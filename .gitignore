@@ -7,3 +7,8 @@ node_modules
 
 # rust
 **/target/
+
+# env
+env
+models
+datasets
