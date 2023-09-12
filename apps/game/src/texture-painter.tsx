@@ -164,7 +164,12 @@ export function TexturePainter(): JSX.Element {
   const [mouseDownHandler, setMouseDownHandler] = useState(() => () => {});
 
   return (
-    <Canvas onMouseDown={mouseDownHandler} onMouseUp={mouseUpHandler}>
+    <Canvas
+      onPointerDown={mouseDownHandler}
+      onPointerUp={mouseUpHandler}
+      onMouseDown={mouseDownHandler}
+      onMouseUp={mouseUpHandler}
+    >
       <OrthographicCamera makeDefault />
       <TexturePainterRenderer
         setMouseDownHandler={setMouseDownHandler}
