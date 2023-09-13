@@ -24,10 +24,14 @@ export const drawCircle = (
   data: Uint8Array,
   params: { pos: THREE.Vector2; radius: number; resolution: Size; fillColor: THREE.Color; alpha: number }
 ) => {
-  for (let i = -params.radius + 1; i < params.radius; i++) {
-    for (let j = -params.radius + 1; j < params.radius; j++) {
-      if (i * i + j * j <= params.radius * params.radius) {
-        fillPixel(data, { ...params, pos: new THREE.Vector2(params.pos.x + i, params.pos.y + j) });
+  const minX = Math.max(-params.radius + 1, -params.pos.x);
+  const minY = Math.max(-params.radius + 1, -params.pos.y);
+  const maxX = Math.min(params.radius, params.resolution.width - params.pos.x);
+  const maxY = Math.min(params.radius, params.resolution.height - params.pos.y);
+  for (let x = minX; x < maxX; x++) {
+    for (let y = minY; y < maxY; y++) {
+      if (x * x + y * y <= params.radius * params.radius) {
+        fillPixel(data, { ...params, pos: new THREE.Vector2(params.pos.x + x, params.pos.y + y) });
       }
     }
   }

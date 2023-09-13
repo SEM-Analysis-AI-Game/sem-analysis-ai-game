@@ -27,7 +27,8 @@ void main() {
     vec4 cursorOverlayColor = vec4(0.0);
 
     if (abs(pixelDifference.x) < float(cursorOverlaySize.x) * 0.5 && abs(pixelDifference.y) < float(cursorOverlaySize.y) * 0.5) {
-        cursorOverlayColor = texture2D(cursorOverlay, difference * resolution / vec2(float(cursorOverlaySize.x), float(cursorOverlaySize.y)) + 0.5);
+        cursorOverlayColor = texture2D(cursorOverlay, 
+            difference * resolution / vec2(float(cursorOverlaySize.x), float(cursorOverlaySize.y)) + 0.5);
     }
 
     gl_FragColor = texture2D(drawing, normalizedCoords) + texture2D(background, normalizedCoords) + cursorOverlayColor;
