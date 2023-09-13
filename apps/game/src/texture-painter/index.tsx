@@ -3,14 +3,14 @@ import { Canvas } from '@react-three/fiber';
 import { TexturePainterRenderer } from './renderer';
 
 export function TexturePainter(): JSX.Element {
-  const [mouseUpHandler, setMouseUpHandler] = useState<React.MouseEventHandler>();
-  const [mouseDownHandler, setMouseDownHandler] = useState<React.MouseEventHandler>();
+  const [cursorUpHandler, setCursorUpHandler] = useState<React.MouseEventHandler>();
+  const [cursorDownHandler, setCursorDownHandler] = useState<React.MouseEventHandler>();
 
   return (
-    <Canvas onPointerDown={mouseDownHandler} onPointerUp={mouseUpHandler}>
+    <Canvas onPointerDown={cursorDownHandler} onPointerUp={cursorUpHandler}>
       <TexturePainterRenderer
-        registerCursorDownHandler={mouseDownHandler ? () => {} : setMouseDownHandler}
-        registerCursorUpHandler={mouseUpHandler ? () => {} : setMouseUpHandler}
+        registerCursorDownHandler={cursorDownHandler ? () => {} : setCursorDownHandler}
+        registerCursorUpHandler={cursorUpHandler ? () => {} : setCursorUpHandler}
       />
     </Canvas>
   );
