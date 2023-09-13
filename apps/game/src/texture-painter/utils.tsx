@@ -24,10 +24,9 @@ export const drawCircle = (
   data: Uint8Array,
   params: { pos: THREE.Vector2; radius: number; resolution: Size; fillColor: THREE.Color; alpha: number }
 ) => {
-  const halfBrushSize = params.radius * 0.5;
-  for (let i = -halfBrushSize; i <= halfBrushSize; i++) {
-    for (let j = -halfBrushSize; j <= halfBrushSize; j++) {
-      if (i * i + j * j <= halfBrushSize * halfBrushSize) {
+  for (let i = -params.radius + 1; i < params.radius; i++) {
+    for (let j = -params.radius + 1; j < params.radius; j++) {
+      if (i * i + j * j <= params.radius * params.radius) {
         fillPixel(data, { ...params, pos: new THREE.Vector2(params.pos.x + i, params.pos.y + j) });
       }
     }

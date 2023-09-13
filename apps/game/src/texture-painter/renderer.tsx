@@ -32,29 +32,36 @@ export function TexturePainterRenderer(props: {
     };
   }, []);
 
-  const [textureComposer, mousePositionUniform, drawingUniform, resolutionUniform, drawingPoints] = useMemo(() => {
-    const points = new Uint8Array(size.width * size.height * 4);
-    const mousePos = new THREE.Uniform(new THREE.Vector2(...mouse));
-    const drawing = new THREE.Uniform(new THREE.Texture());
-    const resolution = new THREE.Uniform(new THREE.Vector2(size.width, size.height));
+  const mouseOverlayReference = useMemo(() => {
+    return { texture: new THREE.Texture() };
+  }, []);
 
-    const composer = new EffectComposer(gl);
-    composer.addPass(
-      new ShaderPass(
-        new THREE.ShaderMaterial({
-          vertexShader,
-          fragmentShader,
-          uniforms: {
-            mousePos,
-            resolution,
-            drawing,
-            background: { value: theTexture },
-          },
-        })
-      )
-    );
-    return [composer, mousePos, drawing, resolution, points];
-  }, [gl, mouse, size, theTexture]);
+  const [textureComposer, mousePositionUniform, drawingUniform, resolutionUniform, mouseOverlayUniform, drawingPoints] =
+    useMemo(() => {
+      const points = new Uint8Array(size.width * size.height * 4);
+      const mousePos = new THREE.Uniform(new THREE.Vector2(...mouse));
+      const drawing = new THREE.Uniform(new THREE.Texture());
+      const resolution = new THREE.Uniform(new THREE.Vector2(size.width, size.height));
+      const mouseOverlay = new THREE.Uniform(mouseOverlayReference.texture);
+
+      const composer = new EffectComposer(gl);
+      composer.addPass(
+        new ShaderPass(
+          new THREE.ShaderMaterial({
+            vertexShader,
+            fragmentShader,
+            uniforms: {
+              mousePos,
+              resolution,
+              drawing,
+              mouseOverlay,
+              background: { value: theTexture },
+            },
+          })
+        )
+      );
+      return [composer, mousePos, drawing, resolution, mouseOverlay, points];
+    }, [gl, mouse, size, theTexture]);
 
   useFrame((_, delta) => {
     if (frameHandler) {
@@ -72,6 +79,7 @@ export function TexturePainterRenderer(props: {
     resolutionUniform.value.set(size.width, size.height);
     drawingUniform.value = new THREE.DataTexture(drawingPoints, size.width, size.height);
     drawingUniform.value.needsUpdate = true;
+    mouseOverlayUniform.value = mouseOverlayReference.texture;
 
     gl.clear();
     gl.autoClear = false;
@@ -85,6 +93,9 @@ export function TexturePainterRenderer(props: {
       registerFrameHandler={frameHandler ? () => {} : setFrameHandler}
       updateControlState={state => {
         Object.assign(controls, state);
+      }}
+      updateMouseOverlay={texture => {
+        mouseOverlayReference.texture = texture;
       }}
     />
   );

@@ -2,8 +2,8 @@ import * as THREE from 'three';
 import React, { useEffect } from 'react';
 import { OrbitControls, OrthographicCamera } from '@react-three/drei';
 import { FrameCallback } from './renderer';
-import { Size } from '@react-three/fiber';
 import { drawCircle, mouseToPixel } from './utils';
+import { Size } from '@react-three/fiber';
 
 const kBrushSmoothingThreshold = 0.01;
 
@@ -16,8 +16,20 @@ export function TexturePainterControls(props: {
   registerCursorUpHandler: (handler: React.MouseEventHandler) => void;
   registerFrameHandler: (callback: FrameCallback) => void;
   updateControlState: (state: TexturePainterControlState) => void;
+  updateMouseOverlay: (overlay: THREE.Texture) => void;
 }): JSX.Element {
   useEffect(() => {
+    const mouseOverlayTextureData = new Uint8Array(39 * 39 * 4).fill(1.0);
+    drawCircle(mouseOverlayTextureData, {
+      pos: new THREE.Vector2(19, 19),
+      resolution: { width: 39, height: 39, top: 0, left: 0 },
+      radius: 20,
+      fillColor: new THREE.Color(1.0, 0.0, 0.0),
+      alpha: 1.0,
+    });
+    const mouseOverlayTexture = new THREE.DataTexture(mouseOverlayTextureData, 39, 39);
+    mouseOverlayTexture.needsUpdate = true;
+    props.updateMouseOverlay(mouseOverlayTexture);
     props.registerCursorDownHandler(() => (e: React.MouseEvent) => {
       if (e.button === 0) {
         props.updateControlState({ cursorDown: true });
