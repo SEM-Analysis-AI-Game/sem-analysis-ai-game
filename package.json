@@ -1,5 +1,5 @@
 {
-  "name": "sem-ml-game",
+  "name": "sem-analysis-ai-game",
   "private": true,
   "workspaces": [
     "apps/*"

@@ -1,5 +1,8 @@
 {
+  "plugins": ["@typescript-eslint", "prettier"],
+  "parser": "@typescript-eslint/parser",
   "extends": [
+    "plugin:@typescript-eslint/recommended",
     "react-app"
   ],
   "rules": {
