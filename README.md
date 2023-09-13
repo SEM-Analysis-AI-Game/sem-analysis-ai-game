@@ -1,20 +1,32 @@
 # Development dependencies
 
-* **pnpm** - for package installation and management
-* **turbo** - for monorepo optimization and management
-* **vite** - for building and running the react app
+* **bun** - for package management, building, and running TypeScript
+* **vite** - for building and running the React app
 
-To download all of the dependencies:
-`npm install -g pnpm && pnpm install -g turbo vite`
+**IMPORTANT**: Bun does not support windows yet, so you need to develop in a mac/linux environment. 
+
+To download bun:
+```
+curl -fsSL https://bun.sh/install | bash
+```
+
+To download Vite:
+```
+bun install -g turbo vite
+```
 
 # Application dependencies
 
 All application dependencies can be fetched by running:
-`pnpm install`
-
+```
+bun install
+```
 From the root directory.
 
 # Running the application
 
 To run the application, run:
-`turbo start`
+```
+cd apps/game
+bun start
+```
