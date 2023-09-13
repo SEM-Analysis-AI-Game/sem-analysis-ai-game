@@ -12,7 +12,7 @@ curl -fsSL https://bun.sh/install | bash
 
 To download Vite:
 ```
-bun install -g turbo vite
+bun install -g vite
 ```
 
 # Application dependencies
