@@ -8,7 +8,7 @@ import { fragmentShader, vertexShader } from './shaders';
 import { TexturePainterControlState, TexturePainterControls, kInitialControlState } from './controls';
 import { Tool } from './tools';
 
-export type FrameCallback = (params: {
+export type FrameCallbackParams = {
   delta: number;
   resolution: Size;
   cursor: {
@@ -17,7 +17,9 @@ export type FrameCallback = (params: {
   };
   drawingPoints: Uint8Array;
   controls: TexturePainterControlState;
-}) => void;
+}
+
+export type FrameCallback = (params: FrameCallbackParams) => void;
 
 export function TexturePainterRenderer(props: {
   initialTool: Tool;

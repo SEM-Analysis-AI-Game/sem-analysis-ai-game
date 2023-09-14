@@ -1,4 +1,4 @@
-import { FrameCallback } from './renderer';
+import { FrameCallback, FrameCallbackParams } from './renderer';
 import { cursorToPixel, drawCircle } from './utils';
 import * as THREE from 'three';
 
@@ -11,6 +11,40 @@ export type Tool = {
 };
 
 const kBrushSmoothingThreshold = 0.01;
+
+const draw: (params: FrameCallbackParams & { radius: number; color: THREE.Color; alpha: number }) => void = ({
+  controls,
+  drawingPoints,
+  resolution,
+  cursor,
+  alpha,
+  color,
+  radius,
+}) => {
+  if (controls.cursorDown) {
+    drawCircle(drawingPoints, {
+      pos: cursorToPixel(cursor.previous, resolution),
+      resolution: resolution,
+      radius: radius,
+      fillColor: color,
+      alpha: alpha,
+    });
+    const movement = cursor.current.clone().sub(cursor.previous);
+    const movementLength = movement.length();
+    const strides = movementLength / kBrushSmoothingThreshold;
+    const step = movement.divideScalar(strides);
+    for (let i = 0; i < strides; i++) {
+      cursor.previous.add(step);
+      drawCircle(drawingPoints, {
+        pos: cursorToPixel(cursor.previous, resolution),
+        resolution: resolution,
+        radius: radius,
+        fillColor: color,
+        alpha: alpha,
+      });
+    }
+  }
+};
 
 export function circleBrush(radius: number, color: THREE.Color, alpha: number): Tool {
   const diameterPixels = radius * 2 - 1;
@@ -27,30 +61,29 @@ export function circleBrush(radius: number, color: THREE.Color, alpha: number): 
   return {
     name: 'brush',
     cursorOverlay: cursorOverlayTexture,
-    frameHandler: ({ controls, drawingPoints, cursor, resolution }) => {
-      if (controls.cursorDown) {
-        drawCircle(drawingPoints, {
-          pos: cursorToPixel(cursor.previous, resolution),
-          resolution: resolution,
-          radius: radius,
-          fillColor: color,
-          alpha: alpha,
-        });
-        const movement = cursor.current.clone().sub(cursor.previous);
-        const movementLength = movement.length();
-        const strides = movementLength / kBrushSmoothingThreshold;
-        const step = movement.divideScalar(strides);
-        for (let i = 0; i < strides; i++) {
-          cursor.previous.add(step);
-          drawCircle(drawingPoints, {
-            pos: cursorToPixel(cursor.previous, resolution),
-            resolution: resolution,
-            radius: radius,
-            fillColor: color,
-            alpha: alpha,
-          });
-        }
-      }
+    frameHandler: (params: FrameCallbackParams) => {
+      draw({...params, radius, alpha, color})
     },
+  };
+}
+
+export function eraserBrush(radius: number): Tool {
+  const diameterPixels = radius * 2 - 1;
+  const cursorOverlayTextureData = new Uint8Array(diameterPixels * diameterPixels * 4).fill(1.0);
+  drawCircle(cursorOverlayTextureData, {
+    pos: new THREE.Vector2(radius - 1, radius - 1),
+    resolution: { width: diameterPixels, height: diameterPixels, top: 0, left: 0 },
+    radius: radius,
+    fillColor: new THREE.Color(1.0, 0.5, 0.5),
+    alpha: 0.5,
+  });
+  const cursorOverlayTexture = new THREE.DataTexture(cursorOverlayTextureData, 39, 39);
+  cursorOverlayTexture.needsUpdate = true;
+  return {
+    name: 'eraser',
+    cursorOverlay: cursorOverlayTexture,
+    frameHandler: (params: FrameCallbackParams) => {
+      draw({...params, radius, color: new THREE.Color(0, 0, 0), alpha: 0.0})
+    }
   };
 }
