@@ -1,11 +1,12 @@
 import * as THREE from 'three';
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { useTexture } from '@react-three/drei';
 import { Size, useFrame, useThree } from '@react-three/fiber';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass';
 import { fragmentShader, vertexShader } from './shaders';
 import { TexturePainterControlState, TexturePainterControls, kInitialControlState } from './controls';
+import { Tool } from './tools';
 
 export type FrameCallback = (params: {
   delta: number;
@@ -19,21 +20,19 @@ export type FrameCallback = (params: {
 }) => void;
 
 export function TexturePainterRenderer(props: {
+  initialTool: Tool;
   registerCursorDownHandler: (handler: React.MouseEventHandler) => void;
   registerCursorUpHandler: (handler: React.MouseEventHandler) => void;
 }): JSX.Element {
-  const [frameHandler, setFrameHandler] = useState<FrameCallback>();
-
   const { gl, mouse, size } = useThree();
 
   const theTexture = useTexture('/the_texture.jpg');
 
-  const controls = useMemo(() => {
-    return kInitialControlState;
-  }, []);
-
-  const cursorOverlayReference = useMemo(() => {
-    return { texture: new THREE.Texture() };
+  const controlState = useMemo(() => {
+    return {
+      tool: props.initialTool,
+      controls: kInitialControlState,
+    };
   }, []);
 
   const [
@@ -48,7 +47,7 @@ export function TexturePainterRenderer(props: {
     const cursorPos = new THREE.Uniform(new THREE.Vector2(...mouse));
     const drawing = new THREE.Uniform(new THREE.Texture());
     const resolution = new THREE.Uniform(new THREE.Vector2(size.width, size.height));
-    const cursorOverlay = new THREE.Uniform(cursorOverlayReference.texture);
+    const cursorOverlay = new THREE.Uniform(controlState.tool.cursorOverlay);
 
     const composer = new EffectComposer(gl);
     composer.addPass(
@@ -70,24 +69,22 @@ export function TexturePainterRenderer(props: {
   }, [gl, mouse, size, theTexture]);
 
   useFrame((_, delta) => {
-    if (frameHandler) {
-      frameHandler({
-        delta,
-        controls,
-        drawingPoints,
-        resolution: size,
-        cursor: {
-          previous: cursorPositionUniform.value,
-          current: mouse,
-        },
-      });
-    }
+    controlState.tool.frameHandler({
+      delta,
+      drawingPoints,
+      resolution: size,
+      controls: controlState.controls,
+      cursor: {
+        previous: cursorPositionUniform.value,
+        current: mouse,
+      },
+    });
 
     cursorPositionUniform.value.copy(mouse);
     resolutionUniform.value.set(size.width, size.height);
     drawingUniform.value = new THREE.DataTexture(drawingPoints, size.width, size.height);
     drawingUniform.value.needsUpdate = true;
-    cursorOverlayUniform.value = cursorOverlayReference.texture;
+    cursorOverlayUniform.value = controlState.tool.cursorOverlay;
 
     gl.clear();
     gl.autoClear = false;
@@ -96,14 +93,14 @@ export function TexturePainterRenderer(props: {
 
   return (
     <TexturePainterControls
+      initialTool={props.initialTool}
       registerCursorDownHandler={props.registerCursorDownHandler}
       registerCursorUpHandler={props.registerCursorUpHandler}
-      registerFrameHandler={frameHandler ? () => {} : setFrameHandler}
-      updateControlState={state => {
-        Object.assign(controls, state);
+      updateTool={tool => {
+        controlState.tool = tool;
       }}
-      updateCursorOverlay={texture => {
-        cursorOverlayReference.texture = texture;
+      updateControls={controls => {
+        Object.assign(controlState.controls, controls);
       }}
     />
   );
