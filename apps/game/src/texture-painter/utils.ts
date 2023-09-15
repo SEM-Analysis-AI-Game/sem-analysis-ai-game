@@ -1,7 +1,6 @@
 import * as THREE from 'three';
-import { Size } from '@react-three/fiber';
 
-export function cursorToPixel(cursor: THREE.Vector2, resolution: Size) {
+export function cursorToPixel(cursor: THREE.Vector2, resolution: THREE.Vector2) {
   const cursorNormalized = new THREE.Vector2(cursor.x * 0.5 + 0.5, cursor.y * 0.5 + 0.5);
   return new THREE.Vector2(
     Math.floor(cursorNormalized.x * resolution.width),
@@ -11,7 +10,7 @@ export function cursorToPixel(cursor: THREE.Vector2, resolution: Size) {
 
 export const fillPixel = (
   data: Uint8Array,
-  params: { pos: THREE.Vector2; resolution: Size; fillColor: THREE.Color; alpha: number }
+  params: { pos: THREE.Vector2; resolution: THREE.Vector2; fillColor: THREE.Color; alpha: number }
 ) => {
   const cursorPixelIndex = (params.pos.y * params.resolution.width + params.pos.x) * 4;
   data[cursorPixelIndex] = params.fillColor.r * 255;
@@ -22,7 +21,7 @@ export const fillPixel = (
 
 export const drawCircle = (
   data: Uint8Array,
-  params: { pos: THREE.Vector2; radius: number; resolution: Size; fillColor: THREE.Color; alpha: number }
+  params: { pos: THREE.Vector2; radius: number; resolution: THREE.Vector2; fillColor: THREE.Color; alpha: number }
 ) => {
   const minX = Math.max(-params.radius + 1, -params.pos.x);
   const minY = Math.max(-params.radius + 1, -params.pos.y);

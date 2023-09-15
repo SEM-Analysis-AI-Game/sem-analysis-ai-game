@@ -51,7 +51,7 @@ export function circleBrush(radius: number, color: THREE.Color, alpha: number): 
   const cursorOverlayTextureData = new Uint8Array(diameterPixels * diameterPixels * 4).fill(1.0);
   drawCircle(cursorOverlayTextureData, {
     pos: new THREE.Vector2(radius - 1, radius - 1),
-    resolution: { width: diameterPixels, height: diameterPixels, top: 0, left: 0 },
+    resolution: new THREE.Vector2(diameterPixels, diameterPixels),
     radius: radius,
     fillColor: color,
     alpha: alpha,
@@ -62,7 +62,7 @@ export function circleBrush(radius: number, color: THREE.Color, alpha: number): 
     name: 'brush',
     cursorOverlay: cursorOverlayTexture,
     frameHandler: (params: FrameCallbackParams) => {
-      draw({...params, radius, alpha, color})
+      draw({ ...params, radius, alpha, color });
     },
   };
 }
@@ -72,10 +72,17 @@ export function eraserBrush(radius: number): Tool {
   const cursorOverlayTextureData = new Uint8Array(diameterPixels * diameterPixels * 4).fill(1.0);
   drawCircle(cursorOverlayTextureData, {
     pos: new THREE.Vector2(radius - 1, radius - 1),
-    resolution: { width: diameterPixels, height: diameterPixels, top: 0, left: 0 },
+    resolution: new THREE.Vector2(diameterPixels, diameterPixels),
     radius: radius,
-    fillColor: new THREE.Color(1.0, 0.5, 0.5),
-    alpha: 0.5,
+    fillColor: new THREE.Color(0, 0, 0),
+    alpha: 0.0,
+  });
+  drawCircle(cursorOverlayTextureData, {
+    pos: new THREE.Vector2(radius - 1, radius - 1),
+    resolution: new THREE.Vector2(diameterPixels, diameterPixels),
+    radius: radius - 1,
+    fillColor: new THREE.Color(1.0, 1.0, 1.0),
+    alpha: 0.2,
   });
   const cursorOverlayTexture = new THREE.DataTexture(cursorOverlayTextureData, 39, 39);
   cursorOverlayTexture.needsUpdate = true;
@@ -83,7 +90,7 @@ export function eraserBrush(radius: number): Tool {
     name: 'eraser',
     cursorOverlay: cursorOverlayTexture,
     frameHandler: (params: FrameCallbackParams) => {
-      draw({...params, radius, color: new THREE.Color(0, 0, 0), alpha: 0.0})
-    }
+      draw({ ...params, radius, color: new THREE.Color(0, 0, 0), alpha: 0.0 });
+    },
   };
 }

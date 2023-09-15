@@ -14,6 +14,9 @@ export function TexturePainterControls(props: {
   initialTool: Tool;
   registerCursorDownHandler: (handler: React.MouseEventHandler) => void;
   registerCursorUpHandler: (handler: React.MouseEventHandler) => void;
+  registerCursorEnterHandler: (handler: React.MouseEventHandler) => void;
+  registerCursorLeaveHandler: (handler: React.MouseEventHandler) => void;
+  hideCursorOverlay: (hide: boolean) => void;
   updateTool: (tool: Tool) => void;
   updateControls: (controls: Partial<TexturePainterControlState>) => void;
 }): JSX.Element {
@@ -31,6 +34,13 @@ export function TexturePainterControls(props: {
     });
     props.registerCursorUpHandler(() => () => {
       props.updateControls({ cursorDown: false });
+    });
+    props.registerCursorLeaveHandler(() => () => {
+      props.updateControls({ cursorDown: false });
+      props.hideCursorOverlay(true);
+    });
+    props.registerCursorEnterHandler(() => () => {
+      props.hideCursorOverlay(false);
     });
   }, []);
 
