@@ -95,7 +95,7 @@ export function TexturePainterRenderer(props: {
     } else {
       props.setTexture(theTexture);
     }
-  }, [gl, mouse, props.texture, props.setTexture]);
+  }, [gl, mouse, props.tool, props.hideCursorOverlay, props.texture, props.setTexture]);
 
   return useFrame((_, delta) => {
     if (state) {
