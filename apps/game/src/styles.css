@@ -14,6 +14,13 @@ body,
   -webkit-overflow-scrolling: touch;
 }
 
+.texture-painter-container {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
 .texture-painter-toolbar {
   position: absolute;
   z-index: 1;

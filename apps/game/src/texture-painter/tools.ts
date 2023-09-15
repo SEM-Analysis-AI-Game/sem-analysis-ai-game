@@ -1,5 +1,5 @@
 import { FrameCallback, FrameCallbackParams } from './renderer';
-import { cursorToPixel, drawCircle } from './utils';
+import { cursorToPixel, fillPixel } from './utils';
 import * as THREE from 'three';
 
 export type ToolName = 'brush' | 'eraser';
@@ -11,6 +11,23 @@ export type Tool = {
 };
 
 const kBrushSmoothingThreshold = 0.01;
+
+const drawCircle = (
+  data: Uint8Array,
+  params: { pos: THREE.Vector2; radius: number; resolution: THREE.Vector2; fillColor: THREE.Color; alpha: number }
+) => {
+  const minX = Math.max(-params.radius + 1, -params.pos.x);
+  const minY = Math.max(-params.radius + 1, -params.pos.y);
+  const maxX = Math.min(params.radius, params.resolution.width - params.pos.x);
+  const maxY = Math.min(params.radius, params.resolution.height - params.pos.y);
+  for (let x = minX; x < maxX; x++) {
+    for (let y = minY; y < maxY; y++) {
+      if (x * x + y * y <= params.radius * params.radius) {
+        fillPixel(data, { ...params, pos: new THREE.Vector2(params.pos.x + x, params.pos.y + y) });
+      }
+    }
+  }
+};
 
 const draw: (params: FrameCallbackParams & { radius: number; color: THREE.Color; alpha: number }) => void = ({
   controls,
