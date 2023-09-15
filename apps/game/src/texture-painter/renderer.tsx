@@ -1,12 +1,11 @@
 import * as THREE from 'three';
 import { useMemo } from 'react';
+import { useTexture } from '@react-three/drei';
 import { useFrame, useThree } from '@react-three/fiber';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass';
 import { fragmentShader, vertexShader } from './shaders';
 import { TexturePainterControlState } from './controls';
-import { Tool } from './tools';
-import { useTexture } from '@react-three/drei';
 
 /**
  * The parameters passed to the three.js render loop callback.
@@ -51,8 +50,9 @@ export type FrameCallbackParams = {
 export type FrameCallback = (params: FrameCallbackParams) => void;
 
 export function TexturePainterRenderer(props: {
+  frameHandler: FrameCallback;
+  cursorOverlay: THREE.Texture;
   drawingPoints: Uint8Array;
-  tool: Tool;
   controls: TexturePainterControlState;
   hideCursorOverlay: boolean;
   texture: THREE.Texture | undefined;
@@ -63,6 +63,7 @@ export function TexturePainterRenderer(props: {
   const theTexture = useTexture('/the_texture.jpg');
 
   const state = useMemo(() => {
+    gl.setClearAlpha(0.0);
     if (props.texture) {
       const resolution = new THREE.Vector2(
         Math.round(props.texture.image.width),
@@ -72,13 +73,14 @@ export function TexturePainterRenderer(props: {
       const drawingUniform = new THREE.Uniform(
         new THREE.DataTexture(props.drawingPoints, resolution.width, resolution.height)
       );
-      const cursorOverlayUniform = new THREE.Uniform(props.tool.cursorOverlay);
+      const cursorOverlayUniform = new THREE.Uniform(props.cursorOverlay);
       const hideCursorOverlayUniform = new THREE.Uniform(props.hideCursorOverlay);
 
       const composer = new EffectComposer(gl);
       composer.addPass(
         new ShaderPass(
           new THREE.ShaderMaterial({
+            transparent: true,
             vertexShader,
             fragmentShader,
             uniforms: {
@@ -95,12 +97,12 @@ export function TexturePainterRenderer(props: {
     } else {
       props.setTexture(theTexture);
     }
-  }, [gl, mouse, props.tool, props.hideCursorOverlay, props.texture, props.setTexture]);
+  }, [gl, mouse, props.cursorOverlay, props.hideCursorOverlay, props.texture, props.setTexture]);
 
   return useFrame((_, delta) => {
     if (state) {
       const [resolution, composer, uniforms] = state;
-      props.tool.frameHandler({
+      props.frameHandler({
         delta,
         resolution,
         controls: props.controls,
@@ -117,6 +119,7 @@ export function TexturePainterRenderer(props: {
 
       gl.clear();
       gl.autoClear = false;
+
       composer.render();
     }
   });

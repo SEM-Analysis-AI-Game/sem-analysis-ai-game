@@ -1,12 +1,6 @@
+import { Tool } from '../tools';
 import { TexturePainterToolbar } from './toolbar';
 
-export function TexturePainterOverlay(): JSX.Element {
-  return (
-    <TexturePainterToolbar
-      currentToolName={'brush'}
-      updateTool={function (): void {
-        throw new Error('Function not implemented.');
-      }}
-    />
-  );
+export function TexturePainterOverlay(props: { updateTool: (tool: Tool) => void }): JSX.Element {
+  return <TexturePainterToolbar currentToolName={'Circle Brush'} updateTool={props.updateTool} />;
 }

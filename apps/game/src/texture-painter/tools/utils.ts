@@ -8,11 +8,15 @@ export function cursorToPixel(cursor: THREE.Vector2, resolution: THREE.Vector2) 
   );
 }
 
+export function pixelToIndex(pos: THREE.Vector2, resolution: THREE.Vector2) {
+  return (pos.y * resolution.width + pos.x) * 4;
+}
+
 export const fillPixel = (
   data: Uint8Array,
   params: { pos: THREE.Vector2; resolution: THREE.Vector2; fillColor: THREE.Color; alpha: number }
 ) => {
-  const cursorPixelIndex = (params.pos.y * params.resolution.width + params.pos.x) * 4;
+  const cursorPixelIndex = pixelToIndex(params.pos, params.resolution);
   data[cursorPixelIndex] = params.fillColor.r * 255;
   data[cursorPixelIndex + 1] = params.fillColor.g * 255;
   data[cursorPixelIndex + 2] = params.fillColor.b * 255;

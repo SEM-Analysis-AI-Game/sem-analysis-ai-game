@@ -25,7 +25,7 @@ export function TexturePainter(props: { initialTool: Tool }): JSX.Element {
   const [texture, setTexture] = useState<THREE.Texture>();
 
   // The currently selected tool.
-  const [tool] = useState(props.initialTool);
+  const [tool, setTool] = useState(props.initialTool);
 
   // The current state of the controls.
   const [controls, setControls] = useState(kInitialControlState);
@@ -42,7 +42,7 @@ export function TexturePainter(props: { initialTool: Tool }): JSX.Element {
 
   return (
     <>
-      <TexturePainterOverlay />
+      <TexturePainterOverlay updateTool={setTool} />
       <div
         className="texture-painter-container"
         style={{
@@ -66,7 +66,8 @@ export function TexturePainter(props: { initialTool: Tool }): JSX.Element {
             updateControls={e => setControls({ ...controls, ...e })}
           />
           <TexturePainterRenderer
-            tool={tool}
+            frameHandler={tool.frameHandler}
+            cursorOverlay={tool.cursorOverlay}
             drawingPoints={drawingPoints}
             controls={controls}
             hideCursorOverlay={hideCursorOverlay}

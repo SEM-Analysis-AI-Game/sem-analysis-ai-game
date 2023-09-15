@@ -37,5 +37,10 @@ void main() {
         }
     }
 
-    gl_FragColor = texture2D(drawing, normalizedCoords) + texture2D(background, normalizedCoords) + cursorOverlayColor;
+    gl_FragColor = texture2D(background, normalizedCoords);
+
+    vec4 drawingColor = texture2D(drawing, normalizedCoords);
+    gl_FragColor = mix(gl_FragColor, drawingColor, drawingColor.a);
+
+    gl_FragColor = mix(gl_FragColor, cursorOverlayColor, cursorOverlayColor.a);
 }`;
