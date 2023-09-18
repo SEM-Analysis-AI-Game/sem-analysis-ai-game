@@ -39,7 +39,7 @@ export function TexturePainter(props: { initialTool: Tool }): JSX.Element {
           tool={tool}
           drawingPoints={drawingPoints}
           hideCursorOverlay={false}
-          texture={texture}
+          background={texture}
         />
       ) : null}
     </>

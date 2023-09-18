@@ -1,9 +1,9 @@
 import * as THREE from "three";
 import { OrbitControls, OrthographicCamera } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
-import { TexturePainterRenderer } from "./renderer";
 import { useState } from "react";
 import { Tool } from "./tools";
+import { TexturePainterRenderer } from "./renderer";
 
 const kInitialControlState: TexturePainterControlState = {
   cursorDown: false,
@@ -17,7 +17,7 @@ export function TexturePainterCanvas(props: {
   tool: Tool;
   drawingPoints: Uint8Array;
   hideCursorOverlay: boolean;
-  texture: THREE.Texture;
+  background: THREE.Texture;
 }): JSX.Element {
   // The current state of the controls.
   const [controls, setControls] = useState(kInitialControlState);
@@ -29,8 +29,8 @@ export function TexturePainterCanvas(props: {
     <div
       className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
       style={{
-        width: props.texture.image.width,
-        height: props.texture.image.height,
+        width: props.background.image.width,
+        height: props.background.image.height,
       }}
     >
       <Canvas
@@ -63,7 +63,7 @@ export function TexturePainterCanvas(props: {
           drawingPoints={props.drawingPoints}
           controls={controls}
           hideCursorOverlay={hideCursorOverlay}
-          texture={props.texture}
+          background={props.background}
         />
       </Canvas>
     </div>

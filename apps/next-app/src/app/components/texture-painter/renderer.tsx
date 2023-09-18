@@ -53,15 +53,15 @@ export function TexturePainterRenderer(props: {
   drawingPoints: Uint8Array;
   controls: TexturePainterControlState;
   hideCursorOverlay: boolean;
-  texture: THREE.Texture;
+  background: THREE.Texture;
 }): null {
   const { gl, mouse } = useThree();
 
   const state = useMemo(() => {
     gl.setClearAlpha(0.0);
     const resolution = new THREE.Vector2(
-      Math.round(props.texture.image.width),
-      Math.round(props.texture.image.height)
+      Math.round(props.background.image.width),
+      Math.round(props.background.image.height)
     );
     const cursorPosUniform = new THREE.Uniform(
       new THREE.Vector2(mouse.x, mouse.y)
@@ -88,7 +88,7 @@ export function TexturePainterRenderer(props: {
             hideCursorOverlay: hideCursorOverlayUniform,
             drawing: drawingUniform,
             cursorPos: cursorPosUniform,
-            background: { value: props.texture },
+            background: { value: props.background },
           },
         })
       )
@@ -98,7 +98,13 @@ export function TexturePainterRenderer(props: {
       composer,
       { cursorPosUniform, drawingUniform },
     ] as const;
-  }, [gl, mouse, props.cursorOverlay, props.hideCursorOverlay, props.texture]);
+  }, [
+    gl,
+    mouse,
+    props.cursorOverlay,
+    props.hideCursorOverlay,
+    props.background,
+  ]);
 
   return useFrame((_, delta) => {
     const [resolution, composer, uniforms] = state;
