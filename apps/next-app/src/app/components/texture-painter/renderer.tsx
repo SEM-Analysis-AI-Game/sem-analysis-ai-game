@@ -1,10 +1,9 @@
 import * as THREE from "three";
 import { useMemo } from "react";
-import { useTexture } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
 import { fragmentShader, vertexShader } from "./shaders";
-import { TexturePainterControlState } from "./controls";
 import { EffectComposer, ShaderPass } from "three-stdlib";
+import { TexturePainterControlState } from "./canvas";
 
 /**
  * The parameters passed to the three.js render loop callback.
@@ -57,8 +56,6 @@ export function TexturePainterRenderer(props: {
   texture: THREE.Texture;
 }): null {
   const { gl, mouse } = useThree();
-
-  const theTexture = useTexture("/the_texture.jpg");
 
   const state = useMemo(() => {
     gl.setClearAlpha(0.0);

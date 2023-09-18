@@ -1,8 +1,17 @@
+import * as THREE from "three";
+import { OrbitControls, OrthographicCamera } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
-import { TexturePainterControls, kInitialControlState } from "./controls";
 import { TexturePainterRenderer } from "./renderer";
 import { useState } from "react";
 import { Tool } from "./tools";
+
+const kInitialControlState: TexturePainterControlState = {
+  cursorDown: false,
+};
+
+export type TexturePainterControlState = {
+  cursorDown: boolean;
+};
 
 export function TexturePainterCanvas(props: {
   tool: Tool;
@@ -10,19 +19,6 @@ export function TexturePainterCanvas(props: {
   hideCursorOverlay: boolean;
   texture: THREE.Texture;
 }): JSX.Element {
-  // These handlers are used to register the cursor events with the canvas.
-  // If the handlers are not registered, then the cursor events will not be
-  // captured by the canvas. These are registered in the TexturePainterControls
-  // component.
-  const [cursorUpHandler, setCursorUpHandler] =
-    useState<React.MouseEventHandler>();
-  const [cursorDownHandler, setCursorDownHandler] =
-    useState<React.MouseEventHandler>();
-  const [cursorLeaveHandler, setCursorLeaveHandler] =
-    useState<React.MouseEventHandler>();
-  const [cursorEnterHandler, setCursorEnterHandler] =
-    useState<React.MouseEventHandler>();
-
   // The current state of the controls.
   const [controls, setControls] = useState(kInitialControlState);
 
@@ -38,19 +34,29 @@ export function TexturePainterCanvas(props: {
       }}
     >
       <Canvas
-        onPointerEnter={cursorEnterHandler}
-        onPointerLeave={cursorLeaveHandler}
-        onPointerDown={cursorDownHandler}
-        onPointerUp={cursorUpHandler}
+        onPointerEnter={() => {
+          setHideCursorOverlay(false);
+        }}
+        onPointerLeave={() => {
+          setControls({ cursorDown: false });
+          setHideCursorOverlay(true);
+        }}
+        onPointerDown={(e: React.MouseEvent) => {
+          if (e.button === 0) {
+            setControls({ cursorDown: true });
+          }
+        }}
+        onPointerUp={() => {
+          setControls({ cursorDown: false });
+        }}
       >
-        <TexturePainterControls
-          registerCursorDownHandler={setCursorDownHandler}
-          registerCursorUpHandler={setCursorUpHandler}
-          registerCursorEnterHandler={setCursorEnterHandler}
-          registerCursorLeaveHandler={setCursorLeaveHandler}
-          hideCursorOverlay={setHideCursorOverlay}
-          updateControls={(e) => setControls({ ...controls, ...e })}
+        <OrbitControls
+          enablePan
+          enableDamping={false}
+          minZoom={1.0}
+          maxZoom={3.0}
         />
+        <OrthographicCamera makeDefault />
         <TexturePainterRenderer
           frameHandler={props.tool.frameHandler}
           cursorOverlay={props.tool.cursorOverlay}
