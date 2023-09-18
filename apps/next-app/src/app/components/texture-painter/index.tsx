@@ -50,14 +50,13 @@ export function TexturePainter(props: { initialTool: Tool }): JSX.Element {
     <>
       <TexturePainterOverlay updateTool={setTool} />
       <div
-        className="texture-painter-container"
+        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
         style={{
           width: texture?.image.width,
           height: texture?.image.height,
         }}
       >
         <Canvas
-          className="absolute z-10 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
           onPointerEnter={cursorEnterHandler}
           onPointerLeave={cursorLeaveHandler}
           onPointerDown={cursorDownHandler}
