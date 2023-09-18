@@ -12,3 +12,7 @@ node_modules
 env
 models
 datasets
+
+# lock files
+package-lock.json
+yarn.lock
