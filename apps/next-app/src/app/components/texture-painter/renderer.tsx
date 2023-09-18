@@ -54,8 +54,7 @@ export function TexturePainterRenderer(props: {
   drawingPoints: Uint8Array;
   controls: TexturePainterControlState;
   hideCursorOverlay: boolean;
-  texture: THREE.Texture | undefined;
-  setTexture: (texture: THREE.Texture) => void;
+  texture: THREE.Texture;
 }): null {
   const { gl, mouse } = useThree();
 
@@ -63,86 +62,71 @@ export function TexturePainterRenderer(props: {
 
   const state = useMemo(() => {
     gl.setClearAlpha(0.0);
-    if (props.texture) {
-      const resolution = new THREE.Vector2(
-        Math.round(props.texture.image.width),
-        Math.round(props.texture.image.height)
-      );
-      const cursorPosUniform = new THREE.Uniform(
-        new THREE.Vector2(mouse.x, mouse.y)
-      );
-      const drawingUniform = new THREE.Uniform(
-        new THREE.DataTexture(
-          props.drawingPoints,
-          resolution.width,
-          resolution.height
-        )
-      );
-      const cursorOverlayUniform = new THREE.Uniform(props.cursorOverlay);
-      const hideCursorOverlayUniform = new THREE.Uniform(
-        props.hideCursorOverlay
-      );
-
-      const composer = new EffectComposer(gl);
-      composer.addPass(
-        new ShaderPass(
-          new THREE.ShaderMaterial({
-            transparent: true,
-            vertexShader,
-            fragmentShader,
-            uniforms: {
-              cursorOverlay: cursorOverlayUniform,
-              hideCursorOverlay: hideCursorOverlayUniform,
-              drawing: drawingUniform,
-              cursorPos: cursorPosUniform,
-              background: { value: props.texture },
-            },
-          })
-        )
-      );
-      return [
-        resolution,
-        composer,
-        { cursorPosUniform, drawingUniform },
-      ] as const;
-    } else {
-      props.setTexture(theTexture);
-    }
-  }, [
-    gl,
-    mouse,
-    props.cursorOverlay,
-    props.hideCursorOverlay,
-    props.texture,
-    props.setTexture,
-  ]);
-
-  return useFrame((_, delta) => {
-    if (state) {
-      const [resolution, composer, uniforms] = state;
-      props.frameHandler({
-        delta,
-        resolution,
-        controls: props.controls,
-        drawingPoints: props.drawingPoints,
-        cursor: {
-          previous: uniforms.cursorPosUniform.value,
-          current: mouse,
-        },
-      });
-
-      uniforms.cursorPosUniform.value.copy(mouse);
-      uniforms.drawingUniform.value = new THREE.DataTexture(
+    const resolution = new THREE.Vector2(
+      Math.round(props.texture.image.width),
+      Math.round(props.texture.image.height)
+    );
+    const cursorPosUniform = new THREE.Uniform(
+      new THREE.Vector2(mouse.x, mouse.y)
+    );
+    const drawingUniform = new THREE.Uniform(
+      new THREE.DataTexture(
         props.drawingPoints,
         resolution.width,
         resolution.height
-      );
-      uniforms.drawingUniform.value.needsUpdate = true;
+      )
+    );
+    const cursorOverlayUniform = new THREE.Uniform(props.cursorOverlay);
+    const hideCursorOverlayUniform = new THREE.Uniform(props.hideCursorOverlay);
 
-      gl.clear();
-      gl.autoClear = false;
+    const composer = new EffectComposer(gl);
+    composer.addPass(
+      new ShaderPass(
+        new THREE.ShaderMaterial({
+          transparent: true,
+          vertexShader,
+          fragmentShader,
+          uniforms: {
+            cursorOverlay: cursorOverlayUniform,
+            hideCursorOverlay: hideCursorOverlayUniform,
+            drawing: drawingUniform,
+            cursorPos: cursorPosUniform,
+            background: { value: props.texture },
+          },
+        })
+      )
+    );
+    return [
+      resolution,
+      composer,
+      { cursorPosUniform, drawingUniform },
+    ] as const;
+  }, [gl, mouse, props.cursorOverlay, props.hideCursorOverlay, props.texture]);
 
-      composer.render();
-    }
+  return useFrame((_, delta) => {
+    const [resolution, composer, uniforms] = state;
+    props.frameHandler({
+      delta,
+      resolution,
+      controls: props.controls,
+      drawingPoints: props.drawingPoints,
+      cursor: {
+        previous: uniforms.cursorPosUniform.value,
+        current: mouse,
+      },
+    });
+
+    uniforms.cursorPosUniform.value.copy(mouse);
+    uniforms.drawingUniform.value = new THREE.DataTexture(
+      props.drawingPoints,
+      resolution.width,
+      resolution.height
+    );
+    uniforms.drawingUniform.value.needsUpdate = true;
+
+    gl.clear();
+    gl.autoClear = false;
+
+    composer.render();
   });
 }
