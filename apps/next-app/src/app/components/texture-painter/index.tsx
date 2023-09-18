@@ -1,12 +1,12 @@
-import * as THREE from 'three';
-import React, { useMemo, useState } from 'react';
-import { Canvas } from '@react-three/fiber';
-import { TexturePainterRenderer } from './renderer';
-import { Tool } from './tools';
-import { TexturePainterOverlay } from './overlay';
-import { TexturePainterControls, kInitialControlState } from './controls';
+import * as THREE from "three";
+import React, { useMemo, useState } from "react";
+import { Canvas } from "@react-three/fiber";
+import { TexturePainterRenderer } from "./renderer";
+import { Tool } from "./tools";
+import { TexturePainterOverlay } from "./overlay";
+import { TexturePainterControls, kInitialControlState } from "./controls";
 
-export * from './tools';
+export * from "./tools";
 
 /**
  * A component that renders a canvas that can be used to paint on a texture.
@@ -16,10 +16,14 @@ export function TexturePainter(props: { initialTool: Tool }): JSX.Element {
   // If the handlers are not registered, then the cursor events will not be
   // captured by the canvas. These are registered in the TexturePainterControls
   // component.
-  const [cursorUpHandler, setCursorUpHandler] = useState<React.MouseEventHandler>();
-  const [cursorDownHandler, setCursorDownHandler] = useState<React.MouseEventHandler>();
-  const [cursorLeaveHandler, setCursorLeaveHandler] = useState<React.MouseEventHandler>();
-  const [cursorEnterHandler, setCursorEnterHandler] = useState<React.MouseEventHandler>();
+  const [cursorUpHandler, setCursorUpHandler] =
+    useState<React.MouseEventHandler>();
+  const [cursorDownHandler, setCursorDownHandler] =
+    useState<React.MouseEventHandler>();
+  const [cursorLeaveHandler, setCursorLeaveHandler] =
+    useState<React.MouseEventHandler>();
+  const [cursorEnterHandler, setCursorEnterHandler] =
+    useState<React.MouseEventHandler>();
 
   // The background image texture.
   const [texture, setTexture] = useState<THREE.Texture>();
@@ -37,7 +41,9 @@ export function TexturePainter(props: { initialTool: Tool }): JSX.Element {
   // This is not used for updating React components, but instead
   // is used by the three.js render loop to update the shader uniform.
   const drawingPoints = useMemo(() => {
-    return new Uint8Array(texture ? texture.image.width * texture.image.height * 4 : 0);
+    return new Uint8Array(
+      texture ? texture.image.width * texture.image.height * 4 : 0
+    );
   }, [texture]);
 
   return (
@@ -51,7 +57,7 @@ export function TexturePainter(props: { initialTool: Tool }): JSX.Element {
         }}
       >
         <Canvas
-          className="texture-painter-canvas"
+          className="absolute z-10 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
           onPointerEnter={cursorEnterHandler}
           onPointerLeave={cursorLeaveHandler}
           onPointerDown={cursorDownHandler}
@@ -63,7 +69,7 @@ export function TexturePainter(props: { initialTool: Tool }): JSX.Element {
             registerCursorEnterHandler={setCursorEnterHandler}
             registerCursorLeaveHandler={setCursorLeaveHandler}
             hideCursorOverlay={setHideCursorOverlay}
-            updateControls={e => setControls({ ...controls, ...e })}
+            updateControls={(e) => setControls({ ...controls, ...e })}
           />
           <TexturePainterRenderer
             frameHandler={tool.frameHandler}
