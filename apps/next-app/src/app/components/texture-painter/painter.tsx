@@ -17,21 +17,16 @@ export function TexturePainter(props: {
 }): JSX.Element {
   const [state, dispatch] = useReducer(
     texturePainterReducer,
-    {
-      toolSize: 20,
-      toolColor: new THREE.Color(0xff0000),
-      drawingPoints: new Uint8Array(
-        props.background.image.width * props.background.image.height * 4
-      ),
-    },
-    (state: {
-      toolSize: number;
-      toolColor: THREE.Color;
-      drawingPoints: Uint8Array;
-    }) => {
+    { toolSize: 20, toolColor: new THREE.Color(0xff0000) },
+    (params) => {
       return {
-        ...state,
-        tool: new CircleBrush(state.toolSize, state.toolColor),
+        toolSize: params.toolSize,
+        toolColor: params.toolColor,
+        drawingPoints: new Uint8Array(
+          props.background.image.width * props.background.image.height * 4
+        ),
+        hideCursor: false,
+        tool: new CircleBrush(params.toolSize, params.toolColor),
       };
     }
   );

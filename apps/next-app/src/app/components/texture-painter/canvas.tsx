@@ -4,7 +4,7 @@ import { Canvas } from "@react-three/fiber";
 import { TexturePainterRenderer } from "./renderer";
 import { useContext, useState } from "react";
 import { TexturePainterActionDispatchContext } from "./context";
-import { SetToolAlphaAction } from "./state";
+import { HideCursorAction } from "./state";
 
 export type ControlsState = {
   cursorDown: boolean;
@@ -34,10 +34,10 @@ export function TexturePainterCanvas(props: {
       <Canvas
         className="m-0 p-0 w-full h-full overflow-hidden bg-black scrolling-touch"
         onPointerEnter={() => {
-          painterDispatch(new SetToolAlphaAction(1.0));
+          painterDispatch(new HideCursorAction(false));
         }}
         onPointerLeave={() => {
-          painterDispatch(new SetToolAlphaAction(0.0));
+          painterDispatch(new HideCursorAction(true));
           setControls({ ...controls, cursorDown: false });
         }}
         onPointerDown={(e: React.MouseEvent) => {

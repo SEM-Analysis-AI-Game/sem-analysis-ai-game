@@ -79,6 +79,7 @@ export function TexturePainterRenderer(props: {
     const cursorOverlayUniform = new THREE.Uniform(
       painterState.tool.cursorOverlay()
     );
+    const hideCursorOverlayUniform = new THREE.Uniform(painterState.hideCursor);
 
     const composer = new EffectComposer(gl);
     composer.addPass(
@@ -91,6 +92,7 @@ export function TexturePainterRenderer(props: {
             cursorOverlay: cursorOverlayUniform,
             drawing: drawingUniform,
             cursorPos: cursorPosUniform,
+            hideCursorOverlay: hideCursorOverlayUniform,
             background: { value: props.background },
           },
         })
@@ -105,6 +107,7 @@ export function TexturePainterRenderer(props: {
     gl,
     mouse,
     painterState.drawingPoints,
+    painterState.hideCursor,
     painterState.tool,
     props.background,
   ]);

@@ -5,10 +5,11 @@ export type TexturePainterState = {
   toolSize: number;
   toolColor: THREE.Color;
   tool: Tools;
+  hideCursor: boolean;
   drawingPoints: Uint8Array;
 };
 
-export type TexturePainterAction = SetToolAction | SetToolAlphaAction;
+export type TexturePainterAction = SetToolAction | HideCursorAction;
 
 export class SetToolAction {
   public readonly toolName: ToolNames;
@@ -18,11 +19,11 @@ export class SetToolAction {
   }
 }
 
-export class SetToolAlphaAction {
-  public readonly brushAlpha: number;
+export class HideCursorAction {
+  public readonly hideCursor: boolean;
 
-  constructor(brushAlpha: number) {
-    this.brushAlpha = brushAlpha;
+  constructor(hideCursor: boolean) {
+    this.hideCursor = hideCursor;
   }
 }
 
@@ -30,21 +31,8 @@ export function texturePainterReducer(
   state: TexturePainterState,
   action: TexturePainterAction
 ): TexturePainterState {
-  if (action instanceof SetToolAlphaAction) {
-    const newState = { ...state, toolAlpha: action.brushAlpha };
-    switch (state.tool.name) {
-      case "Circle Brush":
-      case "Square Brush":
-        newState.tool = new kToolFactory[state.tool.name](
-          state.toolSize,
-          state.toolColor
-        );
-        return newState;
-      case "Circle Eraser":
-      case "Square Eraser":
-        newState.tool = new kToolFactory[state.tool.name](state.toolSize);
-        return newState;
-    }
+  if (action instanceof HideCursorAction) {
+    return { ...state, hideCursor: action.hideCursor };
   } else if (action instanceof SetToolAction) {
     switch (action.toolName) {
       case "Circle Brush":
