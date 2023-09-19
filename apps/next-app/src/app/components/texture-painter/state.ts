@@ -9,7 +9,11 @@ export type TexturePainterState = {
   drawingPoints: Uint8Array;
 };
 
-export type TexturePainterAction = SetToolAction | HideCursorAction;
+export type TexturePainterAction =
+  | SetToolAction
+  | HideCursorAction
+  | SetToolSizeAction
+  | SetToolColorAction;
 
 export class SetToolAction {
   public readonly toolName: ToolNames;
@@ -27,6 +31,22 @@ export class HideCursorAction {
   }
 }
 
+export class SetToolSizeAction {
+  public readonly toolSize: number;
+
+  constructor(toolSize: number) {
+    this.toolSize = toolSize;
+  }
+}
+
+export class SetToolColorAction {
+  public readonly toolColor: THREE.Color;
+
+  constructor(toolColor: THREE.Color) {
+    this.toolColor = toolColor;
+  }
+}
+
 export function texturePainterReducer(
   state: TexturePainterState,
   action: TexturePainterAction
@@ -34,25 +54,22 @@ export function texturePainterReducer(
   if (action instanceof HideCursorAction) {
     return { ...state, hideCursor: action.hideCursor };
   } else if (action instanceof SetToolAction) {
-    switch (action.toolName) {
-      case "Circle Brush":
-      case "Square Brush":
-        const newBrush = new kToolFactory[action.toolName](
-          state.toolSize,
-          state.toolColor
-        );
-        return {
-          ...state,
-          tool: newBrush,
-        };
-      case "Circle Eraser":
-      case "Square Eraser":
-        const newEraser = new kToolFactory[action.toolName](state.toolSize);
-        return {
-          ...state,
-          tool: newEraser,
-        };
-    }
+    return {
+      ...state,
+      tool: new kToolFactory[action.toolName](state.toolSize, state.toolColor),
+    };
+  } else if (action instanceof SetToolSizeAction) {
+    return {
+      ...state,
+      toolSize: action.toolSize,
+      tool: new kToolFactory[state.tool.name](action.toolSize, state.toolColor),
+    };
+  } else if (action instanceof SetToolColorAction) {
+    return {
+      ...state,
+      toolColor: action.toolColor,
+      tool: new kToolFactory[state.tool.name](state.toolSize, action.toolColor),
+    };
   } else {
     throw new Error("Unknown action");
   }

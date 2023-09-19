@@ -11,11 +11,11 @@ export function TexturePainterOverlay(): JSX.Element {
   }
 
   return (
-    <div className="absolute z-10 left-1/2 -translate-x-1/2">
+    <div className="absolute z-10 left-1/2 -translate-x-1/2 top-0">
       {Object.keys(kToolFactory).map((toolName) => {
         return (
           <button
-            className="text-[#ff0000]"
+            className="text-[#ff0000] pl-8 pr-8"
             key={toolName}
             onClick={() =>
               painterDispatch(new SetToolAction(toolName as ToolNames))
