@@ -1,29 +1,27 @@
 import * as THREE from "three";
 import { OrbitControls, OrthographicCamera } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
-import { useState } from "react";
-import { Tool } from "./tools";
 import { TexturePainterRenderer } from "./renderer";
+import { useContext, useState } from "react";
+import { TexturePainterActionDispatchContext } from "./context";
+import { SetToolAlphaAction } from "./state";
 
-const kInitialControlState: TexturePainterControlState = {
-  cursorDown: false,
-};
-
-export type TexturePainterControlState = {
+export type ControlsState = {
   cursorDown: boolean;
 };
 
 export function TexturePainterCanvas(props: {
-  tool: Tool;
-  drawingPoints: Uint8Array;
-  hideCursorOverlay: boolean;
   background: THREE.Texture;
 }): JSX.Element {
-  // The current state of the controls.
-  const [controls, setControls] = useState(kInitialControlState);
+  const painterDispatch = useContext(TexturePainterActionDispatchContext);
 
-  // This is used to hide the cursor overlay when the cursor leaves the canvas.
-  const [hideCursorOverlay, setHideCursorOverlay] = useState(false);
+  if (!painterDispatch) {
+    throw new Error("No painter dispatch found");
+  }
+
+  const [controls, setControls] = useState({
+    cursorDown: false,
+  });
 
   return (
     <div
@@ -34,20 +32,21 @@ export function TexturePainterCanvas(props: {
       }}
     >
       <Canvas
+        className="m-0 p-0 w-full h-full overflow-hidden bg-black scrolling-touch"
         onPointerEnter={() => {
-          setHideCursorOverlay(false);
+          painterDispatch(new SetToolAlphaAction(1.0));
         }}
         onPointerLeave={() => {
-          setControls({ cursorDown: false });
-          setHideCursorOverlay(true);
+          painterDispatch(new SetToolAlphaAction(0.0));
+          setControls({ ...controls, cursorDown: false });
         }}
         onPointerDown={(e: React.MouseEvent) => {
           if (e.button === 0) {
-            setControls({ cursorDown: true });
+            setControls({ ...controls, cursorDown: true });
           }
         }}
         onPointerUp={() => {
-          setControls({ cursorDown: false });
+          setControls({ ...controls, cursorDown: false });
         }}
       >
         <OrbitControls
@@ -58,11 +57,7 @@ export function TexturePainterCanvas(props: {
         />
         <OrthographicCamera makeDefault />
         <TexturePainterRenderer
-          frameHandler={props.tool.frameHandler}
-          cursorOverlay={props.tool.cursorOverlay}
-          drawingPoints={props.drawingPoints}
           controls={controls}
-          hideCursorOverlay={hideCursorOverlay}
           background={props.background}
         />
       </Canvas>

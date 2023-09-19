@@ -1,9 +1,10 @@
 import * as THREE from "three";
-import { useMemo } from "react";
+import { useContext, useMemo } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { fragmentShader, vertexShader } from "./shaders";
 import { EffectComposer, ShaderPass } from "three-stdlib";
-import { TexturePainterControlState } from "./canvas";
+import { ControlsState } from "../canvas";
+import { TexturePainterStateContext } from "../context";
 
 /**
  * The parameters passed to the three.js render loop callback.
@@ -39,7 +40,7 @@ export type FrameCallbackParams = {
   /**
    * The current state of the controls.
    */
-  controls: TexturePainterControlState;
+  controls: ControlsState;
 };
 
 /**
@@ -48,14 +49,16 @@ export type FrameCallbackParams = {
 export type FrameCallback = (params: FrameCallbackParams) => void;
 
 export function TexturePainterRenderer(props: {
-  frameHandler: FrameCallback;
-  cursorOverlay: THREE.Texture;
-  drawingPoints: Uint8Array;
-  controls: TexturePainterControlState;
-  hideCursorOverlay: boolean;
+  controls: ControlsState;
   background: THREE.Texture;
 }): null {
   const { gl, mouse } = useThree();
+
+  const painterState = useContext(TexturePainterStateContext);
+
+  if (!painterState) {
+    throw new Error("No painter state found");
+  }
 
   const state = useMemo(() => {
     gl.setClearAlpha(0.0);
@@ -68,13 +71,14 @@ export function TexturePainterRenderer(props: {
     );
     const drawingUniform = new THREE.Uniform(
       new THREE.DataTexture(
-        props.drawingPoints,
+        painterState.drawingPoints,
         resolution.width,
         resolution.height
       )
     );
-    const cursorOverlayUniform = new THREE.Uniform(props.cursorOverlay);
-    const hideCursorOverlayUniform = new THREE.Uniform(props.hideCursorOverlay);
+    const cursorOverlayUniform = new THREE.Uniform(
+      painterState.tool.cursorOverlay()
+    );
 
     const composer = new EffectComposer(gl);
     composer.addPass(
@@ -85,7 +89,6 @@ export function TexturePainterRenderer(props: {
           fragmentShader,
           uniforms: {
             cursorOverlay: cursorOverlayUniform,
-            hideCursorOverlay: hideCursorOverlayUniform,
             drawing: drawingUniform,
             cursorPos: cursorPosUniform,
             background: { value: props.background },
@@ -101,18 +104,18 @@ export function TexturePainterRenderer(props: {
   }, [
     gl,
     mouse,
-    props.cursorOverlay,
-    props.hideCursorOverlay,
+    painterState.drawingPoints,
+    painterState.tool,
     props.background,
   ]);
 
   return useFrame((_, delta) => {
     const [resolution, composer, uniforms] = state;
-    props.frameHandler({
+    painterState.tool.frameHandler({
       delta,
       resolution,
       controls: props.controls,
-      drawingPoints: props.drawingPoints,
+      drawingPoints: painterState.drawingPoints,
       cursor: {
         previous: uniforms.cursorPosUniform.value,
         current: mouse,
@@ -121,7 +124,7 @@ export function TexturePainterRenderer(props: {
 
     uniforms.cursorPosUniform.value.copy(mouse);
     uniforms.drawingUniform.value = new THREE.DataTexture(
-      props.drawingPoints,
+      painterState.drawingPoints,
       resolution.width,
       resolution.height
     );

@@ -1,12 +1,31 @@
 "use client";
 
-import { TexturePainter, circleBrush } from "./components/texture-painter";
-import * as THREE from "three";
+import { useEffect, useState } from "react";
+import { TexturePainter } from "./components/texture-painter";
+import { Canvas } from "@react-three/fiber";
+import { useTexture } from "@react-three/drei";
+
+function TextureLoading(props: {
+  setBackground: (background: THREE.Texture) => void;
+}) {
+  const background = useTexture("/the_texture.jpg");
+
+  useEffect(() => {
+    props.setBackground(background);
+  }, [background, props.setBackground]);
+
+  return null;
+}
 
 export default function Home() {
+  const [background, setBackground] = useState<THREE.Texture>();
+
   return (
-    <TexturePainter
-      initialTool={circleBrush(20.0, new THREE.Color(0xff0000), 1.0)}
-    />
+    <>
+      <Canvas>
+        <TextureLoading setBackground={setBackground} />
+      </Canvas>
+      {background ? <TexturePainter background={background} /> : null}
+    </>
   );
 }

@@ -1,9 +1,17 @@
-import { FrameCallback } from '../renderer';
+import * as THREE from "three";
+import { FrameCallbackParams } from "../renderer";
 
-export type ToolName = 'Circle Brush' | 'Circle Eraser' | 'Square Brush' | 'Square Eraser';
+export type ToolNames =
+  | "Circle Eraser"
+  | "Square Eraser"
+  | "Circle Brush"
+  | "Square Brush";
 
-export type Tool<Name extends ToolName = ToolName> = {
-  name: Name;
-  cursorOverlay: THREE.Texture;
-  frameHandler: FrameCallback;
-};
+export abstract class Tool {
+  public abstract frameHandler(params: FrameCallbackParams): void;
+  public abstract cursorOverlay(): THREE.Texture;
+
+  public abstract readonly name: ToolNames;
+
+  constructor() {}
+}
