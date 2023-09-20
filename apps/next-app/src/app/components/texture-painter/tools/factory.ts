@@ -1,7 +1,13 @@
 import { CircleBrush, CircleEraser, SquareBrush, SquareEraser } from "./draw";
+import { PanTool } from "./pan";
 import { ToolNames } from "./tool";
 
-export type Tools = CircleBrush | SquareBrush | CircleEraser | SquareEraser;
+export type Tools =
+  | CircleBrush
+  | SquareBrush
+  | CircleEraser
+  | SquareEraser
+  | PanTool;
 
 type ToolFactory<Name extends ToolNames> = Name extends "Circle Brush"
   ? typeof CircleBrush
@@ -11,6 +17,8 @@ type ToolFactory<Name extends ToolNames> = Name extends "Circle Brush"
   ? typeof CircleEraser
   : Name extends "Square Eraser"
   ? typeof SquareEraser
+  : Name extends "Pan"
+  ? typeof PanTool
   : never;
 
 export const kToolFactory: { [Key in ToolNames]: ToolFactory<Key> } = {
@@ -18,4 +26,5 @@ export const kToolFactory: { [Key in ToolNames]: ToolFactory<Key> } = {
   "Square Eraser": SquareEraser,
   "Circle Brush": CircleBrush,
   "Square Brush": SquareBrush,
+  Pan: PanTool,
 } as const;

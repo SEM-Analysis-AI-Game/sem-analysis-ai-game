@@ -5,7 +5,7 @@ import { fragmentShader, vertexShader } from "./shaders";
 import { EffectComposer, ShaderPass } from "three-stdlib";
 import { ControlsState } from "../canvas";
 import { TexturePainterStateContext } from "../context";
-import { usePinch } from "@use-gesture/react";
+import { useDrag, usePinch, useScroll } from "@use-gesture/react";
 
 /**
  * The parameters passed to the three.js render loop callback.
@@ -49,7 +49,7 @@ export type FrameCallbackParams = {
  */
 export type FrameCallback = (params: FrameCallbackParams) => void;
 
-const kMaxZoom = 5.0;
+const kMaxZoom = 6.5;
 const kMinZoom = 1.0;
 
 export function TexturePainterRenderer(props: {
@@ -134,6 +134,30 @@ export function TexturePainterRenderer(props: {
     );
   }, []);
 
+  useDrag(
+    (drag) => {
+      if (painterState.tool.panning) {
+        const max = panBounds(uniforms.zoomUniform.value);
+        const zoomFactor = Math.sqrt(uniforms.zoomUniform.value * 0.25);
+        uniforms.panUniform.value = uniforms.panUniform.value
+          .clone()
+          .add(
+            new THREE.Vector2(
+              -drag.delta[0] / (props.background.image.width * zoomFactor),
+              drag.delta[1] / (props.background.image.height * zoomFactor)
+            )
+          )
+          .clamp(max.clone().negate(), max);
+      }
+    },
+    {
+      pointer: {
+        touch: true,
+      },
+      target: gl.domElement,
+    }
+  );
+
   usePinch(
     (pinch) => {
       uniforms.zoomUniform.value = pinch.offset[0];
@@ -147,6 +171,7 @@ export function TexturePainterRenderer(props: {
     },
     {
       pinchOnWheel: true,
+      modifierKey: null,
       pointer: {
         touch: true,
       },

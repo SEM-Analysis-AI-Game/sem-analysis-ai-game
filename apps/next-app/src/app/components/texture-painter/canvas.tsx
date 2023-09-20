@@ -32,7 +32,7 @@ export function TexturePainterCanvas(props: {
       }}
     >
       <Canvas
-        className="m-0 p-0 w-full h-full overflow-hidden bg-black"
+        className="m-0 p-0 w-full h-full overflow-hidden bg-black touch-none"
         onPointerEnter={() => {
           painterDispatch(new HideCursorAction(false));
         }}
