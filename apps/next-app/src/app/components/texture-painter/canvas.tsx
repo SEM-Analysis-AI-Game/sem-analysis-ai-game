@@ -24,7 +24,8 @@ export function TexturePainterCanvas(props: {
 
   return (
     <div
-      className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 touch-none"
+      // className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 touch-none"
+      className="block m-auto touch-none"
       style={{
         width: props.background.image.width,
         height: props.background.image.height,

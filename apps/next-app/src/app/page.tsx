@@ -8,7 +8,7 @@ import { useTexture } from "@react-three/drei";
 function TextureLoading(props: {
   setBackground: (background: THREE.Texture) => void;
 }) {
-  const background = useTexture("/the_texture.jpg");
+  const background = useTexture("/example.png");
 
   useEffect(() => {
     props.setBackground(background);
