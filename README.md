@@ -27,6 +27,6 @@ From the root directory.
 
 To run the application, run:
 ```
-cd apps/game
-bun start
+cd apps/next-app
+bun dev
 ```
