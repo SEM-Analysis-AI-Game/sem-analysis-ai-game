@@ -1,8 +1,7 @@
 import * as THREE from "three";
-import { OrbitControls, OrthographicCamera } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
-import { TexturePainterRenderer } from "./renderer";
 import { useContext, useState } from "react";
+import { TexturePainterRenderer } from "./renderer";
 import { TexturePainterActionDispatchContext } from "./context";
 import { HideCursorAction } from "./state";
 
@@ -25,14 +24,14 @@ export function TexturePainterCanvas(props: {
 
   return (
     <div
-      className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+      className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 touch-none"
       style={{
         width: props.background.image.width,
         height: props.background.image.height,
       }}
     >
       <Canvas
-        className="m-0 p-0 w-full h-full overflow-hidden bg-black scrolling-touch"
+        className="m-0 p-0 w-full h-full overflow-hidden bg-black"
         onPointerEnter={() => {
           painterDispatch(new HideCursorAction(false));
         }}
@@ -41,21 +40,12 @@ export function TexturePainterCanvas(props: {
           setControls({ ...controls, cursorDown: false });
         }}
         onPointerDown={(e: React.MouseEvent) => {
-          if (e.button === 0) {
-            setControls({ ...controls, cursorDown: true });
-          }
+          setControls({ ...controls, cursorDown: true });
         }}
         onPointerUp={() => {
           setControls({ ...controls, cursorDown: false });
         }}
       >
-        <OrbitControls
-          enablePan
-          enableDamping={false}
-          minZoom={1.0}
-          maxZoom={3.0}
-        />
-        <OrthographicCamera makeDefault />
         <TexturePainterRenderer
           controls={controls}
           background={props.background}

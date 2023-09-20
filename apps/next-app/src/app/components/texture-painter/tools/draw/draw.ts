@@ -5,7 +5,7 @@ import { smoothPaint } from "../utils";
 
 export abstract class DrawTool extends Tool {
   public readonly size: number;
-  public cursorOverlayTexture: THREE.DataTexture;
+  public readonly cursorOverlayTexture: THREE.DataTexture;
   protected readonly color: THREE.Color;
   protected readonly alpha: number;
 

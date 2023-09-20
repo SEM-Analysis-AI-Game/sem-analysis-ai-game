@@ -1,10 +1,11 @@
 import * as THREE from "three";
-import { useContext, useMemo } from "react";
+import { useCallback, useContext, useEffect, useMemo } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { fragmentShader, vertexShader } from "./shaders";
 import { EffectComposer, ShaderPass } from "three-stdlib";
 import { ControlsState } from "../canvas";
 import { TexturePainterStateContext } from "../context";
+import { usePinch } from "@use-gesture/react";
 
 /**
  * The parameters passed to the three.js render loop callback.
@@ -48,6 +49,9 @@ export type FrameCallbackParams = {
  */
 export type FrameCallback = (params: FrameCallbackParams) => void;
 
+const kMaxZoom = 5.0;
+const kMinZoom = 1.0;
+
 export function TexturePainterRenderer(props: {
   controls: ControlsState;
   background: THREE.Texture;
@@ -60,7 +64,7 @@ export function TexturePainterRenderer(props: {
     throw new Error("No painter state found");
   }
 
-  const state = useMemo(() => {
+  const [resolution, composer, uniforms] = useMemo(() => {
     gl.setClearAlpha(0.0);
     const resolution = new THREE.Vector2(
       Math.round(props.background.image.width),
@@ -79,7 +83,9 @@ export function TexturePainterRenderer(props: {
     const cursorOverlayUniform = new THREE.Uniform(
       painterState.tool.cursorOverlay()
     );
-    const hideCursorOverlayUniform = new THREE.Uniform(painterState.hideCursor);
+    const hideCursorUniform = new THREE.Uniform(painterState.hideCursor);
+    const zoomUniform = new THREE.Uniform(1.0);
+    const panUniform = new THREE.Uniform(new THREE.Vector2(0.0, 0.0));
 
     const composer = new EffectComposer(gl);
     composer.addPass(
@@ -92,7 +98,9 @@ export function TexturePainterRenderer(props: {
             cursorOverlay: cursorOverlayUniform,
             drawing: drawingUniform,
             cursorPos: cursorPosUniform,
-            hideCursorOverlay: hideCursorOverlayUniform,
+            hideCursorOverlay: hideCursorUniform,
+            zoom: zoomUniform,
+            pan: panUniform,
             background: { value: props.background },
           },
         })
@@ -101,19 +109,61 @@ export function TexturePainterRenderer(props: {
     return [
       resolution,
       composer,
-      { cursorPosUniform, drawingUniform },
+      {
+        cursorPosUniform,
+        drawingUniform,
+        cursorOverlayUniform,
+        hideCursorUniform,
+        panUniform,
+        zoomUniform,
+      },
     ] as const;
-  }, [
-    gl,
-    mouse,
-    painterState.drawingPoints,
-    painterState.hideCursor,
-    painterState.tool,
-    props.background,
-  ]);
+  }, []);
+
+  useEffect(() => {
+    uniforms.hideCursorUniform.value = painterState.hideCursor;
+  }, [painterState.hideCursor]);
+
+  useEffect(() => {
+    uniforms.cursorOverlayUniform.value = painterState.tool.cursorOverlay();
+  }, [painterState.tool]);
+
+  const panBounds = useCallback((zoom: number) => {
+    return new THREE.Vector2(1.0, 1.0).multiplyScalar(
+      1 - 1.0 / Math.sqrt(zoom)
+    );
+  }, []);
+
+  usePinch(
+    (pinch) => {
+      uniforms.zoomUniform.value = pinch.offset[0];
+      const max = panBounds(uniforms.zoomUniform.value);
+      uniforms.panUniform.value = mouse
+        .clone()
+        .divideScalar(uniforms.zoomUniform.value)
+        .multiplyScalar(Math.max(pinch.delta[0] * 0.5, 0))
+        .add(uniforms.panUniform.value)
+        .clamp(max.clone().negate(), max);
+    },
+    {
+      pinchOnWheel: true,
+      pointer: {
+        touch: true,
+      },
+      scaleBounds: {
+        min: kMinZoom,
+        max: kMaxZoom,
+      },
+      target: gl.domElement,
+    }
+  );
 
   return useFrame((_, delta) => {
-    const [resolution, composer, uniforms] = state;
+    const currentMouse = mouse
+      .clone()
+      .divideScalar(Math.sqrt(uniforms.zoomUniform.value))
+      .add(uniforms.panUniform.value);
+
     painterState.tool.frameHandler({
       delta,
       resolution,
@@ -121,11 +171,11 @@ export function TexturePainterRenderer(props: {
       drawingPoints: painterState.drawingPoints,
       cursor: {
         previous: uniforms.cursorPosUniform.value,
-        current: mouse,
+        current: currentMouse,
       },
     });
 
-    uniforms.cursorPosUniform.value.copy(mouse);
+    uniforms.cursorPosUniform.value = currentMouse;
     uniforms.drawingUniform.value = new THREE.DataTexture(
       painterState.drawingPoints,
       resolution.width,
