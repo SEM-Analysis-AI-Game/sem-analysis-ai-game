@@ -1,31 +1,12 @@
-"use client";
+import { UploadButton } from "@/components";
 
-import { useEffect, useState } from "react";
-import { TexturePainter } from "./components/texture-painter";
-import { Canvas } from "@react-three/fiber";
-import { useTexture } from "@react-three/drei";
-
-function TextureLoading(props: {
-  setBackground: (background: THREE.Texture) => void;
-}) {
-  const background = useTexture("/example.png");
-
-  useEffect(() => {
-    props.setBackground(background);
-  }, [background, props.setBackground]);
-
-  return null;
-}
-
-export default function Home() {
-  const [background, setBackground] = useState<THREE.Texture>();
-
+export default function Home(): JSX.Element {
   return (
-    <>
-      <Canvas>
-        <TextureLoading setBackground={setBackground} />
-      </Canvas>
-      {background ? <TexturePainter background={background} /> : null}
-    </>
+    <div>
+      <h1>SEM Analysis AI Game</h1>
+      <UploadButton>
+        <img src="/upload.png" className="w-4 mr-2" /> <span>Upload Image</span>
+      </UploadButton>
+    </div>
   );
 }

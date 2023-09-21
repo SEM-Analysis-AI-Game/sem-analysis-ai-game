@@ -3,9 +3,12 @@ import { useCallback, useContext, useEffect, useMemo } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { fragmentShader, vertexShader } from "./shaders";
 import { EffectComposer, ShaderPass } from "three-stdlib";
-import { ControlsState } from "../canvas";
 import { TexturePainterStateContext } from "../context";
-import { useDrag, usePinch, useScroll } from "@use-gesture/react";
+import { useDrag, usePinch } from "@use-gesture/react";
+
+type ControlsState = {
+  cursorDown: boolean;
+};
 
 /**
  * The parameters passed to the three.js render loop callback.

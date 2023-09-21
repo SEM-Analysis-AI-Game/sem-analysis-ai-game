@@ -3,13 +3,12 @@ import { FrameCallbackParams } from "../renderer";
 import { Tool } from "./tool";
 
 export class PanTool extends Tool {
-  public readonly cursorOverlayTexture: THREE.Texture;
+  public readonly cursorOverlayTexture = new THREE.Texture();
   readonly panning = true;
   readonly name = "Pan";
 
   constructor() {
     super();
-    this.cursorOverlayTexture = new THREE.TextureLoader().load("/pan.png");
   }
 
   public cursorOverlay(): THREE.Texture {
