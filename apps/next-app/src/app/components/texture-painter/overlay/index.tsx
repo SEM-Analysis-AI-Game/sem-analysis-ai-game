@@ -1,6 +1,6 @@
 import { useContext } from "react";
 import { TexturePainterActionDispatchContext } from "../context";
-import { SetToolAction, SetToolColorAction } from "../state";
+import { SetToolAction, SetToolColorAction, SetToolSizeAction } from "../state";
 import { kToolFactory } from "../tools/factory";
 import { ToolNames } from "../tools";
 import colors from "../tools/colors";
@@ -28,6 +28,15 @@ export function TexturePainterOverlay(): JSX.Element {
           </button>
         );
       })}
+      {/* BRUSH SIZE SLIDER */}
+      <input type="range" 
+             className="opacity-80 hover:opacity-100 bg-cyan-800 transition outline-none"
+             min={5} 
+             max={100} 
+            //  value={10} 
+             onChange={(e) => {
+              painterDispatch(new SetToolSizeAction(Number.parseInt(e.currentTarget.value))) 
+             }}/>
       {/* COLORS */}
       <div className="grid grid-cols-2">
         {
