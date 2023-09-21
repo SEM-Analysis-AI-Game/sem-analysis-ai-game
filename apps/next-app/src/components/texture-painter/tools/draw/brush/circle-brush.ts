@@ -10,18 +10,16 @@ export class CircleBrush extends Brush {
   }
 
   protected paint(
-    data: Uint8Array,
+    drawPoint: (pos: THREE.Vector2) => void,
     pos: THREE.Vector2,
     size: number,
-    resolution: THREE.Vector2,
-    color: THREE.Color,
-    alpha: number
+    resolution: THREE.Vector2
   ): void {
-    drawCircle(data, {
+    drawCircle({
+      drawPoint,
       pos,
       resolution,
       diameter: size,
-      fillPoint: () => ({ color, alpha }),
     });
   }
 }

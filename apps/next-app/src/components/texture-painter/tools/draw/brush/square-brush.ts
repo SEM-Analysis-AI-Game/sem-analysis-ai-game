@@ -10,18 +10,16 @@ export class SquareBrush extends Brush {
   }
 
   protected paint(
-    data: Uint8Array,
+    drawPoint: (pos: THREE.Vector2) => void,
     pos: THREE.Vector2,
     size: number,
-    resolution: THREE.Vector2,
-    color: THREE.Color,
-    alpha: number
+    resolution: THREE.Vector2
   ): void {
-    drawSquare(data, {
+    drawSquare({
+      drawPoint,
       pos,
       resolution,
       length: size,
-      fillPoint: () => ({ color, alpha }),
     });
   }
 }

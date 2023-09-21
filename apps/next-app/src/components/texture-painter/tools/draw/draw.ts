@@ -24,15 +24,13 @@ export abstract class DrawTool extends Tool {
     this.cursorOverlayTexture.needsUpdate = true;
   }
 
-  protected abstract paintCursorOverlay(drawingPoints: Uint8Array): void;
+  protected abstract paintCursorOverlay(data: Uint8Array): void;
 
   protected abstract paint(
-    data: Uint8Array,
+    drawPoint: (pos: THREE.Vector2) => void,
     pos: THREE.Vector2,
     size: number,
-    resolution: THREE.Vector2,
-    color: THREE.Color,
-    alpha: number
+    resolution: THREE.Vector2
   ): void;
 
   public cursorOverlay(): THREE.Texture {
@@ -42,12 +40,10 @@ export abstract class DrawTool extends Tool {
   public frameHandler(params: FrameCallbackParams): void {
     smoothPaint({ ...params }, (pos) => {
       this.paint(
-        params.drawingPoints,
+        (pos) => params.drawPoint(pos, this.color, this.alpha),
         pos,
         this.size,
-        params.resolution,
-        this.color,
-        this.alpha
+        params.resolution
       );
     });
   }

@@ -38,7 +38,7 @@ void main() {
             cursorOverlayColor = texture2D(cursorOverlay, pixelDifference / cursorResolution + 0.5);
         }
     }
-    
+
     gl_FragColor = texture2D(background, transformedCoords);
 
     vec4 drawingColor = texture2D(drawing, transformedCoords);

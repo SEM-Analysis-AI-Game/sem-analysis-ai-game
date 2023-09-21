@@ -61,15 +61,12 @@ export const smoothPaint: (
   }
 };
 
-export const drawCircle = (
-  data: Uint8Array,
-  params: {
-    pos: THREE.Vector2;
-    diameter: number;
-    resolution: THREE.Vector2;
-    fillPoint: (pos: THREE.Vector2) => { color: THREE.Color; alpha: number };
-  }
-) => {
+export const drawCircle = (params: {
+  drawPoint: (pos: THREE.Vector2) => void;
+  pos: THREE.Vector2;
+  diameter: number;
+  resolution: THREE.Vector2;
+}) => {
   const radius = Math.floor((params.diameter + 1) / 2);
   const minX = Math.max(-radius + 1, -params.pos.x);
   const minY = Math.max(-radius + 1, -params.pos.y);
@@ -79,27 +76,18 @@ export const drawCircle = (
     for (let y = minY; y < maxY; y++) {
       if (x * x + y * y <= radius * radius) {
         const pos = new THREE.Vector2(params.pos.x + x, params.pos.y + y);
-        const fill = params.fillPoint(pos);
-        fillPixel(data, {
-          ...params,
-          pos,
-          fillColor: fill.color,
-          alpha: fill.alpha,
-        });
+        params.drawPoint(pos);
       }
     }
   }
 };
 
-export const drawSquare = (
-  data: Uint8Array,
-  params: {
-    pos: THREE.Vector2;
-    length: number;
-    resolution: THREE.Vector2;
-    fillPoint: (pos: THREE.Vector2) => { color: THREE.Color; alpha: number };
-  }
-) => {
+export const drawSquare = (params: {
+  drawPoint: (pos: THREE.Vector2) => void;
+  pos: THREE.Vector2;
+  length: number;
+  resolution: THREE.Vector2;
+}) => {
   const minX = Math.max(-params.length / 2, -params.pos.x);
   const minY = Math.max(-params.length / 2, -params.pos.y);
   const maxX = Math.min(
@@ -113,13 +101,7 @@ export const drawSquare = (
   for (let x = minX; x < maxX; x++) {
     for (let y = minY; y < maxY; y++) {
       const pos = new THREE.Vector2(params.pos.x + x, params.pos.y + y);
-      const fill = params.fillPoint(pos);
-      fillPixel(data, {
-        ...params,
-        pos,
-        fillColor: fill.color,
-        alpha: fill.alpha,
-      });
+      params.drawPoint(pos);
     }
   }
 };

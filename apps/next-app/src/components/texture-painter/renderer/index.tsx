@@ -1,10 +1,11 @@
 import * as THREE from "three";
-import { useCallback, useContext, useEffect, useMemo } from "react";
+import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { fragmentShader, vertexShader } from "./shaders";
 import { EffectComposer, ShaderPass } from "three-stdlib";
 import { TexturePainterStateContext } from "../context";
 import { useDrag, usePinch } from "@use-gesture/react";
+import { fillPixel } from "../tools/utils";
 
 type ControlsState = {
   cursorDown: boolean;
@@ -34,12 +35,9 @@ export type FrameCallbackParams = {
   };
 
   /**
-   * The drawing layer. This is a flattened array of RGBA values.
-   * Writing to this array will update the drawing.
-   *
-   * length = resolution.width * resolution.height * 4
+   * Use this to draw a point on the canvas.
    */
-  drawingPoints: Uint8Array;
+  drawPoint: (pos: THREE.Vector2, color: THREE.Color, alpha: number) => void;
 
   /**
    * The current state of the controls.
@@ -54,6 +52,8 @@ export type FrameCallback = (params: FrameCallbackParams) => void;
 
 const kMaxZoom = 6.5;
 const kMinZoom = 1.0;
+
+const kFrameCooldownRatio = 0.1;
 
 export function TexturePainterRenderer(props: {
   controls: ControlsState;
@@ -186,6 +186,9 @@ export function TexturePainterRenderer(props: {
     }
   );
 
+  const [slowClock, setSlowClock] = useState(0.0);
+  const [dirty, setDirty] = useState(false);
+
   return useFrame((_, delta) => {
     const currentMouse = mouse
       .clone()
@@ -196,7 +199,17 @@ export function TexturePainterRenderer(props: {
       delta,
       resolution,
       controls: props.controls,
-      drawingPoints: painterState.drawingPoints,
+      drawPoint: (pos, color, alpha) => {
+        if (!dirty) {
+          setDirty(true);
+        }
+        fillPixel(painterState.drawingPoints, {
+          pos,
+          alpha,
+          resolution,
+          fillColor: color,
+        });
+      },
       cursor: {
         previous: uniforms.cursorPosUniform.value,
         current: currentMouse,
@@ -204,12 +217,19 @@ export function TexturePainterRenderer(props: {
     });
 
     uniforms.cursorPosUniform.value = currentMouse;
-    uniforms.drawingUniform.value = new THREE.DataTexture(
-      painterState.drawingPoints,
-      resolution.width,
-      resolution.height
-    );
-    uniforms.drawingUniform.value.needsUpdate = true;
+
+    setSlowClock(slowClock + delta);
+
+    if (slowClock > kFrameCooldownRatio && dirty) {
+      uniforms.drawingUniform.value = new THREE.DataTexture(
+        painterState.drawingPoints,
+        resolution.width,
+        resolution.height
+      );
+      uniforms.drawingUniform.value.needsUpdate = true;
+      setSlowClock(0);
+      setDirty(false);
+    }
 
     gl.clear();
     gl.autoClear = false;
