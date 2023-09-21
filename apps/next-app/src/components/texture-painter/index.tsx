@@ -2,7 +2,7 @@
 
 import * as THREE from "three";
 import { Canvas } from "@react-three/fiber";
-import { useContext, useEffect, useReducer, useState } from "react";
+import { useContext, useEffect, useMemo, useReducer, useState } from "react";
 import { HideCursorAction, texturePainterReducer } from "./state";
 import { CircleBrush } from "./tools";
 import {
@@ -80,12 +80,20 @@ function TexturePainterCanvas(props: {
     cursorDown: false,
   });
 
+  const scale = useMemo(() => {
+    const maxDim = Math.max(
+      props.background.image.width / window.innerWidth,
+      props.background.image.height / window.innerHeight
+    );
+    return Math.min(1.0 / maxDim, 1.0);
+  }, [props.background]);
+
   return (
     <div
       className="block m-auto touch-none"
       style={{
-        width: props.background.image.width,
-        height: props.background.image.height,
+        width: props.background.image.width * scale,
+        height: props.background.image.height * scale,
       }}
     >
       <Canvas

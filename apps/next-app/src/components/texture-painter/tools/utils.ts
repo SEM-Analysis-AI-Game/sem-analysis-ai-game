@@ -35,21 +35,28 @@ export const fillPixel = (
   data[cursorPixelIndex + 3] = params.alpha * 255;
 };
 
-const kBrushSmoothingThreshold = 0.01;
+const kBrushSmoothingThreshold = 2;
 
 export const smoothPaint: (
   params: FrameCallbackParams,
   paint: (pos: THREE.Vector2) => void
 ) => void = ({ controls, resolution, cursor }, paint) => {
   if (controls.cursorDown) {
-    paint(cursorToPixel(cursor.current, resolution));
-    const movement = cursor.current.clone().sub(cursor.previous);
+    const currentPixel = cursorToPixel(cursor.current, resolution);
+    paint(currentPixel);
+    const previousPixel = cursorToPixel(cursor.previous, resolution);
+    const movement = currentPixel.clone().sub(previousPixel);
     const movementLength = movement.length();
     const strides = movementLength / kBrushSmoothingThreshold;
     const step = movement.divideScalar(strides);
     for (let i = 0; i < strides; i++) {
-      cursor.previous.add(step);
-      paint(cursorToPixel(cursor.previous, resolution));
+      previousPixel.add(step);
+      paint(
+        new THREE.Vector2(
+          Math.round(previousPixel.x),
+          Math.round(previousPixel.y)
+        )
+      );
     }
   }
 };
