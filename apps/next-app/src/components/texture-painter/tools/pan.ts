@@ -1,5 +1,4 @@
 import * as THREE from "three";
-import { FrameCallbackParams } from "../renderer";
 import { Tool } from "./tool";
 
 export class PanTool extends Tool {
@@ -15,5 +14,7 @@ export class PanTool extends Tool {
     return this.cursorOverlayTexture;
   }
 
-  public frameHandler(params: FrameCallbackParams): void {}
+  public frameHandler(): boolean {
+    return false;
+  }
 }

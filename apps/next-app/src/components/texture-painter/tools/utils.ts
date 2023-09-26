@@ -1,5 +1,4 @@
 import * as THREE from "three";
-import { FrameCallbackParams } from "../renderer";
 
 export function cursorToPixel(
   cursor: THREE.Vector2,
@@ -35,213 +34,124 @@ export const fillPixel = (
   data[cursorPixelIndex + 3] = params.alpha * 255;
 };
 
-export const smoothPaint: (
-  params: FrameCallbackParams,
-  paint: (pos: THREE.Vector2) => void,
+function inBounds(pos: THREE.Vector2, resolution: THREE.Vector2) {
+  return (
+    pos.x >= 0 &&
+    pos.x < resolution.width &&
+    pos.y >= 0 &&
+    pos.y < resolution.height
+  );
+}
+
+export function smoothPaint(
+  resolution: THREE.Vector2,
+  currentPixel: THREE.Vector2,
+  previousPixel: THREE.Vector2,
+  data: Uint8Array,
   color: THREE.Color,
   alpha: number,
-  size: number
-) => void = (
-  { controls, resolution, cursor, data },
-  paint,
-  color,
-  alpha,
-  size
-) => {
-  if (controls.cursorDown) {
-    cursor.current.clampScalar(-1, 1);
-    const currentPixel = cursorToPixel(cursor.current, resolution);
-    paint(currentPixel);
-    const previousPixel = cursorToPixel(cursor.previous, resolution).clamp(
-      new THREE.Vector2(),
-      new THREE.Vector2(resolution.width - 1, resolution.height - 1)
-    );
-    const movement = currentPixel.clone().sub(previousPixel);
-    const movementLength = Math.round(movement.length());
-    const step = movement.normalize();
-    const perpindicular = step
-      .clone()
-      .rotateAround(new THREE.Vector2(), Math.PI / 2);
-    for (let i = 0; i < movementLength; i++) {
+  width: number
+) {
+  const movement = currentPixel.clone().sub(previousPixel);
+  const movementLength = Math.round(movement.length());
+  const step = movement.normalize();
+  const perpindicularStep = step
+    .clone()
+    .rotateAround(new THREE.Vector2(), Math.PI / 2);
+  const bound = new THREE.Vector2(resolution.width - 1, resolution.height - 1);
+  const current = previousPixel.clone();
+  for (let i = 0; i < movementLength; i++) {
+    const ceil = current.clone().ceil();
+    fillPixel(data, {
+      pos: ceil,
+      resolution,
+      fillColor: color,
+      alpha: alpha,
+    });
+    const floor = current.clone().floor();
+    if (!floor.equals(ceil)) {
       fillPixel(data, {
-        pos: previousPixel.clone().ceil(),
+        pos: floor,
         resolution,
         fillColor: color,
         alpha: alpha,
       });
-      fillPixel(data, {
-        pos: previousPixel.clone().floor(),
-        resolution,
-        fillColor: color,
-        alpha: alpha,
-      });
-      previousPixel
-        .add(step)
-        .clamp(
-          new THREE.Vector2(),
-          new THREE.Vector2(resolution.width - 1, resolution.height - 1)
-        );
-      const left = previousPixel.clone();
-      const right = previousPixel.clone();
-      for (let j = 0; j < size / 2; j++) {
-        if (
-          left.x > 0 &&
-          left.x < resolution.width &&
-          left.y > 0 &&
-          left.y < resolution.height
-        ) {
-          left
-            .add(perpindicular)
-            .clamp(
-              new THREE.Vector2(),
-              new THREE.Vector2(resolution.width - 1, resolution.height - 1)
-            );
-          const leftCeil = new THREE.Vector2(
-            Math.ceil(left.x),
-            Math.ceil(left.y)
-          );
-          const leftFloor = new THREE.Vector2(
-            Math.floor(left.x),
-            Math.floor(left.y)
-          );
+    }
+    current.add(step).clamp(new THREE.Vector2(), bound);
+    const left = current.clone();
+    const right = current.clone();
+    for (let j = 0; j < width; j++) {
+      if (inBounds(left, resolution)) {
+        left.add(perpindicularStep).clamp(new THREE.Vector2(), bound);
+        const leftCeil = left.clone().ceil();
+        fillPixel(data, {
+          pos: leftCeil,
+          resolution,
+          fillColor: color,
+          alpha: alpha,
+        });
+        const leftFloor = left.clone().floor();
+        if (!leftFloor.equals(leftCeil)) {
           fillPixel(data, {
-            pos: leftCeil,
+            pos: leftFloor,
             resolution,
             fillColor: color,
             alpha: alpha,
           });
-          if (!leftFloor.equals(leftCeil)) {
-            fillPixel(data, {
-              pos: leftFloor,
-              resolution,
-              fillColor: color,
-              alpha: alpha,
-            });
-          }
-          const leftCeilPlusOne = leftCeil
-            .clone()
-            .add(step)
-            .round()
-            .clamp(
-              new THREE.Vector2(),
-              new THREE.Vector2(resolution.width - 1, resolution.height - 1)
-            );
-          if (
-            !leftCeilPlusOne.equals(leftCeil) &&
-            !leftCeilPlusOne.equals(leftFloor)
-          ) {
-            fillPixel(data, {
-              pos: leftCeilPlusOne,
-              resolution,
-              fillColor: color,
-              alpha: alpha,
-            });
-          }
-          const leftCeilMinusOne = leftCeil
-            .clone()
-            .sub(step)
-            .round()
-            .clamp(
-              new THREE.Vector2(),
-              new THREE.Vector2(resolution.width - 1, resolution.height - 1)
-            );
-          if (
-            !leftCeilMinusOne.equals(leftCeil) &&
-            !leftCeilMinusOne.equals(leftFloor) &&
-            !leftCeilMinusOne.equals(leftCeilPlusOne)
-          ) {
-            fillPixel(data, {
-              pos: leftCeilMinusOne,
-              resolution,
-              fillColor: color,
-              alpha: alpha,
-            });
-          }
         }
-        if (
-          right.x > 0 &&
-          right.x < resolution.width &&
-          right.y > 0 &&
-          right.y < resolution.height
-        ) {
-          right
-            .sub(perpindicular)
-            .clamp(
-              new THREE.Vector2(),
-              new THREE.Vector2(resolution.width - 1, resolution.height - 1)
-            );
-          const rightCeil = new THREE.Vector2(
-            Math.ceil(right.x),
-            Math.ceil(right.y)
-          );
-          const rightFloor = new THREE.Vector2(
-            Math.floor(right.x),
-            Math.floor(right.y)
-          );
+        const leftCeilPlusOne = leftCeil
+          .clone()
+          .add(step)
+          .ceil()
+          .clamp(new THREE.Vector2(), bound);
+        fillPixel(data, {
+          pos: leftCeilPlusOne,
+          resolution,
+          fillColor: color,
+          alpha: alpha,
+        });
+      }
+      if (inBounds(right, resolution)) {
+        right.sub(perpindicularStep).clamp(new THREE.Vector2(), bound);
+        const rightCeil = right.clone().ceil();
+        fillPixel(data, {
+          pos: rightCeil,
+          resolution,
+          fillColor: color,
+          alpha: alpha,
+        });
+        const rightFloor = right.clone().floor();
+        if (!rightFloor.equals(rightCeil)) {
           fillPixel(data, {
-            pos: rightCeil,
+            pos: rightFloor,
             resolution,
             fillColor: color,
             alpha: alpha,
           });
-          if (!rightFloor.equals(rightCeil)) {
-            fillPixel(data, {
-              pos: rightFloor,
-              resolution,
-              fillColor: color,
-              alpha: alpha,
-            });
-          }
-          const rightCeilPlusOne = rightCeil
-            .clone()
-            .add(step)
-            .round()
-            .clamp(
-              new THREE.Vector2(),
-              new THREE.Vector2(resolution.width - 1, resolution.height - 1)
-            );
-          if (
-            !rightCeilPlusOne.equals(rightCeil) &&
-            !rightCeilPlusOne.equals(rightFloor)
-          ) {
-            fillPixel(data, {
-              pos: rightCeilPlusOne,
-              resolution,
-              fillColor: color,
-              alpha: alpha,
-            });
-          }
-          const rightCeilMinusOne = rightCeil
-            .clone()
-            .sub(step)
-            .round()
-            .clamp(
-              new THREE.Vector2(),
-              new THREE.Vector2(resolution.width - 1, resolution.height - 1)
-            );
-          if (
-            !rightCeilMinusOne.equals(rightCeil) &&
-            !rightCeilMinusOne.equals(rightFloor) &&
-            !rightCeilMinusOne.equals(rightCeilPlusOne)
-          ) {
-            fillPixel(data, {
-              pos: rightCeilMinusOne,
-              resolution,
-              fillColor: color,
-              alpha: alpha,
-            });
-          }
         }
+        const rightCeilPlusOne = rightCeil
+          .clone()
+          .add(step)
+          .ceil()
+          .clamp(new THREE.Vector2(), bound);
+        fillPixel(data, {
+          pos: rightCeilPlusOne,
+          resolution,
+          fillColor: color,
+          alpha: alpha,
+        });
       }
     }
   }
-};
+}
 
 export const drawCircle = (params: {
-  drawPoint: (pos: THREE.Vector2) => void;
+  data: Uint8Array;
   pos: THREE.Vector2;
   diameter: number;
   resolution: THREE.Vector2;
+  color: THREE.Color;
+  alpha: number;
 }) => {
   const radius = Math.floor((params.diameter + 1) / 2);
   const minX = Math.max(-radius + 1, -params.pos.x);
@@ -252,17 +162,24 @@ export const drawCircle = (params: {
     for (let y = minY; y < maxY; y++) {
       if (x * x + y * y <= radius * radius) {
         const pos = new THREE.Vector2(params.pos.x + x, params.pos.y + y);
-        params.drawPoint(pos);
+        fillPixel(params.data, {
+          pos,
+          resolution: params.resolution,
+          fillColor: params.color,
+          alpha: params.alpha,
+        });
       }
     }
   }
 };
 
 export const drawSquare = (params: {
-  drawPoint: (pos: THREE.Vector2) => void;
+  data: Uint8Array;
   pos: THREE.Vector2;
   length: number;
   resolution: THREE.Vector2;
+  color: THREE.Color;
+  alpha: number;
 }) => {
   const minX = Math.max(-params.length / 2, -params.pos.x);
   const minY = Math.max(-params.length / 2, -params.pos.y);
@@ -277,7 +194,12 @@ export const drawSquare = (params: {
   for (let x = minX; x < maxX; x++) {
     for (let y = minY; y < maxY; y++) {
       const pos = new THREE.Vector2(params.pos.x + x, params.pos.y + y);
-      params.drawPoint(pos);
+      fillPixel(params.data, {
+        pos,
+        resolution: params.resolution,
+        fillColor: params.color,
+        alpha: params.alpha,
+      });
     }
   }
 };

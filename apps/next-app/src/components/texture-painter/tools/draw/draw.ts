@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { FrameCallbackParams } from "../../renderer";
 import { Tool } from "../tool";
-import { smoothPaint } from "../utils";
+import { cursorToPixel, smoothPaint } from "../utils";
 
 export abstract class DrawTool extends Tool {
   public readonly size: number;
@@ -27,7 +27,7 @@ export abstract class DrawTool extends Tool {
   protected abstract paintCursorOverlay(data: Uint8Array): void;
 
   protected abstract paint(
-    drawPoint: (pos: THREE.Vector2) => void,
+    data: Uint8Array,
     pos: THREE.Vector2,
     size: number,
     resolution: THREE.Vector2
@@ -37,20 +37,30 @@ export abstract class DrawTool extends Tool {
     return this.cursorOverlayTexture;
   }
 
-  public frameHandler(params: FrameCallbackParams): void {
-    smoothPaint(
-      { ...params },
-      (pos) => {
-        this.paint(
-          (pos) => params.drawPoint(pos, this.color, this.alpha),
-          pos,
-          this.size,
-          params.resolution
-        );
-      },
-      this.color,
-      this.alpha,
-      this.size
-    );
+  protected abstract widthInDirection(dir: THREE.Vector2): number;
+
+  public frameHandler(params: FrameCallbackParams): boolean {
+    if (params.controls.cursorDown) {
+      const currentPixel = cursorToPixel(
+        params.cursor.current,
+        params.resolution
+      );
+      this.paint(params.data, currentPixel, this.size, params.resolution);
+      const previousPixel = cursorToPixel(
+        params.cursor.previous,
+        params.resolution
+      );
+      smoothPaint(
+        params.resolution,
+        currentPixel,
+        previousPixel,
+        params.data,
+        this.color,
+        this.alpha,
+        this.widthInDirection(currentPixel.clone().sub(previousPixel))
+      );
+      return true;
+    }
+    return false;
   }
 }

@@ -1,11 +1,13 @@
+"use client";
+
 import * as THREE from "three";
 import { useDrag, usePinch } from "@use-gesture/react";
 import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { EffectComposer, ShaderPass } from "three-stdlib";
 import { useFrame, useThree } from "@react-three/fiber";
 import { fragmentShader, vertexShader } from "./shaders";
-import { TexturePainterStateContext } from "../context";
-import { fillPixel } from "../tools/utils";
+import { TexturePainterStateContext } from "./context";
+import { TexturePainterLoadedState } from "./state";
 
 type ControlsState = {
   cursorDown: boolean;
@@ -21,7 +23,7 @@ export type FrameCallbackParams = {
   delta: number;
 
   /**
-   * The resolution of the background image.
+   * The resolution of the canvas.
    */
   resolution: THREE.Vector2;
 
@@ -35,15 +37,9 @@ export type FrameCallbackParams = {
   };
 
   /**
-   * The current drawing data. Modifying this directly will
-   * update the drawing but it will not trigger a re-render.
+   * The current drawing data. Modify this to draw on the canvas.
    */
   data: Uint8Array;
-
-  /**
-   * Use this to draw a point on the canvas.
-   */
-  drawPoint: (pos: THREE.Vector2, color: THREE.Color, alpha: number) => void;
 
   /**
    * The current state of the controls.
@@ -53,15 +49,15 @@ export type FrameCallbackParams = {
 
 /**
  * A function that is called every frame to update the renderer state.
+ * Returns true if the drawing layer should be re-rendered.
  */
-export type FrameCallback = (params: FrameCallbackParams) => void;
+export type FrameCallback = (params: FrameCallbackParams) => boolean;
 
 const kMaxZoom = 6.5;
 const kMinZoom = 1.0;
 
 export function TexturePainterRenderer(props: {
   controls: ControlsState;
-  background: THREE.Texture;
 }): null {
   const { gl, mouse } = useThree();
 
@@ -71,12 +67,16 @@ export function TexturePainterRenderer(props: {
     throw new Error("No painter state found");
   }
 
+  if (!(painterState instanceof TexturePainterLoadedState)) {
+    throw new Error("Painter state not loaded");
+  }
+
   const [resolution, composer, uniforms] = useMemo(() => {
     gl.setClearAlpha(0.0);
     const resolution = new THREE.Vector2(
-      Math.round(props.background.image.width),
-      Math.round(props.background.image.height)
-    );
+      painterState.background.image.width,
+      painterState.background.image.height
+    ).round();
     const cursorPosUniform = new THREE.Uniform(
       new THREE.Vector2(mouse.x, mouse.y)
     );
@@ -108,7 +108,7 @@ export function TexturePainterRenderer(props: {
             hideCursorOverlay: hideCursorUniform,
             zoom: zoomUniform,
             pan: panUniform,
-            background: { value: props.background },
+            background: { value: painterState.background },
           },
         })
       )
@@ -136,23 +136,20 @@ export function TexturePainterRenderer(props: {
   }, [painterState.tool]);
 
   const panBounds = useCallback((zoom: number) => {
-    return new THREE.Vector2(1.0, 1.0).multiplyScalar(
-      1 - 1.0 / Math.sqrt(zoom)
-    );
+    return new THREE.Vector2(1.0, 1.0).subScalar(1.0 / Math.sqrt(zoom));
   }, []);
 
   useDrag(
     (drag) => {
       if (painterState.tool.panning) {
         const max = panBounds(uniforms.zoomUniform.value);
-        const zoomFactor = Math.sqrt(uniforms.zoomUniform.value * 0.25);
+        const zoomFactor = Math.sqrt(uniforms.zoomUniform.value / 4.0);
         uniforms.panUniform.value = uniforms.panUniform.value
           .clone()
           .add(
-            new THREE.Vector2(
-              -drag.delta[0] / (props.background.image.width * zoomFactor),
-              drag.delta[1] / (props.background.image.height * zoomFactor)
-            )
+            new THREE.Vector2(-drag.delta[0], drag.delta[1])
+              .divide(resolution)
+              .divideScalar(zoomFactor)
           )
           .clamp(max.clone().negate(), max);
       }
@@ -190,29 +187,17 @@ export function TexturePainterRenderer(props: {
     }
   );
 
-  const [dirty, setDirty] = useState(false);
-
   return useFrame((_, delta) => {
     const currentMouse = mouse
       .clone()
       .divideScalar(Math.sqrt(uniforms.zoomUniform.value))
-      .add(uniforms.panUniform.value);
-    painterState.tool.frameHandler({
+      .add(uniforms.panUniform.value)
+      .clampScalar(-1.0, 1.0);
+    const dirty = painterState.tool.frameHandler({
       delta,
       resolution,
       controls: props.controls,
       data: painterState.drawingPoints,
-      drawPoint: (pos, color, alpha) => {
-        if (!dirty) {
-          setDirty(true);
-        }
-        fillPixel(painterState.drawingPoints, {
-          resolution,
-          pos,
-          alpha,
-          fillColor: color,
-        });
-      },
       cursor: {
         previous: uniforms.cursorPosUniform.value,
         current: currentMouse,
@@ -228,7 +213,6 @@ export function TexturePainterRenderer(props: {
         resolution.height
       );
       uniforms.drawingUniform.value.needsUpdate = true;
-      setDirty(false);
     }
 
     gl.clear();

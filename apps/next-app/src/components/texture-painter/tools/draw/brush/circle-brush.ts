@@ -9,17 +9,23 @@ export class CircleBrush extends Brush {
     super(diameter, color);
   }
 
+  protected widthInDirection(dir: THREE.Vector2): number {
+    return this.size / 2;
+  }
+
   protected paint(
-    drawPoint: (pos: THREE.Vector2) => void,
+    data: Uint8Array,
     pos: THREE.Vector2,
     size: number,
     resolution: THREE.Vector2
   ): void {
     drawCircle({
-      drawPoint,
+      data,
       pos,
       resolution,
       diameter: size,
+      color: this.color,
+      alpha: this.alpha,
     });
   }
 }

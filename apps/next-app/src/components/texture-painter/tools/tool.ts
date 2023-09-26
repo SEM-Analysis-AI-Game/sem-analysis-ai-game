@@ -9,7 +9,7 @@ export type ToolNames =
   | "Pan";
 
 export abstract class Tool {
-  public abstract frameHandler(params: FrameCallbackParams): void;
+  public abstract frameHandler(params: FrameCallbackParams): boolean;
   public abstract cursorOverlay(): THREE.Texture;
   public readonly panning: boolean = false;
 

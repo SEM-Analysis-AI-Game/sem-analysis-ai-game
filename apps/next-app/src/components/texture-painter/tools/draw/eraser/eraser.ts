@@ -1,6 +1,5 @@
 import * as THREE from "three";
 import { DrawTool } from "../draw";
-import { fillPixel } from "../../utils";
 
 const kFillColor = new THREE.Color(0x000000);
 
@@ -11,25 +10,13 @@ export abstract class Eraser extends DrawTool {
 
   protected paintCursorOverlay(data: Uint8Array): void {
     this.paint(
-      (pos) =>
-        fillPixel(data, {
-          pos,
-          resolution: new THREE.Vector2(this.size, this.size),
-          fillColor: kFillColor,
-          alpha: 1,
-        }),
+      data,
       new THREE.Vector2(this.size / 2, this.size / 2),
       this.size,
       new THREE.Vector2(this.size, this.size)
     );
     this.paint(
-      (pos) =>
-        fillPixel(data, {
-          pos,
-          resolution: new THREE.Vector2(this.size, this.size),
-          fillColor: kFillColor,
-          alpha: 0,
-        }),
+      data,
       new THREE.Vector2(this.size / 2, this.size / 2),
       this.size - 2,
       new THREE.Vector2(this.size, this.size)
@@ -37,7 +24,7 @@ export abstract class Eraser extends DrawTool {
   }
 
   protected abstract paint(
-    drawPoint: (pos: THREE.Vector2) => void,
+    data: Uint8Array,
     pos: THREE.Vector2,
     size: number,
     resolution: THREE.Vector2

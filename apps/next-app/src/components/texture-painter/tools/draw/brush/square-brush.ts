@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { Brush } from "./brush";
 import { drawSquare } from "../../utils";
+import { lerp } from "three/src/math/MathUtils.js";
 
 export class SquareBrush extends Brush {
   readonly name = "Square Brush";
@@ -9,17 +10,27 @@ export class SquareBrush extends Brush {
     super(diameter, color);
   }
 
+  protected widthInDirection(dir: THREE.Vector2): number {
+    return lerp(
+      Math.round(this.size / 2),
+      Math.round(this.size * 0.5 * Math.sqrt(2)),
+      Math.abs(Math.sin(dir.angle()) * Math.cos(dir.angle())) * 2
+    );
+  }
+
   protected paint(
-    drawPoint: (pos: THREE.Vector2) => void,
+    data: Uint8Array,
     pos: THREE.Vector2,
     size: number,
     resolution: THREE.Vector2
   ): void {
     drawSquare({
-      drawPoint,
+      data,
       pos,
       resolution,
       length: size,
+      color: this.color,
+      alpha: this.alpha,
     });
   }
 }
