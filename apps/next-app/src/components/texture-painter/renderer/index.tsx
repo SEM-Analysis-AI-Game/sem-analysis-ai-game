@@ -197,7 +197,6 @@ export function TexturePainterRenderer(props: {
       .clone()
       .divideScalar(Math.sqrt(uniforms.zoomUniform.value))
       .add(uniforms.panUniform.value);
-
     painterState.tool.frameHandler({
       delta,
       resolution,

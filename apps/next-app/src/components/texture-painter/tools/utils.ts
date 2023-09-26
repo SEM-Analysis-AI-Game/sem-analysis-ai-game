@@ -49,9 +49,13 @@ export const smoothPaint: (
   size
 ) => {
   if (controls.cursorDown) {
+    cursor.current.clampScalar(-1, 1);
     const currentPixel = cursorToPixel(cursor.current, resolution);
     paint(currentPixel);
-    const previousPixel = cursorToPixel(cursor.previous, resolution);
+    const previousPixel = cursorToPixel(cursor.previous, resolution).clamp(
+      new THREE.Vector2(),
+      new THREE.Vector2(resolution.width - 1, resolution.height - 1)
+    );
     const movement = currentPixel.clone().sub(previousPixel);
     const movementLength = Math.round(movement.length());
     const step = movement.normalize();
@@ -71,7 +75,12 @@ export const smoothPaint: (
         fillColor: color,
         alpha: alpha,
       });
-      previousPixel.add(step);
+      previousPixel
+        .add(step)
+        .clamp(
+          new THREE.Vector2(),
+          new THREE.Vector2(resolution.width - 1, resolution.height - 1)
+        );
       const left = previousPixel.clone();
       const right = previousPixel.clone();
       for (let j = 0; j < size / 2; j++) {
@@ -81,7 +90,12 @@ export const smoothPaint: (
           left.y > 0 &&
           left.y < resolution.height
         ) {
-          left.add(perpindicular).clamp(new THREE.Vector2(), resolution);
+          left
+            .add(perpindicular)
+            .clamp(
+              new THREE.Vector2(),
+              new THREE.Vector2(resolution.width - 1, resolution.height - 1)
+            );
           const leftCeil = new THREE.Vector2(
             Math.ceil(left.x),
             Math.ceil(left.y)
@@ -104,7 +118,14 @@ export const smoothPaint: (
               alpha: alpha,
             });
           }
-          const leftCeilPlusOne = leftCeil.clone().add(step).round();
+          const leftCeilPlusOne = leftCeil
+            .clone()
+            .add(step)
+            .round()
+            .clamp(
+              new THREE.Vector2(),
+              new THREE.Vector2(resolution.width - 1, resolution.height - 1)
+            );
           if (
             !leftCeilPlusOne.equals(leftCeil) &&
             !leftCeilPlusOne.equals(leftFloor)
@@ -116,7 +137,14 @@ export const smoothPaint: (
               alpha: alpha,
             });
           }
-          const leftCeilMinusOne = leftCeil.clone().sub(step).round();
+          const leftCeilMinusOne = leftCeil
+            .clone()
+            .sub(step)
+            .round()
+            .clamp(
+              new THREE.Vector2(),
+              new THREE.Vector2(resolution.width - 1, resolution.height - 1)
+            );
           if (
             !leftCeilMinusOne.equals(leftCeil) &&
             !leftCeilMinusOne.equals(leftFloor) &&
@@ -136,7 +164,12 @@ export const smoothPaint: (
           right.y > 0 &&
           right.y < resolution.height
         ) {
-          right.sub(perpindicular).clamp(new THREE.Vector2(), resolution);
+          right
+            .sub(perpindicular)
+            .clamp(
+              new THREE.Vector2(),
+              new THREE.Vector2(resolution.width - 1, resolution.height - 1)
+            );
           const rightCeil = new THREE.Vector2(
             Math.ceil(right.x),
             Math.ceil(right.y)
@@ -159,7 +192,14 @@ export const smoothPaint: (
               alpha: alpha,
             });
           }
-          const rightCeilPlusOne = rightCeil.clone().add(step).round();
+          const rightCeilPlusOne = rightCeil
+            .clone()
+            .add(step)
+            .round()
+            .clamp(
+              new THREE.Vector2(),
+              new THREE.Vector2(resolution.width - 1, resolution.height - 1)
+            );
           if (
             !rightCeilPlusOne.equals(rightCeil) &&
             !rightCeilPlusOne.equals(rightFloor)
@@ -171,7 +211,14 @@ export const smoothPaint: (
               alpha: alpha,
             });
           }
-          const rightCeilMinusOne = rightCeil.clone().sub(step).round();
+          const rightCeilMinusOne = rightCeil
+            .clone()
+            .sub(step)
+            .round()
+            .clamp(
+              new THREE.Vector2(),
+              new THREE.Vector2(resolution.width - 1, resolution.height - 1)
+            );
           if (
             !rightCeilMinusOne.equals(rightCeil) &&
             !rightCeilMinusOne.equals(rightFloor) &&
