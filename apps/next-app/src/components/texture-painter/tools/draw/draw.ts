@@ -38,13 +38,19 @@ export abstract class DrawTool extends Tool {
   }
 
   public frameHandler(params: FrameCallbackParams): void {
-    smoothPaint({ ...params }, (pos) => {
-      this.paint(
-        (pos) => params.drawPoint(pos, this.color, this.alpha),
-        pos,
-        this.size,
-        params.resolution
-      );
-    });
+    smoothPaint(
+      { ...params },
+      (pos) => {
+        this.paint(
+          (pos) => params.drawPoint(pos, this.color, this.alpha),
+          pos,
+          this.size,
+          params.resolution
+        );
+      },
+      this.color,
+      this.alpha,
+      this.size
+    );
   }
 }

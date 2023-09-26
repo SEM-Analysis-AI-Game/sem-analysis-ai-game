@@ -35,28 +35,157 @@ export const fillPixel = (
   data[cursorPixelIndex + 3] = params.alpha * 255;
 };
 
-const kBrushSmoothingThreshold = 2;
-
 export const smoothPaint: (
   params: FrameCallbackParams,
-  paint: (pos: THREE.Vector2) => void
-) => void = ({ controls, resolution, cursor }, paint) => {
+  paint: (pos: THREE.Vector2) => void,
+  color: THREE.Color,
+  alpha: number,
+  size: number
+) => void = (
+  { controls, resolution, cursor, data },
+  paint,
+  color,
+  alpha,
+  size
+) => {
   if (controls.cursorDown) {
     const currentPixel = cursorToPixel(cursor.current, resolution);
     paint(currentPixel);
     const previousPixel = cursorToPixel(cursor.previous, resolution);
     const movement = currentPixel.clone().sub(previousPixel);
-    const movementLength = movement.length();
-    const strides = movementLength / kBrushSmoothingThreshold;
-    const step = movement.divideScalar(strides);
-    for (let i = 0; i < strides; i++) {
+    const movementLength = Math.round(movement.length());
+    const step = movement.normalize();
+    const perpindicular = step
+      .clone()
+      .rotateAround(new THREE.Vector2(), Math.PI / 2);
+    for (let i = 0; i < movementLength; i++) {
+      fillPixel(data, {
+        pos: previousPixel.clone().ceil(),
+        resolution,
+        fillColor: color,
+        alpha: alpha,
+      });
+      fillPixel(data, {
+        pos: previousPixel.clone().floor(),
+        resolution,
+        fillColor: color,
+        alpha: alpha,
+      });
       previousPixel.add(step);
-      paint(
-        new THREE.Vector2(
-          Math.round(previousPixel.x),
-          Math.round(previousPixel.y)
-        )
-      );
+      const left = previousPixel.clone();
+      const right = previousPixel.clone();
+      for (let j = 0; j < size / 2; j++) {
+        if (
+          left.x > 0 &&
+          left.x < resolution.width &&
+          left.y > 0 &&
+          left.y < resolution.height
+        ) {
+          left.add(perpindicular).clamp(new THREE.Vector2(), resolution);
+          const leftCeil = new THREE.Vector2(
+            Math.ceil(left.x),
+            Math.ceil(left.y)
+          );
+          const leftFloor = new THREE.Vector2(
+            Math.floor(left.x),
+            Math.floor(left.y)
+          );
+          fillPixel(data, {
+            pos: leftCeil,
+            resolution,
+            fillColor: color,
+            alpha: alpha,
+          });
+          if (!leftFloor.equals(leftCeil)) {
+            fillPixel(data, {
+              pos: leftFloor,
+              resolution,
+              fillColor: color,
+              alpha: alpha,
+            });
+          }
+          const leftCeilPlusOne = leftCeil.clone().add(step).round();
+          if (
+            !leftCeilPlusOne.equals(leftCeil) &&
+            !leftCeilPlusOne.equals(leftFloor)
+          ) {
+            fillPixel(data, {
+              pos: leftCeilPlusOne,
+              resolution,
+              fillColor: color,
+              alpha: alpha,
+            });
+          }
+          const leftCeilMinusOne = leftCeil.clone().sub(step).round();
+          if (
+            !leftCeilMinusOne.equals(leftCeil) &&
+            !leftCeilMinusOne.equals(leftFloor) &&
+            !leftCeilMinusOne.equals(leftCeilPlusOne)
+          ) {
+            fillPixel(data, {
+              pos: leftCeilMinusOne,
+              resolution,
+              fillColor: color,
+              alpha: alpha,
+            });
+          }
+        }
+        if (
+          right.x > 0 &&
+          right.x < resolution.width &&
+          right.y > 0 &&
+          right.y < resolution.height
+        ) {
+          right.sub(perpindicular).clamp(new THREE.Vector2(), resolution);
+          const rightCeil = new THREE.Vector2(
+            Math.ceil(right.x),
+            Math.ceil(right.y)
+          );
+          const rightFloor = new THREE.Vector2(
+            Math.floor(right.x),
+            Math.floor(right.y)
+          );
+          fillPixel(data, {
+            pos: rightCeil,
+            resolution,
+            fillColor: color,
+            alpha: alpha,
+          });
+          if (!rightFloor.equals(rightCeil)) {
+            fillPixel(data, {
+              pos: rightFloor,
+              resolution,
+              fillColor: color,
+              alpha: alpha,
+            });
+          }
+          const rightCeilPlusOne = rightCeil.clone().add(step).round();
+          if (
+            !rightCeilPlusOne.equals(rightCeil) &&
+            !rightCeilPlusOne.equals(rightFloor)
+          ) {
+            fillPixel(data, {
+              pos: rightCeilPlusOne,
+              resolution,
+              fillColor: color,
+              alpha: alpha,
+            });
+          }
+          const rightCeilMinusOne = rightCeil.clone().sub(step).round();
+          if (
+            !rightCeilMinusOne.equals(rightCeil) &&
+            !rightCeilMinusOne.equals(rightFloor) &&
+            !rightCeilMinusOne.equals(rightCeilPlusOne)
+          ) {
+            fillPixel(data, {
+              pos: rightCeilMinusOne,
+              resolution,
+              fillColor: color,
+              alpha: alpha,
+            });
+          }
+        }
+      }
     }
   }
 };
