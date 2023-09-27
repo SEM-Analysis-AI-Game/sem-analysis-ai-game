@@ -47,28 +47,26 @@ export abstract class DrawTool extends Tool {
 
   public frameHandler(params: FrameCallbackParams): Set<number> {
     const changedDrawings = new Set<number>();
-    if (params.controls.cursorDown) {
-      const currentPixel = cursorToPixel(
-        params.cursor.current,
-        params.resolution
+    if (params.painterState.cursorDown) {
+      const resolution = new THREE.Vector2(
+        params.painterState.background.image.width,
+        params.painterState.background.image.height
       );
+      const currentPixel = cursorToPixel(params.cursor.current, resolution);
       this.paint(
-        params.drawings,
+        params.painterState.drawings,
         currentPixel,
         this.size,
-        params.resolution
+        resolution
       ).forEach((index) => changedDrawings.add(index));
-      const previousPixel = cursorToPixel(
-        params.cursor.previous,
-        params.resolution
-      );
+      const previousPixel = cursorToPixel(params.cursor.previous, resolution);
       smoothPaint(
-        params.resolution,
+        resolution,
         currentPixel,
         previousPixel,
         this.size,
         (pos: THREE.Vector2) =>
-          this.paint(params.drawings, pos, this.size, params.resolution)
+          this.paint(params.painterState.drawings, pos, this.size, resolution)
       ).forEach((index) => changedDrawings.add(index));
     }
     return changedDrawings;

@@ -9,9 +9,8 @@ import { fragmentShader, kSubdivisions, vertexShader } from "./shaders";
 import { TexturePainterStateContext } from "./context";
 import { TexturePainterLoadedState } from "./state";
 
-type ControlsState = {
-  cursorDown: boolean;
-};
+const kMaxZoom = 6.5;
+const kMinZoom = 1.0;
 
 /**
  * The parameters passed to the three.js render loop callback.
@@ -23,11 +22,6 @@ export type FrameCallbackParams = {
   delta: number;
 
   /**
-   * The resolution of the canvas.
-   */
-  resolution: THREE.Vector2;
-
-  /**
    * The cursor position in screen coordinates at the end of
    * the previous frame and at the start of the current frame.
    */
@@ -36,15 +30,7 @@ export type FrameCallbackParams = {
     current: THREE.Vector2;
   };
 
-  /**
-   * The current drawing data. Modify this to draw on the canvas.
-   */
-  drawings: Uint8Array[];
-
-  /**
-   * The current state of the controls.
-   */
-  controls: ControlsState;
+  painterState: TexturePainterLoadedState;
 };
 
 /**
@@ -53,12 +39,7 @@ export type FrameCallbackParams = {
  */
 export type FrameCallback = (params: FrameCallbackParams) => Set<number>;
 
-const kMaxZoom = 6.5;
-const kMinZoom = 1.0;
-
-export function TexturePainterRenderer(props: {
-  controls: ControlsState;
-}): null {
+export function TexturePainterRenderer(): null {
   const { gl, mouse } = useThree();
 
   const painterState = useContext(TexturePainterStateContext);
@@ -196,9 +177,7 @@ export function TexturePainterRenderer(props: {
       .clampScalar(-0.999999999, 0.999999999);
     const dirty = painterState.tool.frameHandler({
       delta,
-      resolution,
-      controls: props.controls,
-      drawings: painterState.drawings,
+      painterState,
       cursor: {
         previous: uniforms.cursorPos.value,
         current: currentMouse,

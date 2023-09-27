@@ -59,7 +59,16 @@ export type TexturePainterAction =
   | HideCursorAction
   | SetToolSizeAction
   | SetToolColorAction
+  | SetCursorDownAction
   | LoadedBackgroundAction;
+
+export class SetCursorDownAction {
+  public readonly cursorDown: boolean;
+
+  constructor(cursorDown: boolean) {
+    this.cursorDown = cursorDown;
+  }
+}
 
 export class SetToolAction {
   public readonly toolName: ToolNames;
@@ -112,7 +121,7 @@ export function texturePainterReducer(
         state.toolColor,
         state.tool,
         action.hideCursor,
-        state.cursorDown,
+        action.hideCursor ? false : state.cursorDown,
         state.drawings,
         state.background
       );
@@ -122,7 +131,7 @@ export function texturePainterReducer(
         state.toolColor,
         state.tool,
         action.hideCursor,
-        state.cursorDown
+        action.hideCursor ? false : state.cursorDown
       );
     }
   } else if (action instanceof SetToolAction) {
@@ -219,14 +228,28 @@ export function texturePainterReducer(
       drawings,
       action.background
     );
+  } else if (action instanceof SetCursorDownAction) {
+    if (state instanceof TexturePainterLoadedState) {
+      return new TexturePainterLoadedState(
+        state.toolSize,
+        state.toolColor,
+        state.tool,
+        state.hideCursor,
+        action.cursorDown,
+        state.drawings,
+        state.background
+      );
+    } else {
+      return new TexturePainterInitialState(
+        state.toolSize,
+        state.toolColor,
+        state.tool,
+        state.hideCursor,
+        action.cursorDown
+      );
+    }
   } else {
-    return new TexturePainterInitialState(
-      state.toolSize,
-      state.toolColor,
-      state.tool,
-      state.hideCursor,
-      state.cursorDown
-    );
+    throw new Error(`Unknown action: ${action}`);
   }
 }
 

@@ -1,13 +1,20 @@
 "use client";
 
 import { Canvas } from "@react-three/fiber";
-import { useContext, useMemo, useState } from "react";
-import { HideCursorAction, TexturePainterLoadedState } from "./state";
+import { useContext, useMemo } from "react";
+import {
+  HideCursorAction,
+  SetCursorDownAction,
+  TexturePainterLoadedState,
+} from "./state";
 import {
   TexturePainterActionDispatchContext,
   TexturePainterStateContext,
 } from "./context";
 import { TexturePainterRenderer } from "./renderer";
+
+const kCanvasWidth = 2 / 3;
+const kCanvasHeight = 9 / 10;
 
 export function TexturePainterCanvas(): JSX.Element {
   const painterDispatch = useContext(TexturePainterActionDispatchContext);
@@ -24,16 +31,14 @@ export function TexturePainterCanvas(): JSX.Element {
   const scale = useMemo(() => {
     if (painterState instanceof TexturePainterLoadedState) {
       const maxDim = Math.max(
-        ((painterState.background.image.width / window.innerWidth) * 3) / 2,
-        ((painterState.background.image.height / window.innerHeight) * 10) / 9
+        painterState.background.image.width /
+          (window.innerWidth * kCanvasWidth),
+        painterState.background.image.height /
+          (window.innerHeight * kCanvasHeight)
       );
       return Math.min(1.0 / maxDim, 1.0);
     }
   }, []);
-
-  const [controls, setControls] = useState({
-    cursorDown: false,
-  });
 
   return painterState instanceof TexturePainterLoadedState ? (
     <div
@@ -50,16 +55,15 @@ export function TexturePainterCanvas(): JSX.Element {
         }}
         onPointerLeave={() => {
           painterDispatch(new HideCursorAction(true));
-          setControls({ ...controls, cursorDown: false });
         }}
         onPointerDown={(e: React.MouseEvent) => {
-          setControls({ ...controls, cursorDown: true });
+          painterDispatch(new SetCursorDownAction(true));
         }}
         onPointerUp={() => {
-          setControls({ ...controls, cursorDown: false });
+          painterDispatch(new SetCursorDownAction(false));
         }}
       >
-        <TexturePainterRenderer controls={controls} />
+        <TexturePainterRenderer />
       </Canvas>
     </div>
   ) : (
