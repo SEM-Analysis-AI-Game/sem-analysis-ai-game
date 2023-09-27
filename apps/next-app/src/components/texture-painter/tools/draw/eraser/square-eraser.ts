@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { Eraser } from "./eraser";
-import { drawSquare } from "../../utils";
+import { drawSquareDirect, drawSquareLayered } from "../../utils";
 import { lerp } from "three/src/math/MathUtils.js";
 
 export class SquareEraser extends Eraser {
@@ -20,20 +20,29 @@ export class SquareEraser extends Eraser {
     );
   }
 
-  protected eraserPaint(
+  protected directPaint(
     data: Uint8Array,
     pos: THREE.Vector2,
     size: number,
     resolution: THREE.Vector2,
     alpha: number
   ): void {
-    drawSquare({
-      data,
+    drawSquareDirect(data, pos, size, resolution, this.color, alpha);
+  }
+
+  protected paint(
+    drawings: Uint8Array[],
+    pos: THREE.Vector2,
+    size: number,
+    resolution: THREE.Vector2
+  ): Set<number> {
+    return drawSquareLayered(
+      drawings,
       pos,
-      length: size,
+      size,
       resolution,
-      color: this.color,
-      alpha: alpha,
-    });
+      this.color,
+      this.alpha
+    );
   }
 }

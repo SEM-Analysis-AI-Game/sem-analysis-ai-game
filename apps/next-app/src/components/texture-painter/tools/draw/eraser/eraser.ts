@@ -9,35 +9,19 @@ export abstract class Eraser extends DrawTool {
   }
 
   protected paintCursorOverlay(data: Uint8Array): void {
-    this.eraserPaint(
+    this.directPaint(
       data,
       new THREE.Vector2(this.size / 2, this.size / 2).floor(),
       Math.floor(this.size),
       new THREE.Vector2(this.size, this.size).floor(),
       1.0
     );
-    this.paint(
+    this.directPaint(
       data,
       new THREE.Vector2(this.size / 2, this.size / 2).floor(),
       Math.floor(this.size) - (this.size % 2 === 1 ? 3 : 4),
-      new THREE.Vector2(this.size, this.size).floor()
+      new THREE.Vector2(this.size, this.size).floor(),
+      0.0
     );
-  }
-
-  protected abstract eraserPaint(
-    data: Uint8Array,
-    pos: THREE.Vector2,
-    size: number,
-    resolution: THREE.Vector2,
-    alpha: number
-  ): void;
-
-  protected paint(
-    data: Uint8Array,
-    pos: THREE.Vector2,
-    size: number,
-    resolution: THREE.Vector2
-  ): void {
-    this.eraserPaint(data, pos, size, resolution, this.alpha);
   }
 }

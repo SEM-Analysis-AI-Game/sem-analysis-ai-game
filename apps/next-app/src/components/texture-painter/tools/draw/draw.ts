@@ -27,10 +27,18 @@ export abstract class DrawTool extends Tool {
   protected abstract paintCursorOverlay(data: Uint8Array): void;
 
   protected abstract paint(
-    data: Uint8Array,
+    drawings: Uint8Array[],
     pos: THREE.Vector2,
     size: number,
     resolution: THREE.Vector2
+  ): Set<number>;
+
+  protected abstract directPaint(
+    data: Uint8Array,
+    pos: THREE.Vector2,
+    size: number,
+    resolution: THREE.Vector2,
+    alpha: number
   ): void;
 
   public cursorOverlay(): THREE.Texture {
@@ -39,13 +47,19 @@ export abstract class DrawTool extends Tool {
 
   protected abstract widthInDirection(dir: THREE.Vector2): number;
 
-  public frameHandler(params: FrameCallbackParams): boolean {
+  public frameHandler(params: FrameCallbackParams): Set<number> {
+    const changedDrawings = new Set<number>();
     if (params.controls.cursorDown) {
       const currentPixel = cursorToPixel(
         params.cursor.current,
         params.resolution
       );
-      this.paint(params.data, currentPixel, this.size, params.resolution);
+      this.paint(
+        params.drawings,
+        currentPixel,
+        this.size,
+        params.resolution
+      ).forEach((index) => changedDrawings.add(index));
       const previousPixel = cursorToPixel(
         params.cursor.previous,
         params.resolution
@@ -54,13 +68,12 @@ export abstract class DrawTool extends Tool {
         params.resolution,
         currentPixel,
         previousPixel,
-        params.data,
+        params.drawings,
         this.color,
         this.alpha,
         this.widthInDirection(currentPixel.clone().sub(previousPixel))
-      );
-      return true;
+      ).forEach((index) => changedDrawings.add(index));
     }
-    return false;
+    return changedDrawings;
   }
 }

@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { Eraser } from "./eraser";
-import { drawCircle } from "../../utils";
+import { drawCircleDirect, drawCircleLayered } from "../../utils";
 
 export class CircleEraser extends Eraser {
   readonly name = "Circle Eraser";
@@ -13,20 +13,29 @@ export class CircleEraser extends Eraser {
     return Math.floor(this.size / 2);
   }
 
-  protected eraserPaint(
+  protected directPaint(
     data: Uint8Array,
     pos: THREE.Vector2,
     size: number,
     resolution: THREE.Vector2,
     alpha: number
   ): void {
-    drawCircle({
-      data,
+    drawCircleDirect(data, pos, size, resolution, this.color, alpha);
+  }
+
+  protected paint(
+    drawings: Uint8Array[],
+    pos: THREE.Vector2,
+    size: number,
+    resolution: THREE.Vector2
+  ): Set<number> {
+    return drawCircleLayered(
+      drawings,
       pos,
+      size,
       resolution,
-      diameter: size,
-      color: this.color,
-      alpha: alpha,
-    });
+      this.color,
+      this.alpha
+    );
   }
 }

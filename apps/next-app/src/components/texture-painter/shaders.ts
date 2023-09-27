@@ -1,3 +1,5 @@
+export const kSubdivisions = 1;
+
 export const vertexShader = `
 varying vec3 vUv;
 
@@ -7,11 +9,18 @@ void main() {
     gl_Position = projectionMatrix * modelViewPosition; 
 }`;
 
+const drawings = [];
+for (let i = 0; i <= kSubdivisions; i++) {
+  for (let j = 0; j <= kSubdivisions; j++) {
+    drawings.push(i * (kSubdivisions + 1) + j);
+  }
+}
+
 export const fragmentShader = `
 precision highp float;
 uniform vec2 cursorPos;
 uniform sampler2D cursorOverlay;
-uniform sampler2D drawing;
+uniform sampler2D drawing${drawings.join(";\nuniform sampler2D drawing")};
 uniform sampler2D background;
 uniform bool hideCursorOverlay;
 uniform float zoom;
@@ -41,8 +50,28 @@ void main() {
 
     gl_FragColor = texture2D(background, transformedCoords);
 
-    vec4 drawingColor = texture2D(drawing, transformedCoords);
-    gl_FragColor = mix(gl_FragColor, drawingColor, drawingColor.a);
+    vec2 subSection = vec2(transformedCoords.x * float(${
+      kSubdivisions + 1
+    }), transformedCoords.y * float(${kSubdivisions + 1}));
+    
+    int subSectionIndex = int(floor(subSection.y)) * ${
+      kSubdivisions + 1
+    } + int(floor(subSection.x));
+    
+    ${(() => {
+      return drawings
+        .map((index) => {
+          return `if (subSectionIndex == ${index}) {
+        vec4 drawingColor = texture2D(drawing${index}, vec2(transformedCoords.x * float(${
+            kSubdivisions + 1
+          }) - floor(subSection.x), transformedCoords.y * float(${
+            kSubdivisions + 1
+          }) - floor(subSection.y)));
+        gl_FragColor = mix(gl_FragColor, drawingColor, drawingColor.a);
+    }`;
+        })
+        .join("\n    ");
+    })()};
 
     gl_FragColor = mix(gl_FragColor, cursorOverlayColor, cursorOverlayColor.a);
 }`;

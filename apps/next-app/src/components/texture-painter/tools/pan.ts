@@ -14,7 +14,7 @@ export class PanTool extends Tool {
     return this.cursorOverlayTexture;
   }
 
-  public frameHandler(): boolean {
-    return false;
+  public frameHandler(): Set<number> {
+    return new Set<number>();
   }
 }

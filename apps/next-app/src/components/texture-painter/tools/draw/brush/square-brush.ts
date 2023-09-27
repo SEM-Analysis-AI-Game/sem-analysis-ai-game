@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { Brush } from "./brush";
-import { drawSquare } from "../../utils";
+import { drawSquareDirect, drawSquareLayered } from "../../utils";
 import { lerp } from "three/src/math/MathUtils.js";
 
 export class SquareBrush extends Brush {
@@ -20,19 +20,28 @@ export class SquareBrush extends Brush {
     );
   }
 
-  protected paint(
+  protected directPaint(
     data: Uint8Array,
     pos: THREE.Vector2,
     size: number,
     resolution: THREE.Vector2
   ): void {
-    drawSquare({
-      data,
+    drawSquareDirect(data, pos, size, resolution, this.color, this.alpha);
+  }
+
+  protected paint(
+    drawings: Uint8Array[],
+    pos: THREE.Vector2,
+    size: number,
+    resolution: THREE.Vector2
+  ): Set<number> {
+    return drawSquareLayered(
+      drawings,
       pos,
+      size,
       resolution,
-      length: size,
-      color: this.color,
-      alpha: this.alpha,
-    });
+      this.color,
+      this.alpha
+    );
   }
 }

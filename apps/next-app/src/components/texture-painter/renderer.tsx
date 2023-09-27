@@ -2,10 +2,10 @@
 
 import * as THREE from "three";
 import { useDrag, usePinch } from "@use-gesture/react";
-import { useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { useCallback, useContext, useEffect, useMemo } from "react";
 import { EffectComposer, ShaderPass } from "three-stdlib";
 import { useFrame, useThree } from "@react-three/fiber";
-import { fragmentShader, vertexShader } from "./shaders";
+import { fragmentShader, kSubdivisions, vertexShader } from "./shaders";
 import { TexturePainterStateContext } from "./context";
 import { TexturePainterLoadedState } from "./state";
 
@@ -39,7 +39,7 @@ export type FrameCallbackParams = {
   /**
    * The current drawing data. Modify this to draw on the canvas.
    */
-  data: Uint8Array;
+  drawings: Uint8Array[];
 
   /**
    * The current state of the controls.
@@ -51,7 +51,7 @@ export type FrameCallbackParams = {
  * A function that is called every frame to update the renderer state.
  * Returns true if the drawing layer should be re-rendered.
  */
-export type FrameCallback = (params: FrameCallbackParams) => boolean;
+export type FrameCallback = (params: FrameCallbackParams) => Set<number>;
 
 const kMaxZoom = 6.5;
 const kMinZoom = 1.0;
@@ -80,12 +80,18 @@ export function TexturePainterRenderer(props: {
     const cursorPosUniform = new THREE.Uniform(
       new THREE.Vector2(mouse.x, mouse.y)
     );
-    const drawingUniform = new THREE.Uniform(
-      new THREE.DataTexture(
-        painterState.drawingPoints,
-        resolution.width,
-        resolution.height
-      )
+    const drawingResolution = resolution
+      .clone()
+      .divideScalar(painterState.drawings.length);
+    const drawingUniforms = painterState.drawings.map(
+      (drawing) =>
+        new THREE.Uniform(
+          new THREE.DataTexture(
+            drawing,
+            drawingResolution.x,
+            drawingResolution.y
+          )
+        )
     );
     const cursorOverlayUniform = new THREE.Uniform(
       painterState.tool.cursorOverlay()
@@ -94,45 +100,39 @@ export function TexturePainterRenderer(props: {
     const zoomUniform = new THREE.Uniform(1.0);
     const panUniform = new THREE.Uniform(new THREE.Vector2(0.0, 0.0));
 
+    const uniforms: Record<string, THREE.Uniform> = {
+      cursorOverlay: cursorOverlayUniform,
+      cursorPos: cursorPosUniform,
+      hideCursorOverlay: hideCursorUniform,
+      zoom: zoomUniform,
+      pan: panUniform,
+      background: new THREE.Uniform(painterState.background),
+    };
+
+    for (let i = 0; i < drawingUniforms.length; i++) {
+      uniforms[`drawing${i}`] = drawingUniforms[i];
+    }
+
     const composer = new EffectComposer(gl);
     composer.addPass(
       new ShaderPass(
         new THREE.ShaderMaterial({
-          transparent: true,
           vertexShader,
           fragmentShader,
-          uniforms: {
-            cursorOverlay: cursorOverlayUniform,
-            drawing: drawingUniform,
-            cursorPos: cursorPosUniform,
-            hideCursorOverlay: hideCursorUniform,
-            zoom: zoomUniform,
-            pan: panUniform,
-            background: { value: painterState.background },
-          },
+          uniforms,
+          transparent: true,
         })
       )
     );
-    return [
-      resolution,
-      composer,
-      {
-        cursorPosUniform,
-        drawingUniform,
-        cursorOverlayUniform,
-        hideCursorUniform,
-        panUniform,
-        zoomUniform,
-      },
-    ] as const;
+    return [resolution, composer, uniforms] as const;
   }, []);
 
   useEffect(() => {
-    uniforms.hideCursorUniform.value = painterState.hideCursor;
+    uniforms.hideCursorOverlay.value = painterState.hideCursor;
   }, [painterState.hideCursor]);
 
   useEffect(() => {
-    uniforms.cursorOverlayUniform.value = painterState.tool.cursorOverlay();
+    uniforms.cursorOverlay.value = painterState.tool.cursorOverlay();
   }, [painterState.tool]);
 
   const panBounds = useCallback((zoom: number) => {
@@ -142,9 +142,9 @@ export function TexturePainterRenderer(props: {
   useDrag(
     (drag) => {
       if (painterState.tool.panning) {
-        const max = panBounds(uniforms.zoomUniform.value);
-        const zoomFactor = Math.sqrt(uniforms.zoomUniform.value / 4.0);
-        uniforms.panUniform.value = uniforms.panUniform.value
+        const max = panBounds(uniforms.zoom.value);
+        const zoomFactor = Math.sqrt(uniforms.zoom.value / 4.0);
+        uniforms.pan.value = uniforms.pan.value
           .clone()
           .add(
             new THREE.Vector2(-drag.delta[0], drag.delta[1])
@@ -164,13 +164,13 @@ export function TexturePainterRenderer(props: {
 
   usePinch(
     (pinch) => {
-      uniforms.zoomUniform.value = pinch.offset[0];
-      const max = panBounds(uniforms.zoomUniform.value);
-      uniforms.panUniform.value = mouse
+      uniforms.zoom.value = pinch.offset[0];
+      const max = panBounds(uniforms.zoom.value);
+      uniforms.pan.value = mouse
         .clone()
-        .divideScalar(uniforms.zoomUniform.value)
+        .divideScalar(uniforms.zoom.value)
         .multiplyScalar(Math.max(pinch.delta[0] * 0.5, 0))
-        .add(uniforms.panUniform.value)
+        .add(uniforms.pan.value)
         .clamp(max.clone().negate(), max);
     },
     {
@@ -190,30 +190,30 @@ export function TexturePainterRenderer(props: {
   return useFrame((_, delta) => {
     const currentMouse = mouse
       .clone()
-      .divideScalar(Math.sqrt(uniforms.zoomUniform.value))
-      .add(uniforms.panUniform.value)
-      .clampScalar(-1.0, 1.0);
+      .divideScalar(Math.sqrt(uniforms.zoom.value))
+      .add(uniforms.pan.value)
+      .clampScalar(-0.999999999, 0.999999999);
     const dirty = painterState.tool.frameHandler({
       delta,
       resolution,
       controls: props.controls,
-      data: painterState.drawingPoints,
+      drawings: painterState.drawings,
       cursor: {
-        previous: uniforms.cursorPosUniform.value,
+        previous: uniforms.cursorPos.value,
         current: currentMouse,
       },
     });
 
-    uniforms.cursorPosUniform.value = currentMouse;
+    uniforms.cursorPos.value = currentMouse;
 
-    if (dirty) {
-      uniforms.drawingUniform.value = new THREE.DataTexture(
-        painterState.drawingPoints,
-        resolution.width,
-        resolution.height
+    dirty.forEach((index) => {
+      uniforms[`drawing${index}`].value = new THREE.DataTexture(
+        painterState.drawings[index],
+        resolution.width / (kSubdivisions + 1),
+        resolution.height / (kSubdivisions + 1)
       );
-      uniforms.drawingUniform.value.needsUpdate = true;
-    }
+      uniforms[`drawing${index}`].value.needsUpdate = true;
+    });
 
     gl.clear();
     gl.autoClear = false;

@@ -7,6 +7,7 @@ import {
   TexturePainterActionDispatchContext,
   TexturePainterStateContext,
 } from "./context";
+import { kSubdivisions } from "./shaders";
 
 export type TexturePainterState =
   | TexturePainterInitialState
@@ -35,7 +36,7 @@ export class TexturePainterInitialState {
 }
 
 export class TexturePainterLoadedState extends TexturePainterInitialState {
-  public readonly drawingPoints: Uint8Array;
+  public readonly drawings: Uint8Array[];
   public readonly background: THREE.Texture;
 
   constructor(
@@ -44,11 +45,11 @@ export class TexturePainterLoadedState extends TexturePainterInitialState {
     tool: Tools,
     hideCursor: boolean,
     cursorDown: boolean,
-    drawingPoints: Uint8Array,
+    drawingPoints: Uint8Array[],
     background: THREE.Texture
   ) {
     super(toolSize, toolColor, tool, hideCursor, cursorDown);
-    this.drawingPoints = drawingPoints;
+    this.drawings = drawingPoints;
     this.background = background;
   }
 }
@@ -112,7 +113,7 @@ export function texturePainterReducer(
         state.tool,
         action.hideCursor,
         state.cursorDown,
-        state.drawingPoints,
+        state.drawings,
         state.background
       );
     } else {
@@ -136,7 +137,7 @@ export function texturePainterReducer(
         tool,
         state.hideCursor,
         state.cursorDown,
-        state.drawingPoints,
+        state.drawings,
         state.background
       );
     } else {
@@ -160,7 +161,7 @@ export function texturePainterReducer(
         tool,
         state.hideCursor,
         state.cursorDown,
-        state.drawingPoints,
+        state.drawings,
         state.background
       );
     } else {
@@ -184,7 +185,7 @@ export function texturePainterReducer(
         tool,
         state.hideCursor,
         state.cursorDown,
-        state.drawingPoints,
+        state.drawings,
         state.background
       );
     } else {
@@ -197,15 +198,25 @@ export function texturePainterReducer(
       );
     }
   } else if (action instanceof LoadedBackgroundAction) {
+    const sections = Math.pow(kSubdivisions + 1, 2);
+    const drawings = new Array(sections);
+    for (let i = 0; i <= kSubdivisions; i++) {
+      for (let j = 0; j <= kSubdivisions; j++) {
+        drawings[i * (kSubdivisions + 1) + j] = new Uint8Array(
+          Math.floor(
+            (action.background.image.width * action.background.image.height) /
+              sections
+          ) * 4
+        );
+      }
+    }
     return new TexturePainterLoadedState(
       state.toolSize,
       state.toolColor,
       state.tool,
       state.hideCursor,
       state.cursorDown,
-      new Uint8Array(
-        action.background.image.width * action.background.image.height * 4
-      ),
+      drawings,
       action.background
     );
   } else {

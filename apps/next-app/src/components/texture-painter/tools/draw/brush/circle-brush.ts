@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { Brush } from "./brush";
-import { drawCircle } from "../../utils";
+import { drawCircleDirect, drawCircleLayered } from "../../utils";
 
 export class CircleBrush extends Brush {
   readonly name = "Circle Brush";
@@ -13,19 +13,28 @@ export class CircleBrush extends Brush {
     return Math.round(this.size / 2);
   }
 
-  protected paint(
+  protected directPaint(
     data: Uint8Array,
     pos: THREE.Vector2,
     size: number,
     resolution: THREE.Vector2
   ): void {
-    drawCircle({
-      data,
+    drawCircleDirect(data, pos, size, resolution, this.color, this.alpha);
+  }
+
+  protected paint(
+    drawings: Uint8Array[],
+    pos: THREE.Vector2,
+    size: number,
+    resolution: THREE.Vector2
+  ): Set<number> {
+    return drawCircleLayered(
+      drawings,
       pos,
+      size,
       resolution,
-      diameter: size,
-      color: this.color,
-      alpha: this.alpha,
-    });
+      this.color,
+      this.alpha
+    );
   }
 }
