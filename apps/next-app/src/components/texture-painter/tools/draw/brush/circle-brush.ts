@@ -9,8 +9,8 @@ export class CircleBrush extends Brush {
     super(diameter, color);
   }
 
-  protected widthInDirection(dir: THREE.Vector2): number {
-    return this.size / 2;
+  protected widthInDirection(): number {
+    return Math.round(this.size / 2);
   }
 
   protected paint(

@@ -11,9 +11,9 @@ export abstract class Brush extends DrawTool {
   protected paintCursorOverlay(data: Uint8Array): void {
     this.paint(
       data,
-      new THREE.Vector2(this.size / 2, this.size / 2),
-      this.size,
-      new THREE.Vector2(this.size, this.size)
+      new THREE.Vector2(this.size / 2, this.size / 2).floor(),
+      Math.floor(this.size),
+      new THREE.Vector2(this.size, this.size).floor()
     );
   }
 }

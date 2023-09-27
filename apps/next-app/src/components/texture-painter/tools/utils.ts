@@ -4,14 +4,12 @@ export function cursorToPixel(
   cursor: THREE.Vector2,
   resolution: THREE.Vector2
 ) {
-  const cursorNormalized = new THREE.Vector2(
-    cursor.x * 0.5 + 0.5,
-    cursor.y * 0.5 + 0.5
-  );
-  return new THREE.Vector2(
-    Math.floor(cursorNormalized.x * resolution.width),
-    Math.floor(cursorNormalized.y * resolution.height)
-  );
+  return cursor
+    .clone()
+    .multiplyScalar(0.5)
+    .addScalar(0.5)
+    .multiply(resolution)
+    .floor();
 }
 
 export function pixelToIndex(pos: THREE.Vector2, resolution: THREE.Vector2) {

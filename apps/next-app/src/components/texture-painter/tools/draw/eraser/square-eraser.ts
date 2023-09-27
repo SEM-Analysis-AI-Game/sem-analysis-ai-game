@@ -11,18 +11,21 @@ export class SquareEraser extends Eraser {
   }
 
   protected widthInDirection(dir: THREE.Vector2): number {
-    return lerp(
-      this.size / 2,
-      Math.sqrt(this.size / 2),
-      Math.abs(Math.sin(dir.angle()) * Math.cos(dir.angle())) * 2
+    return Math.round(
+      lerp(
+        this.size / 2,
+        this.size / Math.sqrt(2),
+        Math.abs(Math.sin(dir.angle()) * Math.cos(dir.angle())) * 2
+      )
     );
   }
 
-  protected paint(
+  protected eraserPaint(
     data: Uint8Array,
     pos: THREE.Vector2,
     size: number,
-    resolution: THREE.Vector2
+    resolution: THREE.Vector2,
+    alpha: number
   ): void {
     drawSquare({
       data,
@@ -30,7 +33,7 @@ export class SquareEraser extends Eraser {
       length: size,
       resolution,
       color: this.color,
-      alpha: this.alpha,
+      alpha: alpha,
     });
   }
 }

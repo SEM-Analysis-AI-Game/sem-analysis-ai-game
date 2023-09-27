@@ -9,15 +9,16 @@ export class CircleEraser extends Eraser {
     super(diameter);
   }
 
-  protected widthInDirection(dir: THREE.Vector2): number {
-    return this.size / 2;
+  protected widthInDirection(): number {
+    return Math.floor(this.size / 2);
   }
 
-  protected paint(
+  protected eraserPaint(
     data: Uint8Array,
     pos: THREE.Vector2,
     size: number,
-    resolution: THREE.Vector2
+    resolution: THREE.Vector2,
+    alpha: number
   ): void {
     drawCircle({
       data,
@@ -25,7 +26,7 @@ export class CircleEraser extends Eraser {
       resolution,
       diameter: size,
       color: this.color,
-      alpha: this.alpha,
+      alpha: alpha,
     });
   }
 }

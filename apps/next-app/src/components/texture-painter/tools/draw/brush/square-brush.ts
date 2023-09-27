@@ -11,10 +11,12 @@ export class SquareBrush extends Brush {
   }
 
   protected widthInDirection(dir: THREE.Vector2): number {
-    return lerp(
-      Math.round(this.size / 2),
-      Math.round(this.size * 0.5 * Math.sqrt(2)),
-      Math.abs(Math.sin(dir.angle()) * Math.cos(dir.angle())) * 2
+    return Math.round(
+      lerp(
+        this.size / 2,
+        this.size / Math.sqrt(2),
+        Math.abs(Math.sin(dir.angle()) * Math.cos(dir.angle())) * 2
+      )
     );
   }
 
