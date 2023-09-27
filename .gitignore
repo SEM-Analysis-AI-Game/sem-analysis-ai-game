@@ -16,3 +16,4 @@ datasets
 # lock files
 package-lock.json
 yarn.lock
+.vercel
