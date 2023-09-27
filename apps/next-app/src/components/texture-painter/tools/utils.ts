@@ -47,80 +47,24 @@ export function smoothPaint(
   currentPixel: THREE.Vector2,
   previousPixel: THREE.Vector2,
   drawings: Uint8Array[],
-  color: THREE.Color,
-  alpha: number,
-  width: number
+  paint: (
+    drawing: Uint8Array,
+    pos: THREE.Vector2,
+    drawingResolution: THREE.Vector2
+  ) => void
 ): Set<number> {
   const changedSections = new Set<number>();
   const movement = currentPixel.clone().sub(previousPixel);
   const movementLength = Math.round(movement.length());
-  const step = movement.normalize();
-  const perpindicularStep = step
-    .clone()
-    .rotateAround(new THREE.Vector2(), Math.PI / 2);
+  const step = movement.normalize().multiplyScalar(30);
   const bound = new THREE.Vector2(resolution.width - 1, resolution.height - 1);
   const current = previousPixel.clone();
   const drawingResolution = resolution.clone().divideScalar(kSubdivisions + 1);
-  for (let i = 0; i < movementLength; i++) {
-    const ceil = toSubdivision(current.clone().ceil(), resolution);
-    changedSections.add(ceil.section);
-    fillPixel(drawings[ceil.section], {
-      pos: ceil.subPos,
-      resolution: drawingResolution,
-      fillColor: color,
-      alpha: alpha,
-    });
-    const floor = toSubdivision(current.clone().floor(), resolution);
-    changedSections.add(floor.section);
-    fillPixel(drawings[floor.section], {
-      pos: floor.subPos,
-      resolution: drawingResolution,
-      fillColor: color,
-      alpha: alpha,
-    });
+  for (let i = 0; i < movementLength; i += step.length()) {
+    const subdivided = toSubdivision(current.clone().ceil(), resolution);
+    changedSections.add(subdivided.section);
+    paint(drawings[subdivided.section], subdivided.subPos, drawingResolution);
     current.add(step).clamp(new THREE.Vector2(), bound);
-    const left = current.clone();
-    const right = current.clone();
-    for (let j = 0; j < width; j++) {
-      if (inBounds(left, resolution)) {
-        left.add(perpindicularStep).clamp(new THREE.Vector2(), bound);
-        const leftCeil = toSubdivision(left.clone().ceil(), resolution);
-        changedSections.add(leftCeil.section);
-        fillPixel(drawings[leftCeil.section], {
-          pos: leftCeil.subPos,
-          resolution: drawingResolution,
-          fillColor: color,
-          alpha: alpha,
-        });
-        const leftFloor = toSubdivision(left.clone().floor(), resolution);
-        changedSections.add(leftFloor.section);
-        fillPixel(drawings[leftFloor.section], {
-          pos: leftFloor.subPos,
-          resolution: drawingResolution,
-          fillColor: color,
-          alpha: alpha,
-        });
-      }
-      if (inBounds(right, resolution)) {
-        right.sub(perpindicularStep).clamp(new THREE.Vector2(), bound);
-        const rightCeil = toSubdivision(right.clone().ceil(), resolution);
-        changedSections.add(rightCeil.section);
-        fillPixel(drawings[rightCeil.section], {
-          pos: rightCeil.subPos,
-          resolution: drawingResolution,
-          fillColor: color,
-          alpha: alpha,
-        });
-        const rightFloor = toSubdivision(right.clone().floor(), resolution);
-        changedSections.add(rightFloor.section);
-        fillPixel(drawings[rightFloor.section], {
-          pos: rightFloor.subPos,
-          resolution: drawingResolution,
-          fillColor: color,
-          alpha: alpha,
-        });
-      }
-    }
   }
   return changedSections;
 }

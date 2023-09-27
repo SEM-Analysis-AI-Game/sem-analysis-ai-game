@@ -230,10 +230,12 @@ export function texturePainterReducer(
   }
 }
 
+export const kDefaultToolSize = 100;
+
 export function TexturePainterProvider(props: PropsWithChildren): JSX.Element {
   const [state, dispatch] = useReducer(
     texturePainterReducer,
-    { toolSize: 20, toolColor: new THREE.Color(0xff0000) },
+    { toolSize: kDefaultToolSize, toolColor: new THREE.Color(0xff0000) },
     (params) => {
       return new TexturePainterInitialState(
         params.toolSize,

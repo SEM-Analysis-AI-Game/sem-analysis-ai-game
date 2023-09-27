@@ -9,10 +9,6 @@ export class CircleEraser extends Eraser {
     super(diameter);
   }
 
-  protected widthInDirection(): number {
-    return Math.floor(this.size / 2);
-  }
-
   protected directPaint(
     data: Uint8Array,
     pos: THREE.Vector2,

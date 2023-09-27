@@ -45,8 +45,6 @@ export abstract class DrawTool extends Tool {
     return this.cursorOverlayTexture;
   }
 
-  protected abstract widthInDirection(dir: THREE.Vector2): number;
-
   public frameHandler(params: FrameCallbackParams): Set<number> {
     const changedDrawings = new Set<number>();
     if (params.controls.cursorDown) {
@@ -69,9 +67,8 @@ export abstract class DrawTool extends Tool {
         currentPixel,
         previousPixel,
         params.drawings,
-        this.color,
-        this.alpha,
-        this.widthInDirection(currentPixel.clone().sub(previousPixel))
+        (data, pos, resolution) =>
+          this.directPaint(data, pos, this.size, resolution, this.alpha)
       ).forEach((index) => changedDrawings.add(index));
     }
     return changedDrawings;

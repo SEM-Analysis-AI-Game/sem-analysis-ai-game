@@ -143,7 +143,7 @@ export function TexturePainterRenderer(props: {
     (drag) => {
       if (painterState.tool.panning) {
         const max = panBounds(uniforms.zoom.value);
-        const zoomFactor = Math.sqrt(uniforms.zoom.value / 4.0);
+        const zoomFactor = Math.sqrt(uniforms.zoom.value / 400.0);
         uniforms.pan.value = uniforms.pan.value
           .clone()
           .add(

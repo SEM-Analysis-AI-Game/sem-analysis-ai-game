@@ -2,7 +2,7 @@
 
 import { useContext } from "react";
 import { TexturePainterActionDispatchContext } from "../context";
-import { SetToolSizeAction } from "../state";
+import { SetToolSizeAction, kDefaultToolSize } from "../state";
 
 export function BrushSizeSlider(): JSX.Element {
   const painterDispatch = useContext(TexturePainterActionDispatchContext);
@@ -16,6 +16,7 @@ export function BrushSizeSlider(): JSX.Element {
       className="opacity-80 hover:opacity-100 bg-cyan-800 transition outline-none"
       min={30}
       max={300}
+      defaultValue={kDefaultToolSize}
       onChange={(e) => {
         painterDispatch(
           new SetToolSizeAction(Number.parseInt(e.currentTarget.value))

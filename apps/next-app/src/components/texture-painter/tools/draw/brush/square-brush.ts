@@ -1,23 +1,12 @@
 import * as THREE from "three";
 import { Brush } from "./brush";
 import { drawSquareDirect, drawSquareLayered } from "../../utils";
-import { lerp } from "three/src/math/MathUtils.js";
 
 export class SquareBrush extends Brush {
   readonly name = "Square Brush";
 
   constructor(diameter: number, color: THREE.Color) {
     super(diameter, color);
-  }
-
-  protected widthInDirection(dir: THREE.Vector2): number {
-    return Math.round(
-      lerp(
-        this.size / 2,
-        this.size / Math.sqrt(2),
-        Math.abs(Math.sin(dir.angle()) * Math.cos(dir.angle())) * 2
-      )
-    );
   }
 
   protected directPaint(
@@ -35,7 +24,7 @@ export class SquareBrush extends Brush {
     size: number,
     resolution: THREE.Vector2
   ): Set<number> {
-    return drawSquareLayered(
+    const res = drawSquareLayered(
       drawings,
       pos,
       size,
@@ -43,5 +32,6 @@ export class SquareBrush extends Brush {
       this.color,
       this.alpha
     );
+    return res;
   }
 }
