@@ -66,9 +66,9 @@ export abstract class DrawTool extends Tool {
         params.resolution,
         currentPixel,
         previousPixel,
-        params.drawings,
-        (data, pos, resolution) =>
-          this.directPaint(data, pos, this.size, resolution, this.alpha)
+        this.size,
+        (pos: THREE.Vector2) =>
+          this.paint(params.drawings, pos, this.size, params.resolution)
       ).forEach((index) => changedDrawings.add(index));
     }
     return changedDrawings;

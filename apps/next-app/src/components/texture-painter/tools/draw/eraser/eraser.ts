@@ -19,7 +19,7 @@ export abstract class Eraser extends DrawTool {
     this.directPaint(
       data,
       new THREE.Vector2(this.size / 2, this.size / 2).floor(),
-      Math.floor(this.size) - (this.size % 2 === 1 ? 3 : 4),
+      Math.floor(this.size) - (this.size % 2 === 1 ? 15 : 16),
       new THREE.Vector2(this.size, this.size).floor(),
       0.0
     );

@@ -33,37 +33,25 @@ export const fillPixel = (
   data[cursorPixelIndex + 3] = params.alpha * 255;
 };
 
-function inBounds(pos: THREE.Vector2, resolution: THREE.Vector2) {
-  return (
-    pos.x >= 0 &&
-    pos.x < resolution.width &&
-    pos.y >= 0 &&
-    pos.y < resolution.height
-  );
-}
-
 export function smoothPaint(
   resolution: THREE.Vector2,
   currentPixel: THREE.Vector2,
   previousPixel: THREE.Vector2,
-  drawings: Uint8Array[],
-  paint: (
-    drawing: Uint8Array,
-    pos: THREE.Vector2,
-    drawingResolution: THREE.Vector2
-  ) => void
+  brushSize: number,
+  paint: (pos: THREE.Vector2) => Set<number>
 ): Set<number> {
   const changedSections = new Set<number>();
   const movement = currentPixel.clone().sub(previousPixel);
   const movementLength = Math.round(movement.length());
-  const step = movement.normalize().multiplyScalar(30);
+  const step = movement
+    .normalize()
+    .multiplyScalar(brushSize / 3)
+    .clampLength(0, movementLength);
   const bound = new THREE.Vector2(resolution.width - 1, resolution.height - 1);
   const current = previousPixel.clone();
-  const drawingResolution = resolution.clone().divideScalar(kSubdivisions + 1);
   for (let i = 0; i < movementLength; i += step.length()) {
-    const subdivided = toSubdivision(current.clone().ceil(), resolution);
-    changedSections.add(subdivided.section);
-    paint(drawings[subdivided.section], subdivided.subPos, drawingResolution);
+    const ceil = current.clone().ceil();
+    paint(ceil).forEach((index) => changedSections.add(index));
     current.add(step).clamp(new THREE.Vector2(), bound);
   }
   return changedSections;

@@ -24,8 +24,8 @@ export function TexturePainterCanvas(): JSX.Element {
   const scale = useMemo(() => {
     if (painterState instanceof TexturePainterLoadedState) {
       const maxDim = Math.max(
-        painterState.background.image.width / window.innerWidth,
-        painterState.background.image.height / window.innerHeight
+        ((painterState.background.image.width / window.innerWidth) * 3) / 2,
+        ((painterState.background.image.height / window.innerHeight) * 10) / 9
       );
       return Math.min(1.0 / maxDim, 1.0);
     }
