@@ -11,7 +11,7 @@ export class SquareEraser extends Eraser {
   }
 
   protected widthInDirection(dir: THREE.Vector2): number {
-    return Math.round(
+    return Math.floor(
       lerp(
         this.size / 2,
         this.size / Math.sqrt(2),
