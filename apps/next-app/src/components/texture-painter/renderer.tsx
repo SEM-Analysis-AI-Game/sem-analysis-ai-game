@@ -167,6 +167,7 @@ export function TexturePainterRenderer(props: {
       uniforms.zoom.value = pinch.offset[0];
       const max = panBounds(uniforms.zoom.value);
       uniforms.pan.value = mouse
+        .clampScalar(-0.999999999, 0.999999999)
         .clone()
         .divideScalar(uniforms.zoom.value)
         .multiplyScalar(Math.max(pinch.delta[0] * 0.5, 0))
@@ -209,8 +210,8 @@ export function TexturePainterRenderer(props: {
     dirty.forEach((index) => {
       uniforms[`drawing${index}`].value = new THREE.DataTexture(
         painterState.drawings[index],
-        resolution.width / (kSubdivisions + 1),
-        resolution.height / (kSubdivisions + 1)
+        Math.floor(resolution.width / (kSubdivisions + 1)),
+        Math.floor(resolution.height / (kSubdivisions + 1))
       );
       uniforms[`drawing${index}`].value.needsUpdate = true;
     });

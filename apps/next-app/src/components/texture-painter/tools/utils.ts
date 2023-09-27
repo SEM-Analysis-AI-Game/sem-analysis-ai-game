@@ -120,7 +120,10 @@ export function drawCircleLayered(
       changedSections.add(section);
       fillPixel(drawings[section], {
         pos: subPos,
-        resolution: resolution.clone().divideScalar(kSubdivisions + 1),
+        resolution: resolution
+          .clone()
+          .divideScalar(kSubdivisions + 1)
+          .floor(),
         fillColor: color,
         alpha,
       });
@@ -200,7 +203,10 @@ export function drawSquareLayered(
       changedSections.add(section);
       fillPixel(drawings[section], {
         pos: subPos,
-        resolution: resolution.clone().divideScalar(kSubdivisions + 1),
+        resolution: resolution
+          .clone()
+          .divideScalar(kSubdivisions + 1)
+          .floor(),
         fillColor: color,
         alpha,
       });
@@ -218,11 +224,15 @@ export function toSubdivision(
   pos: THREE.Vector2,
   resolution: THREE.Vector2
 ): { section: number; subPos: THREE.Vector2 } {
-  const sectionSize = resolution.clone().divideScalar(kSubdivisions + 1);
-  const section = new THREE.Vector2(
-    Math.floor(pos.x / sectionSize.x),
-    Math.floor(pos.y / sectionSize.y)
-  );
-  const subPos = pos.clone().sub(section.clone().multiply(sectionSize));
+  const sectionSize = resolution
+    .clone()
+    .divideScalar(kSubdivisions + 1)
+    .floor();
+  const section = pos
+    .clone()
+    .divide(sectionSize)
+    .floor()
+    .clampScalar(0, kSubdivisions);
+  const subPos = pos.clone().sub(section.clone().multiply(sectionSize)).floor();
   return { section: section.y * (kSubdivisions + 1) + section.x, subPos };
 }
