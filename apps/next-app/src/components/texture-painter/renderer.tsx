@@ -6,8 +6,15 @@ import { useCallback, useContext, useEffect, useMemo } from "react";
 import { EffectComposer, ShaderPass } from "three-stdlib";
 import { useFrame, useThree } from "@react-three/fiber";
 import { fragmentShader, kSubdivisions, vertexShader } from "./shaders";
-import { TexturePainterStateContext } from "./context";
-import { TexturePainterLoadedState } from "./state";
+import {
+  TexturePainterActionDispatchContext,
+  TexturePainterStateContext,
+} from "./context";
+import {
+  ApplyPanAction,
+  SetZoomAction,
+  TexturePainterLoadedState,
+} from "./state";
 
 const kMaxZoom = 6.5;
 const kMinZoom = 1.0;
@@ -42,7 +49,12 @@ export type FrameCallback = (params: FrameCallbackParams) => Set<number>;
 export function TexturePainterRenderer(): null {
   const { gl, mouse } = useThree();
 
+  const painterDispatch = useContext(TexturePainterActionDispatchContext);
   const painterState = useContext(TexturePainterStateContext);
+
+  if (!painterDispatch) {
+    throw new Error("No painter dispatch found");
+  }
 
   if (!painterState) {
     throw new Error("No painter state found");
@@ -78,8 +90,8 @@ export function TexturePainterRenderer(): null {
       painterState.tool.cursorOverlay()
     );
     const hideCursorUniform = new THREE.Uniform(painterState.hideCursor);
-    const zoomUniform = new THREE.Uniform(1.0);
-    const panUniform = new THREE.Uniform(new THREE.Vector2(0.0, 0.0));
+    const zoomUniform = new THREE.Uniform(painterState.zoom);
+    const panUniform = new THREE.Uniform(painterState.pan);
 
     const uniforms: Record<string, THREE.Uniform> = {
       cursorOverlay: cursorOverlayUniform,
@@ -116,23 +128,20 @@ export function TexturePainterRenderer(): null {
     uniforms.cursorOverlay.value = painterState.tool.cursorOverlay();
   }, [painterState.tool]);
 
-  const panBounds = useCallback((zoom: number) => {
-    return new THREE.Vector2(1.0, 1.0).subScalar(1.0 / Math.sqrt(zoom));
-  }, []);
+  useEffect(() => {
+    uniforms.zoom.value = painterState.zoom;
+  }, [painterState.zoom]);
+
+  useEffect(() => {
+    uniforms.pan.value = painterState.pan;
+  }, [painterState.pan]);
 
   useDrag(
     (drag) => {
       if (painterState.tool.panning) {
-        const max = panBounds(uniforms.zoom.value);
-        const zoomFactor = Math.sqrt(uniforms.zoom.value / 400.0);
-        uniforms.pan.value = uniforms.pan.value
-          .clone()
-          .add(
-            new THREE.Vector2(-drag.delta[0], drag.delta[1])
-              .divide(resolution)
-              .divideScalar(zoomFactor)
-          )
-          .clamp(max.clone().negate(), max);
+        painterDispatch(
+          new ApplyPanAction(new THREE.Vector2(-drag.delta[0], drag.delta[1]))
+        );
       }
     },
     {
@@ -145,15 +154,7 @@ export function TexturePainterRenderer(): null {
 
   usePinch(
     (pinch) => {
-      uniforms.zoom.value = pinch.offset[0];
-      const max = panBounds(uniforms.zoom.value);
-      uniforms.pan.value = mouse
-        .clampScalar(-0.999999999, 0.999999999)
-        .clone()
-        .divideScalar(uniforms.zoom.value)
-        .multiplyScalar(Math.max(pinch.delta[0] * 0.5, 0))
-        .add(uniforms.pan.value)
-        .clamp(max.clone().negate(), max);
+      painterDispatch(new SetZoomAction(pinch.offset[0], mouse));
     },
     {
       pinchOnWheel: true,
