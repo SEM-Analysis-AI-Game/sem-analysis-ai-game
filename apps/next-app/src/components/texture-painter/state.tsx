@@ -25,6 +25,8 @@ export class TexturePainterInitialState {
   }
 }
 
+const kPanSpeed = 3.25;
+
 export class TexturePainterLoadedState extends TexturePainterInitialState {
   public readonly drawings: Uint8Array[];
   public readonly background: THREE.Texture;
@@ -312,7 +314,7 @@ export function texturePainterReducer(
                   state.background.image.height
                 ).divideScalar(zoomFactor)
               )
-              .multiplyScalar(3.25)
+              .multiplyScalar(kPanSpeed)
           )
           .clamp(panBounds.clone().negate(), panBounds)
       );
