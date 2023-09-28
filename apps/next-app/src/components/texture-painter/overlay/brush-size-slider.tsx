@@ -14,7 +14,7 @@ export function BrushSizeSlider(): JSX.Element {
     <input
       type="range"
       className="opacity-80 hover:opacity-100 bg-cyan-800 transition outline-none"
-      min={30}
+      min={7}
       max={300}
       defaultValue={kDefaultToolSize}
       onChange={(e) => {
