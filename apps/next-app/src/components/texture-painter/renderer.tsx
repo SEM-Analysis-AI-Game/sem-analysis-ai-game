@@ -1,8 +1,7 @@
 "use client";
 
 import * as THREE from "three";
-import { useDrag, usePinch } from "@use-gesture/react";
-import { useCallback, useContext, useEffect, useMemo } from "react";
+import { useContext, useEffect, useMemo } from "react";
 import { EffectComposer, ShaderPass } from "three-stdlib";
 import { useFrame, useThree } from "@react-three/fiber";
 import { fragmentShader, kSubdivisions, vertexShader } from "./shaders";
@@ -10,14 +9,7 @@ import {
   TexturePainterActionDispatchContext,
   TexturePainterStateContext,
 } from "./context";
-import {
-  ApplyPanAction,
-  SetZoomAction,
-  TexturePainterLoadedState,
-} from "./state";
-
-const kMaxZoom = 6.5;
-const kMinZoom = 1.0;
+import { TexturePainterLoadedState } from "./state";
 
 /**
  * The parameters passed to the three.js render loop callback.
@@ -135,40 +127,6 @@ export function TexturePainterRenderer(): null {
   useEffect(() => {
     uniforms.pan.value = painterState.pan;
   }, [painterState.pan]);
-
-  useDrag(
-    (drag) => {
-      if (painterState.tool.panning) {
-        painterDispatch(
-          new ApplyPanAction(new THREE.Vector2(-drag.delta[0], drag.delta[1]))
-        );
-      }
-    },
-    {
-      pointer: {
-        touch: true,
-      },
-      target: gl.domElement,
-    }
-  );
-
-  usePinch(
-    (pinch) => {
-      painterDispatch(new SetZoomAction(pinch.offset[0], mouse));
-    },
-    {
-      pinchOnWheel: true,
-      modifierKey: null,
-      pointer: {
-        touch: true,
-      },
-      scaleBounds: {
-        min: kMinZoom,
-        max: kMaxZoom,
-      },
-      target: gl.domElement,
-    }
-  );
 
   return useFrame((_, delta) => {
     const currentMouse = mouse
