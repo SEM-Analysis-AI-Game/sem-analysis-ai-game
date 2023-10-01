@@ -6,7 +6,7 @@ import { PainterTools } from "./tools";
 
 export function Painter(): JSX.Element {
   return (
-    <div className="flex h-screen justify-center items-center">
+    <div className="flex h-screen justify-center items-center overflow-hidden">
       <PainterTools>
         <BackgroundLoader overlay={<PainterOverlay />} fallback={<Loader />}>
           <PainterCanvas />
