@@ -4,6 +4,7 @@ import {
   Dispatch,
   SetStateAction,
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
@@ -104,19 +105,22 @@ export function PainterControls(): null {
       }
     });
     gl.domElement.addEventListener("pointerdown", (e) => {
-      const toolMouse = mouse
-        .clone()
-        .divideScalar(Math.sqrt(controls.zoom))
-        .add(controls.pan.clone().multiplyScalar(kPanMultiplier))
-        .multiplyScalar(0.5)
-        .addScalar(0.5)
-        .multiply(drawingLayer.pixelSize)
-        .floor();
-      if (!cursorDown) {
-        drawingLayer.updateActiveSegment(toolMouse.x, toolMouse.y);
-      }
-      setCursorDown(true);
-      setShiftDown(e.shiftKey);
+      setControls((controls) => {
+        const toolMouse = mouse
+          .clone()
+          .divideScalar(Math.sqrt(controls.zoom))
+          .add(controls.pan.clone().multiplyScalar(kPanMultiplier))
+          .multiplyScalar(0.5)
+          .addScalar(0.5)
+          .multiply(drawingLayer.pixelSize)
+          .floor();
+        if (!cursorDown) {
+          drawingLayer.updateActiveSegment(toolMouse.x, toolMouse.y);
+        }
+        setCursorDown(true);
+        setShiftDown(e.shiftKey);
+        return controls;
+      });
     });
     gl.domElement.addEventListener("pointerup", () => {
       setCursorDown(false);
