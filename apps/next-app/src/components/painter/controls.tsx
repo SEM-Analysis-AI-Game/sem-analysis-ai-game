@@ -10,7 +10,7 @@ import {
 import { useDrag, usePinch } from "@use-gesture/react";
 import { useDrawingLayer } from "./drawing-layer";
 import { useTool } from "./tools";
-import { kPanMultiplier } from "./tools/pan";
+import { applyPan, kPanMultiplier } from "./tools/pan";
 
 export const ControlsContext = createContext<
   [Controls, Dispatch<SetStateAction<Controls>>] | null
@@ -87,7 +87,12 @@ export function PainterControls(): null {
       const newMouse = mouse
         .clone()
         .divideScalar(Math.sqrt(controls.zoom))
-        .add(controls.pan.clone().multiplyScalar(kPanMultiplier))
+        .add(
+          // This is kind of a hack to fix a strange bug with pan.
+          tool.name === "Pan"
+            ? controls.pan
+            : controls.pan.clone().multiplyScalar(kPanMultiplier)
+        )
         .multiplyScalar(0.5)
         .addScalar(0.5)
         .multiply(drawingLayer.pixelSize)
@@ -96,14 +101,24 @@ export function PainterControls(): null {
         drawingLayer.updateActiveSegment(newMouse.x, newMouse.y);
       }
       setCursorDown(e.down);
-      tool.frameCallback(
-        cursorDown,
-        zooming,
-        newMouse,
-        controls,
-        setControls,
-        drawingLayer
-      );
+      if (e.touches > 1) {
+        applyPan(
+          controls,
+          setControls,
+          newMouse,
+          newMouse.clone().sub(new THREE.Vector2(e.movement[0], e.movement[1])),
+          drawingLayer
+        );
+      } else {
+        tool.frameCallback(
+          cursorDown,
+          zooming,
+          newMouse,
+          controls,
+          setControls,
+          drawingLayer
+        );
+      }
     },
     {
       pointer: {
