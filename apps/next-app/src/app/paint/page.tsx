@@ -1,7 +1,7 @@
-import { TexturePainter } from "@/components";
+import { Painter } from "@/components";
 
 export default function Paint(): JSX.Element {
-  return <TexturePainter />;
+  return <Painter />;
 }
 
 /* Hi */

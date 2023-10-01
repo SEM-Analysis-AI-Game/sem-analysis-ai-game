@@ -1,2 +1,2 @@
 export * from "./upload-button";
-export * from "./texture-painter";
+export * from "./painter";
