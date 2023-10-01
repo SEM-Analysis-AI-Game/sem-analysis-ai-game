@@ -40,8 +40,6 @@ export function PainterControls(): null {
 
   const [cursorDown, setCursorDown] = useState(false);
 
-  const [mousePos, setMousePos] = useState(new THREE.Vector2());
-
   const [tool] = useTool();
 
   const drawingLayer = useDrawingLayer();
@@ -98,13 +96,11 @@ export function PainterControls(): null {
       tool.frameCallback(
         cursorDown,
         zooming,
-        mousePos.clone(),
         newMouse,
         controls,
         setControls,
         drawingLayer
       );
-      setMousePos(newMouse);
     },
     {
       pointer: {

@@ -24,7 +24,6 @@ export abstract class DrawTool extends Tool {
   public frameCallback(
     cursorDown: boolean,
     zooming: boolean,
-    previousMousePos: THREE.Vector2,
     mousePos: THREE.Vector2,
     controls: Controls,
     setControls: Dispatch<SetStateAction<Controls>>,
