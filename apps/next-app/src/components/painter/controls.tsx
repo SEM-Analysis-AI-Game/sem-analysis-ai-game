@@ -40,6 +40,8 @@ export function PainterControls(): null {
 
   const [cursorDown, setCursorDown] = useState(false);
 
+  const [previousMouse, setPreviousMouse] = useState(new THREE.Vector2());
+
   const [tool] = useTool();
 
   const drawingLayer = useDrawingLayer();
@@ -102,13 +104,7 @@ export function PainterControls(): null {
       }
       setCursorDown(e.down);
       if (e.touches > 1) {
-        applyPan(
-          controls,
-          setControls,
-          newMouse,
-          newMouse.clone().sub(new THREE.Vector2(e.movement[0], e.movement[1])),
-          drawingLayer
-        );
+        applyPan(controls, setControls, newMouse, previousMouse, drawingLayer);
       } else {
         tool.frameCallback(
           cursorDown,
@@ -119,6 +115,7 @@ export function PainterControls(): null {
           drawingLayer
         );
       }
+      setPreviousMouse(newMouse);
     },
     {
       pointer: {
