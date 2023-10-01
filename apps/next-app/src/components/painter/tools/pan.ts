@@ -13,13 +13,13 @@ export class PanTool extends Tool {
 
   public frameCallback(
     cursorDown: boolean,
-    previousMousePos: THREE.Vector2,
+    zooming: boolean,
     mousePos: THREE.Vector2,
     setControls: Dispatch<SetStateAction<Controls>>,
     drawingLayer: DrawingLayer
   ): void {
     setControls((controls) => {
-      if (cursorDown) {
+      if (cursorDown && this.lastMousePos) {
         const maxPan = new THREE.Vector2(1, 1).subScalar(
           1 / Math.sqrt(controls.zoom)
         );
@@ -28,7 +28,7 @@ export class PanTool extends Tool {
           pan: controls.pan
             .clone()
             .add(
-              previousMousePos
+              this.lastMousePos
                 .clone()
                 .sub(mousePos)
                 .divide(drawingLayer.pixelSize)

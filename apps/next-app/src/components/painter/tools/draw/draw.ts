@@ -21,39 +21,18 @@ export abstract class DrawTool extends Tool {
 
   public frameCallback(
     cursorDown: boolean,
-    previousMousePos: THREE.Vector2,
+    zooming: boolean,
     mousePos: THREE.Vector2,
     setControls: Dispatch<SetStateAction<Controls>>,
     drawingLayer: DrawingLayer
   ): void {
     setControls((controls) => {
-      if (cursorDown && !controls.zooming) {
+      if (cursorDown && !zooming) {
         const pointsToDraw: {
           pos: THREE.Vector2;
           color: THREE.Color;
           alpha: number;
         }[] = [];
-        const current = mousePos.clone();
-        const step = previousMousePos
-          .clone()
-          .sub(mousePos)
-          .normalize()
-          .multiplyScalar(this.size / 2);
-        while (step.dot(previousMousePos.clone().sub(current)) > 0) {
-          this.paint({
-            fill: (pos) => {
-              pointsToDraw.push({
-                pos,
-                color: this.color,
-                alpha: this.alpha,
-              });
-            },
-            size: this.size,
-            pos: current.clone().ceil(),
-            resolution: drawingLayer.pixelSize,
-          });
-          current.add(step);
-        }
         this.paint({
           fill: (pos) => {
             pointsToDraw.push({
@@ -63,10 +42,36 @@ export abstract class DrawTool extends Tool {
             });
           },
           size: this.size,
-          pos: previousMousePos,
+          pos: mousePos,
           resolution: drawingLayer.pixelSize,
         });
+        if (this.lastMousePos) {
+          const current = mousePos.clone();
+          const step = this.lastMousePos
+            .clone()
+            .sub(mousePos)
+            .normalize()
+            .multiplyScalar(this.size / 2);
+          while (step.dot(this.lastMousePos.clone().sub(current)) > 0) {
+            this.paint({
+              fill: (pos) => {
+                pointsToDraw.push({
+                  pos,
+                  color: this.color,
+                  alpha: this.alpha,
+                });
+              },
+              size: this.size,
+              pos: current.clone().ceil(),
+              resolution: drawingLayer.pixelSize,
+            });
+            current.add(step);
+          }
+        }
+        this.lastMousePos = mousePos.clone();
         drawingLayer.drawPoints(pointsToDraw);
+      } else {
+        this.lastMousePos = null;
       }
       return controls;
     });

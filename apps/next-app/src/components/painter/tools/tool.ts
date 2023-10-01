@@ -15,9 +15,28 @@ export abstract class Tool {
   public readonly color: THREE.Color;
   public readonly size: number;
 
+  protected lastMousePos: THREE.Vector2 | null = null;
+
+  public handleFrame(
+    cursorDown: boolean,
+    zooming: boolean,
+    mousePos: THREE.Vector2,
+    setControls: Dispatch<SetStateAction<Controls>>,
+    drawingLayer: DrawingLayer
+  ): void {
+    this.frameCallback(
+      cursorDown,
+      zooming,
+      mousePos,
+      setControls,
+      drawingLayer
+    );
+    this.lastMousePos = mousePos.clone();
+  }
+
   public abstract frameCallback(
     cursorDown: boolean,
-    previousMousePos: THREE.Vector2,
+    zooming: boolean,
     mousePos: THREE.Vector2,
     setControls: Dispatch<SetStateAction<Controls>>,
     drawingLayer: DrawingLayer
