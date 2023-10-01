@@ -1,7 +1,6 @@
 import { UploadButton } from "@/components";
-import { ToolNames, kColors, kToolFactory } from "../tools";
+import { ToolNames, kToolFactory } from "../tools";
 import { BrushSizeSlider } from "./brush-size-slider";
-import { ColorButton } from "./color-button";
 import { ToolbarButton } from "./toolbar-button";
 
 export function PainterOverlay(): JSX.Element {
@@ -13,11 +12,6 @@ export function PainterOverlay(): JSX.Element {
         </ToolbarButton>
       ))}
       <BrushSizeSlider />
-      <div className="grid grid-cols-2">
-        {kColors.map((color: string) => (
-          <ColorButton key={color} color={color} />
-        ))}
-      </div>
       <UploadButton />
     </div>
   );

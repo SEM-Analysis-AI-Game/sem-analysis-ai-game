@@ -5,8 +5,8 @@ import { drawSquare } from "../../utils";
 export class SquareEraser extends Eraser {
   readonly name = "Square Eraser";
 
-  constructor(color: THREE.Color, diameter: number) {
-    super(color, diameter);
+  constructor(diameter: number) {
+    super(diameter);
   }
 
   protected paint(params: {

@@ -1,6 +1,5 @@
 "use client";
 
-import * as THREE from "three";
 import {
   Dispatch,
   PropsWithChildren,
@@ -28,10 +27,7 @@ export function useTool(): [Tool, Dispatch<SetStateAction<Tool>>] {
 
 export const kInitialToolSize = 100;
 
-const kInitialTool = new CircleBrush(
-  new THREE.Color(1, 0, 0),
-  kInitialToolSize
-);
+const kInitialTool = new CircleBrush(kInitialToolSize);
 
 export function PainterTools(props: PropsWithChildren): JSX.Element {
   const toolState = useState<Tool>(kInitialTool);

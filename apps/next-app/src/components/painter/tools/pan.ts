@@ -11,8 +11,8 @@ export class PanTool extends Tool {
 
   private anchor: THREE.Vector2 | null = null;
 
-  constructor(color: THREE.Color, size: number) {
-    super(color, size);
+  constructor(size: number) {
+    super(size);
   }
 
   public frameCallback(

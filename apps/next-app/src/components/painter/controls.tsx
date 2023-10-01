@@ -84,15 +84,18 @@ export function PainterControls(): null {
 
   useDrag(
     (e) => {
-      setCursorDown(e.down);
       const newMouse = mouse
         .clone()
         .divideScalar(Math.sqrt(controls.zoom))
-        .add(controls.pan)
+        .add(controls.pan.clone().multiplyScalar(kPanMultiplier))
         .multiplyScalar(0.5)
         .addScalar(0.5)
         .multiply(drawingLayer.pixelSize)
         .floor();
+      if (!cursorDown && e.down) {
+        drawingLayer.updateActiveSegment(newMouse.x, newMouse.y);
+      }
+      setCursorDown(e.down);
       tool.frameCallback(
         cursorDown,
         zooming,

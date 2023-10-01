@@ -9,8 +9,8 @@ export abstract class DrawTool extends Tool {
 
   private lastMousePos: THREE.Vector2 | null = null;
 
-  constructor(color: THREE.Color, size: number, alpha: number) {
-    super(color, size);
+  constructor(size: number, alpha: number) {
+    super(size);
     this.alpha = alpha;
   }
 
@@ -32,14 +32,12 @@ export abstract class DrawTool extends Tool {
     if (cursorDown && !zooming) {
       const pointsToDraw: {
         pos: THREE.Vector2;
-        color: THREE.Color;
         alpha: number;
       }[] = [];
       this.paint({
         fill: (pos) => {
           pointsToDraw.push({
             pos,
-            color: this.color,
             alpha: this.alpha,
           });
         },
@@ -59,7 +57,6 @@ export abstract class DrawTool extends Tool {
             fill: (pos) => {
               pointsToDraw.push({
                 pos,
-                color: this.color,
                 alpha: this.alpha,
               });
             },

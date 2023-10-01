@@ -4,8 +4,8 @@ import { Eraser } from "./eraser";
 export class CircleEraser extends Eraser {
   readonly name = "Circle Eraser";
 
-  constructor(color: THREE.Color, diameter: number) {
-    super(color, diameter);
+  constructor(diameter: number) {
+    super(diameter);
   }
 
   protected paint(params: {
