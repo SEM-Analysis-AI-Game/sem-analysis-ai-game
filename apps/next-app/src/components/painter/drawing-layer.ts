@@ -125,6 +125,8 @@ export class DrawingLayer {
             this.setSegment(pos.x, pos.y, kDrawAlpha, newSegment);
           }
         }
+      } else {
+        action.effectedSegments.delete(segment);
       }
     }
     if (splitSegment) {
