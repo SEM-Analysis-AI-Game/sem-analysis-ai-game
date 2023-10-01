@@ -4,6 +4,7 @@ import * as THREE from "three";
 import { createContext, useContext } from "react";
 import { kSubdivisionSize } from "./renderer";
 import { kDrawAlpha } from "./tools/draw/brush/brush";
+import { CanvasAction } from "./action";
 
 export class DrawingLayer {
   private readonly drawingUniforms: THREE.Uniform<THREE.DataTexture>[];
@@ -43,11 +44,8 @@ export class DrawingLayer {
     }
   }
 
-  public recomputeSegments(
-    segments: Set<number>,
-    writtenPoints: Set<string>
-  ): void {
-    for (let segment of segments) {
+  public recomputeSegments(action: CanvasAction): void {
+    for (let segment of action.effectedSegments) {
       const segmentEntry = this.segmentMap.get(segment);
       if (!segmentEntry) {
         throw new Error("Segment not found");
@@ -55,7 +53,7 @@ export class DrawingLayer {
       let bfsStart: THREE.Vector2 | null = null;
       let totalPoints = 0;
       for (let point of segmentEntry.points) {
-        if (!writtenPoints.has(point)) {
+        if (!action.drawnPoints.has(point)) {
           totalPoints++;
           bfsStart = new THREE.Vector2(
             parseInt(point.split(",")[0]),
@@ -69,7 +67,7 @@ export class DrawingLayer {
 
       const otherPortion = new Set<string>();
       for (let point of segmentEntry.points) {
-        if (!writtenPoints.has(point)) {
+        if (!action.drawnPoints.has(point)) {
           otherPortion.add(point);
         }
       }
@@ -94,7 +92,7 @@ export class DrawingLayer {
             const stringNeighbor = `${neighbor.x},${neighbor.y}`;
             if (
               segmentEntry.points.has(stringNeighbor) &&
-              !writtenPoints.has(stringNeighbor) &&
+              !action.drawnPoints.has(stringNeighbor) &&
               !visited.has(stringNeighbor)
             ) {
               queue.push(neighbor);
@@ -112,6 +110,15 @@ export class DrawingLayer {
             parseInt(point.split(",")[1])
           );
           if (this.segment(pos.x, pos.y) === segment) {
+            if (!action.paintedPoints.has(point)) {
+              action.paintedPoints.set(point, {
+                pos,
+                newSegment,
+                oldSegment: segment,
+                oldAlpha: this.alpha(pos.x, pos.y),
+                newAlpha: kDrawAlpha,
+              });
+            }
             this.setSegment(pos.x, pos.y, kDrawAlpha, newSegment);
           }
         }
