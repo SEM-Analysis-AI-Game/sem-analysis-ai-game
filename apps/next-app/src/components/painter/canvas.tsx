@@ -47,7 +47,7 @@ export function PainterCanvas(): JSX.Element {
 
   return (
     <div
-      className="block m-auto"
+      className="block m-auto overflow-hidden"
       style={{
         width: screenSize.x,
         height: screenSize.y,
