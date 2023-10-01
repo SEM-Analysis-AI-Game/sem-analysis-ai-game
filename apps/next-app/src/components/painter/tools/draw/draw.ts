@@ -44,20 +44,20 @@ export abstract class DrawTool extends Tool {
 
       const fill = (pos: THREE.Vector2) => {
         const mapKey = `${pos.x},${pos.y}`;
-        const segment = drawingLayer.segment(pos.x, pos.y);
+        const oldSegment = drawingLayer.segment(pos.x, pos.y);
         const drawSegment =
           this.alpha === 0 ? -1 : drawingLayer.getActiveSegment();
         if (!drawAction.paintedPoints.has(mapKey)) {
           drawAction.paintedPoints.set(mapKey, {
             pos,
             newSegment: drawSegment,
-            oldSegment: segment,
+            oldSegment: oldSegment,
             oldAlpha: drawingLayer.alpha(pos.x, pos.y),
             newAlpha: this.alpha,
           });
         }
-        if (segment !== -1 && segment !== drawingLayer.getActiveSegment()) {
-          drawAction.effectedSegments.add(segment);
+        if (oldSegment !== -1 && oldSegment !== drawSegment) {
+          drawAction.effectedSegments.add(oldSegment);
         }
         drawAction.drawnPoints.add(mapKey);
         drawingLayer.setSegment(pos.x, pos.y, this.alpha, drawSegment);
