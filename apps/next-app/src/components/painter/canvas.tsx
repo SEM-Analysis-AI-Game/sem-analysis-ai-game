@@ -13,7 +13,6 @@ const kCanvasHeight = 9 / 10;
 
 const kInitialControls = {
   zoom: 1.0,
-  zooming: false,
   pan: new THREE.Vector2(),
 };
 

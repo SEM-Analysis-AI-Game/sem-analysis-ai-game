@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { useFrame, useThree } from "@react-three/fiber";
+import { useThree } from "@react-three/fiber";
 import {
   Dispatch,
   SetStateAction,
@@ -27,7 +27,6 @@ export function useControls(): [Controls, Dispatch<SetStateAction<Controls>>] {
 
 export type Controls = {
   zoom: number;
-  zooming: boolean;
   pan: THREE.Vector2;
 };
 
@@ -36,9 +35,9 @@ export function PainterControls(): null {
 
   const [controls, setControls] = useControls();
 
-  const [cursorDown, setCursorDown] = useState(false);
+  const [zooming, setZooming] = useState(false);
 
-  const [mousePos, setMousePos] = useState(new THREE.Vector2());
+  const [cursorDown, setCursorDown] = useState(false);
 
   const [tool] = useTool();
 
@@ -58,8 +57,8 @@ export function PainterControls(): null {
       const panBounds = new THREE.Vector2(1.0, 1.0).subScalar(
         1.0 / Math.sqrt(zoom)
       );
+      setZooming(e.pinching || false);
       setControls((controls) => ({
-        zooming: e.pinching || false,
         zoom,
         pan: origin
           .clone()
@@ -82,40 +81,23 @@ export function PainterControls(): null {
     }
   );
 
-  useFrame(() => {
-    const perviousMousePos = mousePos.clone();
-    const newPos = mouse
-      .clone()
-      .divideScalar(Math.sqrt(controls.zoom))
-      .add(controls.pan)
-      .multiplyScalar(0.5)
-      .addScalar(0.5)
-      .multiply(drawingLayer.pixelSize)
-      .floor();
-
-    setMousePos(newPos);
-
-    tool.frameCallback(
-      cursorDown,
-      perviousMousePos,
-      newPos,
-      setControls,
-      drawingLayer
-    );
-  });
-
   useDrag(
     (e) => {
       setCursorDown(e.down);
-      setMousePos(
-        mouse
-          .clone()
-          .divideScalar(Math.sqrt(controls.zoom))
-          .add(controls.pan)
-          .multiplyScalar(0.5)
-          .addScalar(0.5)
-          .multiply(drawingLayer.pixelSize)
-          .floor()
+      const mousePos = mouse
+        .clone()
+        .divideScalar(Math.sqrt(controls.zoom))
+        .add(controls.pan)
+        .multiplyScalar(0.5)
+        .addScalar(0.5)
+        .multiply(drawingLayer.pixelSize)
+        .floor();
+      tool.frameCallback(
+        cursorDown,
+        zooming,
+        mousePos,
+        setControls,
+        drawingLayer
       );
     },
     {
