@@ -183,11 +183,13 @@ export class DrawingLayer {
     this.activeSegment = segment;
     const color = this.activeColor();
     const pos = new THREE.Vector2(x, y);
-    const segmentEntry = this.segmentMap.get(segment);
-    if (segmentEntry) {
-      segmentEntry.points.add(`${x},${y}`);
-    } else {
-      throw new Error("Segment not found");
+    if (segment !== -1) {
+      const segmentEntry = this.segmentMap.get(segment);
+      if (segmentEntry) {
+        segmentEntry.points.add(`${x},${y}`);
+      } else {
+        throw new Error("Segment not found");
+      }
     }
     if (oldSegment !== segment && oldSegment !== -1) {
       const oldSegmentEntry = this.segmentMap.get(oldSegment);
@@ -237,7 +239,7 @@ export class DrawingLayer {
                 checkSegment.color.b
               ).distanceTo(
                 new THREE.Vector3(randomColor.r, randomColor.g, randomColor.b)
-              ) < 0.05
+              ) < 0.075
             ) {
               randomColor = new THREE.Color(
                 Math.random(),
