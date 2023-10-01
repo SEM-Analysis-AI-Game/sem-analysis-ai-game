@@ -109,7 +109,7 @@ export function PainterControls(): null {
         drawingLayer.updateActiveSegment(toolMouse.x, toolMouse.y);
       }
       setCursorDown(e.down);
-      if (e.touches > 1 || e.shiftKey) {
+      if ((e.touches > 1 && !zooming) || e.shiftKey) {
         panTool.frameCallback(
           cursorDown,
           zooming,
