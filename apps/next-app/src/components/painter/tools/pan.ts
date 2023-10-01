@@ -33,6 +33,7 @@ export class PanTool extends Tool {
                 .clone()
                 .sub(mousePos)
                 .divide(drawingLayer.pixelSize)
+                .multiplyScalar(2.0)
             )
             .clamp(maxPan.clone().negate(), maxPan),
         };
