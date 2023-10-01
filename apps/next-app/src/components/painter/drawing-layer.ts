@@ -3,8 +3,8 @@
 import * as THREE from "three";
 import { createContext, useContext } from "react";
 import { kSubdivisionSize } from "./renderer";
-import { kDrawAlpha } from "./tools/draw/brush/brush";
 import { CanvasAction } from "./action";
+import { kDrawAlpha } from "./tools";
 
 export class DrawingLayer {
   private readonly drawingUniforms: THREE.Uniform<THREE.DataTexture>[];
@@ -122,13 +122,11 @@ export class DrawingLayer {
               pos,
               newSegment,
               oldSegment: segment,
-              oldAlpha: this.alpha(pos.x, pos.y),
-              newAlpha: kDrawAlpha,
             });
           }
           action.effectedSegments.add(segment);
           splitSegment = true;
-          this.setSegment(pos.x, pos.y, kDrawAlpha, newSegment);
+          this.setSegment(pos.x, pos.y, newSegment);
         }
       } else {
         action.effectedSegments.delete(segment);
@@ -147,17 +145,6 @@ export class DrawingLayer {
     return new THREE.Vector2(x, y).divideScalar(kSubdivisionSize).floor();
   }
 
-  public alpha(x: number, y: number): number {
-    const section = this.section(x, y);
-    const sectionPos = new THREE.Vector2(x, y)
-      .sub(section.clone().multiplyScalar(kSubdivisionSize))
-      .floor();
-    const sectionSize = this.sectionSize(section.x, section.y);
-    const pixelIndex = (sectionPos.y * sectionSize.x + sectionPos.x) * 4;
-    const data = this.uniform(section.x, section.y).value.image.data;
-    return data[pixelIndex + 3] / 255.0;
-  }
-
   public sectionSize(j: number, i: number): THREE.Vector2 {
     return new THREE.Vector2(
       j === this.numSections.x ? this.trailing.x : kSubdivisionSize,
@@ -165,12 +152,7 @@ export class DrawingLayer {
     );
   }
 
-  public setSegment(
-    x: number,
-    y: number,
-    alpha: number,
-    segment: number
-  ): void {
+  public setSegment(x: number, y: number, segment: number): void {
     const oldSegment = this.segment(x, y);
     this.segmentBuffer[y * this.pixelSize.x + x] = segment;
     const color = this.segmentColor(segment);
@@ -202,7 +184,7 @@ export class DrawingLayer {
     data[pixelIndex] = color.r * 255;
     data[pixelIndex + 1] = color.g * 255;
     data[pixelIndex + 2] = color.b * 255;
-    data[pixelIndex + 3] = alpha * 255;
+    data[pixelIndex + 3] = segment === -1 ? 0 : kDrawAlpha * 255.0;
     uniform.value.needsUpdate = true;
   }
 

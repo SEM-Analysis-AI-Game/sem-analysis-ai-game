@@ -51,7 +51,6 @@ export class ActionHistory {
           this.current.data.drawingLayer.setSegment(
             entry[1].pos.x,
             entry[1].pos.y,
-            entry[1].oldAlpha,
             entry[1].oldSegment
           );
         }
@@ -70,7 +69,6 @@ export class ActionHistory {
           this.current.data.drawingLayer.setSegment(
             entry[1].pos.x,
             entry[1].pos.y,
-            entry[1].newAlpha,
             entry[1].newSegment
           );
         }

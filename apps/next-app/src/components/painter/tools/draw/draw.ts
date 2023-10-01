@@ -6,15 +6,14 @@ import { Dispatch, SetStateAction } from "react";
 import { ActionHistory } from "../../action-history";
 import { CanvasAction } from "../../action";
 
-export abstract class DrawTool extends Tool {
-  protected readonly alpha: number;
+export const kDrawAlpha = 0.5;
 
+export abstract class DrawTool extends Tool {
   private lastMousePos: THREE.Vector2 | null = null;
   private drawAction: CanvasAction | null = null;
 
-  constructor(size: number, alpha: number) {
+  constructor(size: number) {
     super(size);
-    this.alpha = alpha;
   }
 
   protected abstract paint(params: {
@@ -23,6 +22,8 @@ export abstract class DrawTool extends Tool {
     pos: THREE.Vector2;
     resolution: THREE.Vector2;
   }): void;
+
+  protected abstract drawingSegment(activeSegment: number): number;
 
   public frameCallback(
     cursorDown: boolean,
@@ -46,21 +47,19 @@ export abstract class DrawTool extends Tool {
       const fill = (pos: THREE.Vector2) => {
         const mapKey = `${pos.x},${pos.y}`;
         const oldSegment = drawingLayer.segment(pos.x, pos.y);
-        const drawSegment = this.alpha === 0 ? -1 : activeSegment;
+        const drawSegment = this.drawingSegment(activeSegment);
         if (!drawAction.paintedPoints.has(mapKey)) {
           drawAction.paintedPoints.set(mapKey, {
             pos,
             newSegment: drawSegment,
             oldSegment: oldSegment,
-            oldAlpha: drawingLayer.alpha(pos.x, pos.y),
-            newAlpha: this.alpha,
           });
         }
         if (oldSegment !== -1 && oldSegment !== drawSegment) {
           drawAction.effectedSegments.add(oldSegment);
         }
         drawAction.drawnPoints.add(mapKey);
-        drawingLayer.setSegment(pos.x, pos.y, this.alpha, drawSegment);
+        drawingLayer.setSegment(pos.x, pos.y, drawSegment);
       };
 
       this.paint({

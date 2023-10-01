@@ -7,8 +7,6 @@ export class CanvasAction {
       pos: THREE.Vector2;
       oldSegment: number;
       newSegment: number;
-      oldAlpha: number;
-      newAlpha: number;
     }
   >;
   public readonly drawingLayer: DrawingLayer;

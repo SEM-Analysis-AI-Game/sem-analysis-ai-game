@@ -1,8 +1,8 @@
 import * as THREE from "three";
+import { Dispatch, SetStateAction } from "react";
 import { Tool } from "./tool";
 import { Controls } from "../controls";
 import { DrawingLayer } from "../drawing-layer";
-import { Dispatch, SetStateAction } from "react";
 import { ActionHistory } from "../action-history";
 
 export const kPanMultiplier = 3.5;
