@@ -12,9 +12,8 @@ const kCanvasWidth = 2 / 3;
 const kCanvasHeight = 9 / 10;
 
 const kInitialControls = {
-  mousePos: new THREE.Vector2(),
-  previousMousePos: new THREE.Vector2(),
   zoom: 1.0,
+  zooming: false,
   pan: new THREE.Vector2(),
 };
 

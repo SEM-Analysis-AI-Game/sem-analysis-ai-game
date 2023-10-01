@@ -26,9 +26,8 @@ export function useControls(): [Controls, Dispatch<SetStateAction<Controls>>] {
 }
 
 export type Controls = {
-  mousePos: THREE.Vector2;
-  previousMousePos: THREE.Vector2;
   zoom: number;
+  zooming: boolean;
   pan: THREE.Vector2;
 };
 
@@ -38,6 +37,8 @@ export function PainterControls(): null {
   const [controls, setControls] = useControls();
 
   const [cursorDown, setCursorDown] = useState(false);
+
+  const [mousePos, setMousePos] = useState(new THREE.Vector2());
 
   const [tool] = useTool();
 
@@ -49,8 +50,8 @@ export function PainterControls(): null {
       const panBounds = new THREE.Vector2(1.0, 1.0).subScalar(
         1.0 / Math.sqrt(zoom)
       );
-      setControls({
-        ...controls,
+      setControls((controls) => ({
+        zooming: e.pinching || false,
         zoom,
         pan: mouse
           .clone()
@@ -58,7 +59,7 @@ export function PainterControls(): null {
           .multiplyScalar(Math.max((zoom - controls.zoom) * 0.5, 0))
           .add(controls.pan)
           .clamp(panBounds.clone().negate(), panBounds),
-      });
+      }));
     },
     {
       pinchOnWheel: true,
@@ -74,27 +75,40 @@ export function PainterControls(): null {
   );
 
   useFrame(() => {
-    const newControls = {
-      ...controls,
-      previousMousePos: controls.mousePos.clone(),
-      mousePos: mouse
-        .clone()
-        .divideScalar(Math.sqrt(controls.zoom))
-        .add(controls.pan)
-        .multiplyScalar(0.5)
-        .addScalar(0.5)
-        .multiply(drawingLayer.pixelSize)
-        .floor(),
-    };
+    const perviousMousePos = mousePos.clone();
+    const newPos = mouse
+      .clone()
+      .divideScalar(Math.sqrt(controls.zoom))
+      .add(controls.pan)
+      .multiplyScalar(0.5)
+      .addScalar(0.5)
+      .multiply(drawingLayer.pixelSize)
+      .floor();
 
-    tool.frameCallback(cursorDown, newControls, drawingLayer);
+    setMousePos(newPos);
 
-    setControls(newControls);
+    tool.frameCallback(
+      cursorDown,
+      perviousMousePos,
+      newPos,
+      setControls,
+      drawingLayer
+    );
   });
 
   useDrag(
     (e) => {
       setCursorDown(e.down);
+      setMousePos(
+        mouse
+          .clone()
+          .divideScalar(Math.sqrt(controls.zoom))
+          .add(controls.pan)
+          .multiplyScalar(0.5)
+          .addScalar(0.5)
+          .multiply(drawingLayer.pixelSize)
+          .floor()
+      );
     },
     {
       pointer: {
