@@ -10,7 +10,7 @@ import {
 import { useDrag, usePinch } from "@use-gesture/react";
 import { useDrawingLayer } from "./drawing-layer";
 import { useTool } from "./tools";
-import { applyPan, kPanMultiplier } from "./tools/pan";
+import { kPanMultiplier } from "./tools/pan";
 
 export const ControlsContext = createContext<
   [Controls, Dispatch<SetStateAction<Controls>>] | null
@@ -39,8 +39,6 @@ export function PainterControls(): null {
   const [zooming, setZooming] = useState(false);
 
   const [cursorDown, setCursorDown] = useState(false);
-
-  const [previousMouse, setPreviousMouse] = useState(new THREE.Vector2());
 
   const [tool] = useTool();
 
@@ -103,19 +101,14 @@ export function PainterControls(): null {
         drawingLayer.updateActiveSegment(newMouse.x, newMouse.y);
       }
       setCursorDown(e.down);
-      if (e.touches > 1) {
-        applyPan(controls, setControls, newMouse, previousMouse, drawingLayer);
-      } else {
-        tool.frameCallback(
-          cursorDown,
-          zooming,
-          newMouse,
-          controls,
-          setControls,
-          drawingLayer
-        );
-      }
-      setPreviousMouse(newMouse);
+      tool.frameCallback(
+        cursorDown,
+        zooming,
+        newMouse,
+        controls,
+        setControls,
+        drawingLayer
+      );
     },
     {
       pointer: {
