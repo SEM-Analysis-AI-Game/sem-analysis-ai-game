@@ -31,7 +31,8 @@ export abstract class DrawTool extends Tool {
     controls: Controls,
     setControls: Dispatch<SetStateAction<Controls>>,
     drawingLayer: DrawingLayer,
-    history: ActionHistory
+    history: ActionHistory,
+    activeSegment: number
   ): void {
     if (cursorDown && !zooming) {
       if (!this.drawAction) {
@@ -45,8 +46,7 @@ export abstract class DrawTool extends Tool {
       const fill = (pos: THREE.Vector2) => {
         const mapKey = `${pos.x},${pos.y}`;
         const oldSegment = drawingLayer.segment(pos.x, pos.y);
-        const drawSegment =
-          this.alpha === 0 ? -1 : drawingLayer.getActiveSegment();
+        const drawSegment = this.alpha === 0 ? -1 : activeSegment;
         if (!drawAction.paintedPoints.has(mapKey)) {
           drawAction.paintedPoints.set(mapKey, {
             pos,

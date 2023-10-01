@@ -12,14 +12,12 @@ export class DrawingLayer {
   public readonly trailing: THREE.Vector2;
   public readonly numSections: THREE.Vector2;
 
-  private activeSegment: number;
   private numSegments: number;
   private readonly segmentBuffer: Int32Array;
   private segmentMap: Map<number, { color: THREE.Color; points: Set<string> }>;
 
   constructor(pixelSize: THREE.Vector2) {
     this.segmentMap = new Map();
-    this.activeSegment = 0;
     this.numSegments = 0;
     this.pixelSize = pixelSize;
     this.segmentBuffer = new Int32Array(pixelSize.x * pixelSize.y).fill(-1);
@@ -42,6 +40,14 @@ export class DrawingLayer {
         this.drawingUniforms.push(drawingUniform);
       }
     }
+  }
+
+  public incrementSegments(): void {
+    this.numSegments++;
+  }
+
+  public getNumSegments(): number {
+    return this.numSegments;
   }
 
   public recomputeSegments(action: CanvasAction): void {
@@ -103,6 +109,7 @@ export class DrawingLayer {
       }
 
       if (visited.size < totalPoints) {
+        this.numSegments++;
         const newSegment = this.numSegments;
         segmentEntry.points = otherPortion;
         for (let point of visited) {
@@ -129,19 +136,6 @@ export class DrawingLayer {
     }
     if (splitSegment) {
       this.recomputeSegments(action);
-    }
-  }
-
-  public getActiveSegment(): number {
-    return this.activeSegment;
-  }
-
-  public updateActiveSegment(x: number, y: number): void {
-    const segment = this.segment(x, y);
-    if (segment === -1) {
-      this.activeSegment = this.numSegments;
-    } else {
-      this.activeSegment = segment;
     }
   }
 
@@ -179,9 +173,7 @@ export class DrawingLayer {
   ): void {
     const oldSegment = this.segment(x, y);
     this.segmentBuffer[y * this.pixelSize.x + x] = segment;
-    const oldActiveSegment = this.activeSegment;
-    this.activeSegment = segment;
-    const color = this.activeColor();
+    const color = this.segmentColor(segment);
     const pos = new THREE.Vector2(x, y);
     if (segment !== -1) {
       const segmentEntry = this.segmentMap.get(segment);
@@ -212,15 +204,11 @@ export class DrawingLayer {
     data[pixelIndex + 2] = color.b * 255;
     data[pixelIndex + 3] = alpha * 255;
     uniform.value.needsUpdate = true;
-    if (this.activeSegment === this.numSegments) {
-      this.numSegments++;
-    }
-    this.activeSegment = oldActiveSegment;
   }
 
-  private activeColor(): THREE.Color {
-    const segment = this.segmentMap.get(this.activeSegment);
-    if (!segment) {
+  private segmentColor(segment: number): THREE.Color {
+    const data = this.segmentMap.get(segment);
+    if (!data) {
       let randomColor = new THREE.Color(
         Math.random(),
         Math.random(),
@@ -251,13 +239,13 @@ export class DrawingLayer {
           }
         }
       }
-      this.segmentMap.set(this.activeSegment, {
+      this.segmentMap.set(segment, {
         color: randomColor,
         points: new Set(),
       });
       return randomColor;
     }
-    return segment.color;
+    return data.color;
   }
 
   public uniform(j: number, i: number): THREE.Uniform<THREE.DataTexture> {

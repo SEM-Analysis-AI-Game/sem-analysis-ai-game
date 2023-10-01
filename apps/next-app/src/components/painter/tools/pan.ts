@@ -23,7 +23,8 @@ export class PanTool extends Tool {
     controls: Controls,
     setControls: Dispatch<SetStateAction<Controls>>,
     drawingLayer: DrawingLayer,
-    history: ActionHistory
+    history: ActionHistory,
+    activeSegment: number
   ): void {
     if (cursorDown && this.anchor) {
       const maxPan = new THREE.Vector2(1, 1)
