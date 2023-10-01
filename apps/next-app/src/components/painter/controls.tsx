@@ -52,27 +52,29 @@ export function PainterControls(): null {
   usePinch(
     (e) => {
       const zoom = e.offset[0];
-      const origin = new THREE.Vector2(
-        e.origin[0] - size.left,
-        e.origin[1] - size.top
-      )
-        .divide(new THREE.Vector2(size.width, size.height))
-        .subScalar(0.5)
-        .multiplyScalar(2.0);
-      origin.setY(-origin.y);
-      const panBounds = new THREE.Vector2(1.0, 1.0)
-        .subScalar(1.0 / Math.sqrt(zoom))
-        .divideScalar(kPanMultiplier);
-      setZooming(e.pinching || false);
-      setControls((controls) => ({
-        zoom,
-        pan: origin
-          .clone()
-          .divideScalar(zoom)
-          .multiplyScalar(Math.max((zoom - controls.zoom) * 0.5, 0))
-          .add(controls.pan)
-          .clamp(panBounds.clone().negate(), panBounds),
-      }));
+      if (Math.abs(zoom - controls.zoom) > 0.3) {
+        const origin = new THREE.Vector2(
+          e.origin[0] - size.left,
+          e.origin[1] - size.top
+        )
+          .divide(new THREE.Vector2(size.width, size.height))
+          .subScalar(0.5)
+          .multiplyScalar(2.0);
+        origin.setY(-origin.y);
+        const panBounds = new THREE.Vector2(1.0, 1.0)
+          .subScalar(1.0 / Math.sqrt(zoom))
+          .divideScalar(kPanMultiplier);
+        setZooming(e.pinching || false);
+        setControls((controls) => ({
+          zoom,
+          pan: origin
+            .clone()
+            .divideScalar(zoom)
+            .multiplyScalar(Math.max((zoom - controls.zoom) * 0.5, 0))
+            .add(controls.pan)
+            .clamp(panBounds.clone().negate(), panBounds),
+        }));
+      }
     },
     {
       pinchOnWheel: true,
