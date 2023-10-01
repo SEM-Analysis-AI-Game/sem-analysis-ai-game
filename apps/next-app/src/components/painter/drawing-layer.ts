@@ -110,20 +110,18 @@ export class DrawingLayer {
             parseInt(point.split(",")[0]),
             parseInt(point.split(",")[1])
           );
-          if (this.segment(pos.x, pos.y) === segment) {
-            if (!action.paintedPoints.has(point)) {
-              action.paintedPoints.set(point, {
-                pos,
-                newSegment,
-                oldSegment: segment,
-                oldAlpha: this.alpha(pos.x, pos.y),
-                newAlpha: kDrawAlpha,
-              });
-            }
-            action.effectedSegments.add(segment);
-            splitSegment = true;
-            this.setSegment(pos.x, pos.y, kDrawAlpha, newSegment);
+          if (!action.paintedPoints.has(point)) {
+            action.paintedPoints.set(point, {
+              pos,
+              newSegment,
+              oldSegment: segment,
+              oldAlpha: this.alpha(pos.x, pos.y),
+              newAlpha: kDrawAlpha,
+            });
           }
+          action.effectedSegments.add(segment);
+          splitSegment = true;
+          this.setSegment(pos.x, pos.y, kDrawAlpha, newSegment);
         }
       } else {
         action.effectedSegments.delete(segment);
@@ -179,6 +177,7 @@ export class DrawingLayer {
     alpha: number,
     segment: number
   ): void {
+    const oldSegment = this.segment(x, y);
     this.segmentBuffer[y * this.pixelSize.x + x] = segment;
     const oldActiveSegment = this.activeSegment;
     this.activeSegment = segment;
@@ -189,6 +188,14 @@ export class DrawingLayer {
       segmentEntry.points.add(`${x},${y}`);
     } else {
       throw new Error("Segment not found");
+    }
+    if (oldSegment !== segment && oldSegment !== -1) {
+      const oldSegmentEntry = this.segmentMap.get(oldSegment);
+      if (oldSegmentEntry) {
+        oldSegmentEntry.points.delete(`${x},${y}`);
+      } else {
+        throw new Error("Segment not found");
+      }
     }
     const section = this.section(x, y);
     const uniform = this.uniform(section.x, section.y);
@@ -230,7 +237,7 @@ export class DrawingLayer {
                 checkSegment.color.b
               ).distanceTo(
                 new THREE.Vector3(randomColor.r, randomColor.g, randomColor.b)
-              ) < 0.1
+              ) < 0.05
             ) {
               randomColor = new THREE.Color(
                 Math.random(),

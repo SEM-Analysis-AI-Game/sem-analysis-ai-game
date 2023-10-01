@@ -7,6 +7,7 @@ import { ControlsContext, PainterControls } from "./controls";
 import { PainterRenderer } from "./renderer";
 import { useBackground } from "./background-loader";
 import { DrawingLayer, DrawingLayerContext } from "./drawing-layer";
+import { useActionHistory } from "./action-history";
 
 const kInitialControls = {
   zoom: 1.0,
@@ -20,7 +21,10 @@ export function PainterCanvas(): JSX.Element {
     throw new Error("No background found");
   }
 
+  const history = useActionHistory();
+
   const [screenSize, drawingLayer] = useMemo(() => {
+    history.clear();
     const backgroundResolution = new THREE.Vector2(
       background.image.width,
       background.image.height

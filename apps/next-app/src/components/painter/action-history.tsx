@@ -39,10 +39,22 @@ export class ActionHistory {
     this.current = this.head;
   }
 
+  public clear(): void {
+    this.head.next = null;
+    this.current = this.head;
+  }
+
   public undo(): void {
     if (this.current.prev) {
       if (this.current.data) {
-        this.current.data.undo();
+        for (let entry of this.current.data.paintedPoints.entries()) {
+          this.current.data.drawingLayer.setSegment(
+            entry[1].pos.x,
+            entry[1].pos.y,
+            entry[1].oldAlpha,
+            entry[1].oldSegment
+          );
+        }
         this.current = this.current.prev;
       } else {
         throw new Error("No data");
@@ -54,7 +66,14 @@ export class ActionHistory {
     if (this.current.next) {
       this.current = this.current.next;
       if (this.current.data) {
-        this.current.data.redo();
+        for (let entry of this.current.data.paintedPoints.entries()) {
+          this.current.data.drawingLayer.setSegment(
+            entry[1].pos.x,
+            entry[1].pos.y,
+            entry[1].newAlpha,
+            entry[1].newSegment
+          );
+        }
       } else {
         throw new Error("No data");
       }
