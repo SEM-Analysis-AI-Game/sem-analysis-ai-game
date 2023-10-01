@@ -5,8 +5,8 @@ import { drawCircle } from "../../utils";
 export class CircleBrush extends Brush {
   readonly name = "Circle Brush";
 
-  constructor(color: THREE.Color, diameter: number) {
-    super(color, diameter);
+  constructor(diameter: number) {
+    super(diameter);
   }
 
   protected paint(params: {

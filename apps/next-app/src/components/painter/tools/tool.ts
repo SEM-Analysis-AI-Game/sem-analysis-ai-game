@@ -12,7 +12,6 @@ export type ToolNames =
 
 export abstract class Tool {
   public abstract readonly name: ToolNames;
-  public readonly color: THREE.Color;
   public readonly size: number;
 
   public abstract frameCallback(
@@ -24,8 +23,7 @@ export abstract class Tool {
     drawingLayer: DrawingLayer
   ): void;
 
-  constructor(color: THREE.Color, size: number) {
-    this.color = color;
+  constructor(size: number) {
     this.size = size;
   }
 }

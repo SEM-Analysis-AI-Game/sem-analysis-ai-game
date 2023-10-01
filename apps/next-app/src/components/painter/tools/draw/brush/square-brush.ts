@@ -5,8 +5,8 @@ import { drawSquare } from "../../utils";
 export class SquareBrush extends Brush {
   readonly name = "Square Brush";
 
-  constructor(color: THREE.Color, diameter: number) {
-    super(color, diameter);
+  constructor(diameter: number) {
+    super(diameter);
   }
 
   protected paint(params: {
