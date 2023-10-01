@@ -39,6 +39,8 @@ export function PainterControls(): null {
 
   const [cursorDown, setCursorDown] = useState(false);
 
+  const [mousePos, setMousePos] = useState(new THREE.Vector2());
+
   const [tool] = useTool();
 
   const drawingLayer = useDrawingLayer();
@@ -84,7 +86,7 @@ export function PainterControls(): null {
   useDrag(
     (e) => {
       setCursorDown(e.down);
-      const mousePos = mouse
+      const newMouse = mouse
         .clone()
         .divideScalar(Math.sqrt(controls.zoom))
         .add(controls.pan)
@@ -95,10 +97,12 @@ export function PainterControls(): null {
       tool.frameCallback(
         cursorDown,
         zooming,
-        mousePos,
+        mousePos.clone(),
+        newMouse,
         setControls,
         drawingLayer
       );
+      setMousePos(newMouse);
     },
     {
       pointer: {

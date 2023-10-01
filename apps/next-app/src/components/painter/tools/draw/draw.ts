@@ -7,6 +7,8 @@ import { Dispatch, SetStateAction } from "react";
 export abstract class DrawTool extends Tool {
   protected readonly alpha: number;
 
+  private lastMousePos: THREE.Vector2 | null = null;
+
   constructor(color: THREE.Color, size: number, alpha: number) {
     super(color, size);
     this.alpha = alpha;
@@ -22,6 +24,7 @@ export abstract class DrawTool extends Tool {
   public frameCallback(
     cursorDown: boolean,
     zooming: boolean,
+    previousMousePos: THREE.Vector2,
     mousePos: THREE.Vector2,
     setControls: Dispatch<SetStateAction<Controls>>,
     drawingLayer: DrawingLayer
