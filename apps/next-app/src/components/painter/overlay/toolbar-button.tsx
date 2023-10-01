@@ -13,9 +13,7 @@ export function ToolbarButton(
     <button
       className="text-[#333] bg-slate-100 rounded pl-2 pr-2 mt-1 mb-1 border-black border-2"
       key={props.toolName}
-      onClick={() =>
-        setTool(new kToolFactory[props.toolName](tool.color, tool.size))
-      }
+      onClick={() => setTool(new kToolFactory[props.toolName](tool.size))}
     >
       {props.children}
     </button>
