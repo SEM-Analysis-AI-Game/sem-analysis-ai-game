@@ -26,57 +26,55 @@ export abstract class DrawTool extends Tool {
     zooming: boolean,
     previousMousePos: THREE.Vector2,
     mousePos: THREE.Vector2,
+    controls: Controls,
     setControls: Dispatch<SetStateAction<Controls>>,
     drawingLayer: DrawingLayer
   ): void {
-    setControls((controls) => {
-      if (cursorDown && !zooming) {
-        const pointsToDraw: {
-          pos: THREE.Vector2;
-          color: THREE.Color;
-          alpha: number;
-        }[] = [];
-        this.paint({
-          fill: (pos) => {
-            pointsToDraw.push({
-              pos,
-              color: this.color,
-              alpha: this.alpha,
-            });
-          },
-          size: this.size,
-          pos: mousePos,
-          resolution: drawingLayer.pixelSize,
-        });
-        if (this.lastMousePos) {
-          const current = mousePos.clone();
-          const step = this.lastMousePos
-            .clone()
-            .sub(mousePos)
-            .normalize()
-            .multiplyScalar(this.size / 2);
-          while (step.dot(this.lastMousePos.clone().sub(current)) > 0) {
-            this.paint({
-              fill: (pos) => {
-                pointsToDraw.push({
-                  pos,
-                  color: this.color,
-                  alpha: this.alpha,
-                });
-              },
-              size: this.size,
-              pos: current.clone().ceil(),
-              resolution: drawingLayer.pixelSize,
-            });
-            current.add(step);
-          }
+    if (cursorDown && !zooming) {
+      const pointsToDraw: {
+        pos: THREE.Vector2;
+        color: THREE.Color;
+        alpha: number;
+      }[] = [];
+      this.paint({
+        fill: (pos) => {
+          pointsToDraw.push({
+            pos,
+            color: this.color,
+            alpha: this.alpha,
+          });
+        },
+        size: this.size,
+        pos: mousePos,
+        resolution: drawingLayer.pixelSize,
+      });
+      if (this.lastMousePos) {
+        const current = mousePos.clone();
+        const step = this.lastMousePos
+          .clone()
+          .sub(mousePos)
+          .normalize()
+          .multiplyScalar(this.size / 2);
+        while (step.dot(this.lastMousePos.clone().sub(current)) > 0) {
+          this.paint({
+            fill: (pos) => {
+              pointsToDraw.push({
+                pos,
+                color: this.color,
+                alpha: this.alpha,
+              });
+            },
+            size: this.size,
+            pos: current.clone().ceil(),
+            resolution: drawingLayer.pixelSize,
+          });
+          current.add(step);
         }
-        this.lastMousePos = mousePos.clone();
-        drawingLayer.drawPoints(pointsToDraw);
-      } else {
-        this.lastMousePos = null;
       }
-      return controls;
-    });
+      this.lastMousePos = mousePos.clone();
+      drawingLayer.drawPoints(pointsToDraw);
+    } else {
+      this.lastMousePos = null;
+    }
   }
 }

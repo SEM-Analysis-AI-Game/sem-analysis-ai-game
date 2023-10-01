@@ -10,6 +10,7 @@ import {
 import { useDrag, usePinch } from "@use-gesture/react";
 import { useDrawingLayer } from "./drawing-layer";
 import { useTool } from "./tools";
+import { kPanMultiplier } from "./tools/pan";
 
 export const ControlsContext = createContext<
   [Controls, Dispatch<SetStateAction<Controls>>] | null
@@ -56,9 +57,9 @@ export function PainterControls(): null {
         .subScalar(0.5)
         .multiplyScalar(2.0);
       origin.setY(-origin.y);
-      const panBounds = new THREE.Vector2(1.0, 1.0).subScalar(
-        1.0 / Math.sqrt(zoom)
-      );
+      const panBounds = new THREE.Vector2(1.0, 1.0)
+        .subScalar(1.0 / Math.sqrt(zoom))
+        .divideScalar(kPanMultiplier);
       setZooming(e.pinching || false);
       setControls((controls) => ({
         zoom,
@@ -99,6 +100,7 @@ export function PainterControls(): null {
         zooming,
         mousePos.clone(),
         newMouse,
+        controls,
         setControls,
         drawingLayer
       );

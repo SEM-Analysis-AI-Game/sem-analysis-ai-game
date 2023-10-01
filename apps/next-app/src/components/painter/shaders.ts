@@ -1,3 +1,5 @@
+import { kPanMultiplier } from "./tools/pan";
+
 export const vertexShader = `
 varying vec3 vUv;
 
@@ -14,7 +16,9 @@ uniform vec2 pan;
 varying vec3 vUv;
 
 void main() {
-    vec2 transformedCoords = ((vUv.xy / sqrt(zoom)) + pan) * 0.5 + 0.5;
+    vec2 transformedCoords = ((vUv.xy / sqrt(zoom)) + pan * ${kPanMultiplier.toFixed(
+      1
+    )}) * 0.5 + 0.5;
     gl_FragColor = texture2D(background, transformedCoords);
 }`;
 
