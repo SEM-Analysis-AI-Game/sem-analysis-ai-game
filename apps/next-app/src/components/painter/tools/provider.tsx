@@ -29,7 +29,7 @@ export const kInitialToolSize = 100;
 
 const kInitialTool = new CircleBrush(kInitialToolSize);
 
-export function PainterTools(props: PropsWithChildren): JSX.Element {
+export function PainterToolProvider(props: PropsWithChildren): JSX.Element {
   const toolState = useState<Tool>(kInitialTool);
 
   return (

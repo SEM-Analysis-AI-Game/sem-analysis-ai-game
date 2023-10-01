@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { Controls } from "../controls";
 import { DrawingLayer } from "../drawing-layer";
 import { Dispatch, SetStateAction } from "react";
+import { ActionHistory } from "../action-history";
 
 export type ToolNames =
   | "Circle Eraser"
@@ -20,7 +21,8 @@ export abstract class Tool {
     mousePos: THREE.Vector2,
     controls: Controls,
     setControls: Dispatch<SetStateAction<Controls>>,
-    drawingLayer: DrawingLayer
+    drawingLayer: DrawingLayer,
+    history: ActionHistory
   ): void;
 
   constructor(size: number) {

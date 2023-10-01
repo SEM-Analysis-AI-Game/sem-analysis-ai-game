@@ -13,6 +13,7 @@ import { usePinch } from "@use-gesture/react";
 import { useDrawingLayer } from "./drawing-layer";
 import { useTool } from "./tools";
 import { PanTool, kPanMultiplier } from "./tools/pan";
+import { useActionHistory } from "./action-history";
 
 export const ControlsContext = createContext<
   [Controls, Dispatch<SetStateAction<Controls>>] | null
@@ -50,6 +51,8 @@ export function PainterControls(): null {
   }, []);
 
   const drawingLayer = useDrawingLayer();
+
+  const history = useActionHistory();
 
   usePinch(
     (e) => {
@@ -91,7 +94,14 @@ export function PainterControls(): null {
 
   useEffect(() => {
     document.addEventListener("keydown", (e) => {
-      console.log(e.code);
+      if (e.ctrlKey) {
+        if (e.code === "KeyZ") {
+          history.undo();
+        }
+        if (e.code === "KeyY") {
+          history.redo();
+        }
+      }
     });
     gl.domElement.addEventListener("pointerdown", (e) => {
       const toolMouse = mouse
@@ -140,7 +150,8 @@ export function PainterControls(): null {
         panMouse,
         controls,
         setControls,
-        drawingLayer
+        drawingLayer,
+        history
       );
     } else {
       tool.frameCallback(
@@ -149,7 +160,8 @@ export function PainterControls(): null {
         tool.name === "Pan" ? panMouse : toolMouse,
         controls,
         setControls,
-        drawingLayer
+        drawingLayer,
+        history
       );
     }
   });
