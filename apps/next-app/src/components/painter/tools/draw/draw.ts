@@ -14,9 +14,13 @@ class DrawAction extends CanvasAction {
   public readonly drawingLayer: DrawingLayer;
   public readonly segment: number;
   public readonly alpha: number;
+  public readonly effectedSegments: Set<number>;
+  public readonly drawnPoints: Set<string>;
 
   constructor(drawingLayer: DrawingLayer, segment: number, alpha: number) {
     super();
+    this.effectedSegments = new Set();
+    this.drawnPoints = new Set();
     this.alpha = alpha;
     this.segment = segment;
     this.paintedPoints = new Map();
@@ -85,15 +89,21 @@ export abstract class DrawTool extends Tool {
       if (!drawAction) {
         throw new Error("Draw action not initialized");
       }
+
       const fill = (pos: THREE.Vector2) => {
         const mapKey = `${pos.x},${pos.y}`;
+        const segment = drawingLayer.segment(pos.x, pos.y);
         if (!drawAction.paintedPoints.has(mapKey)) {
           drawAction.paintedPoints.set(mapKey, {
             pos,
-            segment: drawingLayer.segment(pos.x, pos.y),
+            segment: segment,
             alpha: drawingLayer.alpha(pos.x, pos.y),
           });
         }
+        if (segment !== -1 && segment !== drawingLayer.getActiveSegment()) {
+          drawAction.effectedSegments.add(segment);
+        }
+        drawAction.drawnPoints.add(mapKey);
         drawingLayer.setSegment(
           pos.x,
           pos.y,
@@ -129,6 +139,10 @@ export abstract class DrawTool extends Tool {
     } else {
       this.lastMousePos = null;
       if (this.drawAction) {
+        drawingLayer.recomputeSegments(
+          this.drawAction.effectedSegments,
+          this.drawAction.drawnPoints
+        );
         history.push(this.drawAction);
         this.drawAction = null;
       }

@@ -3,6 +3,7 @@
 import * as THREE from "three";
 import { createContext, useContext } from "react";
 import { kSubdivisionSize } from "./renderer";
+import { kDrawAlpha } from "./tools/draw/brush/brush";
 
 export class DrawingLayer {
   private readonly drawingUniforms: THREE.Uniform<THREE.DataTexture>[];
@@ -13,10 +14,10 @@ export class DrawingLayer {
   private activeSegment: number;
   private numSegments: number;
   private readonly segmentBuffer: Int32Array;
-  private segmentColorMap: Map<number, THREE.Color>;
+  private segmentMap: Map<number, { color: THREE.Color; points: Set<string> }>;
 
   constructor(pixelSize: THREE.Vector2) {
-    this.segmentColorMap = new Map();
+    this.segmentMap = new Map();
     this.activeSegment = 0;
     this.numSegments = 0;
     this.pixelSize = pixelSize;
@@ -38,6 +39,82 @@ export class DrawingLayer {
           )
         );
         this.drawingUniforms.push(drawingUniform);
+      }
+    }
+  }
+
+  public recomputeSegments(
+    segments: Set<number>,
+    writtenPoints: Set<string>
+  ): void {
+    for (let segment of segments) {
+      const segmentEntry = this.segmentMap.get(segment);
+      if (!segmentEntry) {
+        throw new Error("Segment not found");
+      }
+      let bfsStart: THREE.Vector2 | null = null;
+      let totalPoints = 0;
+      for (let point of segmentEntry.points) {
+        if (!writtenPoints.has(point)) {
+          totalPoints++;
+          bfsStart = new THREE.Vector2(
+            parseInt(point.split(",")[0]),
+            parseInt(point.split(",")[1])
+          );
+        }
+      }
+      if (!bfsStart) {
+        continue;
+      }
+
+      const otherPortion = new Set<string>();
+      for (let point of segmentEntry.points) {
+        if (!writtenPoints.has(point)) {
+          otherPortion.add(point);
+        }
+      }
+
+      let visited = new Set<string>();
+      let queue: THREE.Vector2[] = [bfsStart];
+      while (queue.length > 0) {
+        let current = queue.shift()!;
+        const stringPos = `${current.x},${current.y}`;
+        if (!visited.has(stringPos)) {
+          visited.add(stringPos);
+          otherPortion.delete(stringPos);
+
+          const neighbors: THREE.Vector2[] = [
+            new THREE.Vector2(current.x - 1, current.y),
+            new THREE.Vector2(current.x + 1, current.y),
+            new THREE.Vector2(current.x, current.y - 1),
+            new THREE.Vector2(current.x, current.y + 1),
+          ];
+
+          for (let neighbor of neighbors) {
+            const stringNeighbor = `${neighbor.x},${neighbor.y}`;
+            if (
+              segmentEntry.points.has(stringNeighbor) &&
+              !writtenPoints.has(stringNeighbor) &&
+              !visited.has(stringNeighbor)
+            ) {
+              queue.push(neighbor);
+            }
+          }
+        }
+      }
+
+      if (visited.size < totalPoints) {
+        const newSegment = this.numSegments;
+        segmentEntry.points = otherPortion;
+        for (let point of visited) {
+          const pos = new THREE.Vector2(
+            parseInt(point.split(",")[0]),
+            parseInt(point.split(",")[1])
+          );
+          if (this.segment(pos.x, pos.y) === segment) {
+            this.setSegment(pos.x, pos.y, kDrawAlpha, newSegment);
+          }
+        }
       }
     }
   }
@@ -92,6 +169,12 @@ export class DrawingLayer {
     this.activeSegment = segment;
     const color = this.activeColor();
     const pos = new THREE.Vector2(x, y);
+    const segmentEntry = this.segmentMap.get(segment);
+    if (segmentEntry) {
+      segmentEntry.points.add(`${x},${y}`);
+    } else {
+      throw new Error("Segment not found");
+    }
     const section = this.section(x, y);
     const uniform = this.uniform(section.x, section.y);
     const sectionPos = pos
@@ -112,17 +195,20 @@ export class DrawingLayer {
   }
 
   private activeColor(): THREE.Color {
-    const color = this.segmentColorMap.get(this.activeSegment);
-    if (!color) {
+    const segment = this.segmentMap.get(this.activeSegment);
+    if (!segment) {
       const randomColor = new THREE.Color(
         Math.random(),
         Math.random(),
         Math.random()
       );
-      this.segmentColorMap.set(this.activeSegment, randomColor);
+      this.segmentMap.set(this.activeSegment, {
+        color: randomColor,
+        points: new Set(),
+      });
       return randomColor;
     }
-    return color;
+    return segment.color;
   }
 
   public uniform(j: number, i: number): THREE.Uniform<THREE.DataTexture> {
