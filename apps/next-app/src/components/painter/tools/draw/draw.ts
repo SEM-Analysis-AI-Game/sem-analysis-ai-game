@@ -6,55 +6,11 @@ import { Dispatch, SetStateAction } from "react";
 import { ActionHistory } from "../../action-history";
 import { CanvasAction } from "../../action";
 
-class DrawAction extends CanvasAction {
-  public readonly paintedPoints: Map<
-    string,
-    { pos: THREE.Vector2; segment: number; alpha: number }
-  >;
-  public readonly drawingLayer: DrawingLayer;
-  public readonly segment: number;
-  public readonly alpha: number;
-  public readonly effectedSegments: Set<number>;
-  public readonly drawnPoints: Set<string>;
-
-  constructor(drawingLayer: DrawingLayer, segment: number, alpha: number) {
-    super();
-    this.effectedSegments = new Set();
-    this.drawnPoints = new Set();
-    this.alpha = alpha;
-    this.segment = segment;
-    this.paintedPoints = new Map();
-    this.drawingLayer = drawingLayer;
-  }
-
-  public redo(): void {
-    for (let entry of this.paintedPoints.entries()) {
-      this.drawingLayer.setSegment(
-        entry[1].pos.x,
-        entry[1].pos.y,
-        this.alpha,
-        this.segment
-      );
-    }
-  }
-
-  public undo(): void {
-    for (let entry of this.paintedPoints.entries()) {
-      this.drawingLayer.setSegment(
-        entry[1].pos.x,
-        entry[1].pos.y,
-        entry[1].alpha,
-        entry[1].segment
-      );
-    }
-  }
-}
-
 export abstract class DrawTool extends Tool {
   protected readonly alpha: number;
 
   private lastMousePos: THREE.Vector2 | null = null;
-  private drawAction: DrawAction | null = null;
+  private drawAction: CanvasAction | null = null;
 
   constructor(size: number, alpha: number) {
     super(size);
@@ -79,11 +35,7 @@ export abstract class DrawTool extends Tool {
   ): void {
     if (cursorDown && !zooming) {
       if (!this.drawAction) {
-        this.drawAction = new DrawAction(
-          drawingLayer,
-          this.alpha === 0.0 ? -1 : drawingLayer.getActiveSegment(),
-          this.alpha
-        );
+        this.drawAction = new CanvasAction(drawingLayer);
       }
       const drawAction = this.drawAction;
       if (!drawAction) {
@@ -93,23 +45,22 @@ export abstract class DrawTool extends Tool {
       const fill = (pos: THREE.Vector2) => {
         const mapKey = `${pos.x},${pos.y}`;
         const segment = drawingLayer.segment(pos.x, pos.y);
+        const drawSegment =
+          this.alpha === 0 ? -1 : drawingLayer.getActiveSegment();
         if (!drawAction.paintedPoints.has(mapKey)) {
           drawAction.paintedPoints.set(mapKey, {
             pos,
-            segment: segment,
-            alpha: drawingLayer.alpha(pos.x, pos.y),
+            newSegment: drawSegment,
+            oldSegment: segment,
+            oldAlpha: drawingLayer.alpha(pos.x, pos.y),
+            newAlpha: this.alpha,
           });
         }
         if (segment !== -1 && segment !== drawingLayer.getActiveSegment()) {
           drawAction.effectedSegments.add(segment);
         }
         drawAction.drawnPoints.add(mapKey);
-        drawingLayer.setSegment(
-          pos.x,
-          pos.y,
-          this.alpha,
-          this.alpha === 0 ? -1 : drawingLayer.getActiveSegment()
-        );
+        drawingLayer.setSegment(pos.x, pos.y, this.alpha, drawSegment);
       };
 
       this.paint({
@@ -139,10 +90,7 @@ export abstract class DrawTool extends Tool {
     } else {
       this.lastMousePos = null;
       if (this.drawAction) {
-        drawingLayer.recomputeSegments(
-          this.drawAction.effectedSegments,
-          this.drawAction.drawnPoints
-        );
+        drawingLayer.recomputeSegments(this.drawAction);
         history.push(this.drawAction);
         this.drawAction = null;
       }

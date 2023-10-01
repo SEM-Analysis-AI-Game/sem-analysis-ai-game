@@ -3,28 +3,28 @@
 import { createContext, useContext, useMemo } from "react";
 import { CanvasAction } from "./action";
 
-class EmptyAction extends CanvasAction {
-  public undo(): void {
-    throw new Error("Method not implemented.");
-  }
-  public redo(): void {
-    throw new Error("Method not implemented.");
-  }
+abstract class Node<T> {
+  public next: Node<T> | null;
+  public prev: Node<T> | null;
 
+  public data: T | null;
+
+  constructor() {
+    this.next = null;
+    this.prev = null;
+    this.data = null;
+  }
+}
+
+class Head<T> extends Node<T> {
   constructor() {
     super();
   }
 }
 
-class Node<T> {
-  public next: Node<T> | null;
-  public prev: Node<T> | null;
-
-  public data: T;
-
+class DataNode<T> extends Node<T> {
   constructor(data: T) {
-    this.next = null;
-    this.prev = null;
+    super();
     this.data = data;
   }
 }
@@ -35,26 +35,34 @@ export class ActionHistory {
   private current: Node<CanvasAction>;
 
   constructor() {
-    this.head = new Node(new EmptyAction());
+    this.head = new Head();
     this.current = this.head;
   }
 
   public undo(): void {
     if (this.current.prev) {
-      this.current.data.undo();
-      this.current = this.current.prev;
+      if (this.current.data) {
+        this.current.data.undo();
+        this.current = this.current.prev;
+      } else {
+        throw new Error("No data");
+      }
     }
   }
 
   public redo(): void {
     if (this.current.next) {
       this.current = this.current.next;
-      this.current.data.redo();
+      if (this.current.data) {
+        this.current.data.redo();
+      } else {
+        throw new Error("No data");
+      }
     }
   }
 
   public push(action: CanvasAction): void {
-    const node = new Node(action);
+    const node = new DataNode(action);
     node.prev = this.current;
     this.current.next = node;
     this.current = node;
