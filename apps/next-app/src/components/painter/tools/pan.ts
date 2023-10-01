@@ -3,6 +3,7 @@ import { Tool } from "./tool";
 import { Controls } from "../controls";
 import { DrawingLayer } from "../drawing-layer";
 import { Dispatch, SetStateAction } from "react";
+import { ActionHistory } from "../action-history";
 
 export const kPanMultiplier = 3.5;
 
@@ -21,7 +22,8 @@ export class PanTool extends Tool {
     mousePos: THREE.Vector2,
     controls: Controls,
     setControls: Dispatch<SetStateAction<Controls>>,
-    drawingLayer: DrawingLayer
+    drawingLayer: DrawingLayer,
+    history: ActionHistory
   ): void {
     if (cursorDown && this.anchor) {
       const maxPan = new THREE.Vector2(1, 1)

@@ -3,14 +3,12 @@
 import * as THREE from "three";
 import { createContext, useContext } from "react";
 import { kSubdivisionSize } from "./renderer";
-import { ActionHistory } from "./action";
 
 export class DrawingLayer {
   private readonly drawingUniforms: THREE.Uniform<THREE.DataTexture>[];
   public readonly pixelSize: THREE.Vector2;
   public readonly trailing: THREE.Vector2;
   public readonly numSections: THREE.Vector2;
-  public readonly history: ActionHistory;
 
   private activeSegment: number;
   private numSegments: number;
@@ -18,7 +16,6 @@ export class DrawingLayer {
   private segmentColorMap: Map<number, THREE.Color>;
 
   constructor(pixelSize: THREE.Vector2) {
-    this.history = new ActionHistory();
     this.segmentColorMap = new Map();
     this.activeSegment = 0;
     this.numSegments = 0;
@@ -62,6 +59,21 @@ export class DrawingLayer {
     return this.segmentBuffer[y * this.pixelSize.x + x];
   }
 
+  public section(x: number, y: number): THREE.Vector2 {
+    return new THREE.Vector2(x, y).divideScalar(kSubdivisionSize).floor();
+  }
+
+  public alpha(x: number, y: number): number {
+    const section = this.section(x, y);
+    const sectionPos = new THREE.Vector2(x, y)
+      .sub(section.clone().multiplyScalar(kSubdivisionSize))
+      .floor();
+    const sectionSize = this.sectionSize(section.x, section.y);
+    const pixelIndex = (sectionPos.y * sectionSize.x + sectionPos.x) * 4;
+    const data = this.uniform(section.x, section.y).value.image.data;
+    return data[pixelIndex + 3] / 255.0;
+  }
+
   public sectionSize(j: number, i: number): THREE.Vector2 {
     return new THREE.Vector2(
       j === this.numSections.x ? this.trailing.x : kSubdivisionSize,
@@ -80,7 +92,7 @@ export class DrawingLayer {
     this.activeSegment = segment;
     const color = this.activeColor();
     const pos = new THREE.Vector2(x, y);
-    const section = pos.clone().divideScalar(kSubdivisionSize).floor();
+    const section = this.section(x, y);
     const uniform = this.uniform(section.x, section.y);
     const sectionPos = pos
       .clone()
