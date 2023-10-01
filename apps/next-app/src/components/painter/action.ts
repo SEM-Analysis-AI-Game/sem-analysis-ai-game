@@ -21,26 +21,4 @@ export class CanvasAction {
     this.paintedPoints = new Map();
     this.drawingLayer = drawingLayer;
   }
-
-  public redo(): void {
-    for (let entry of this.paintedPoints.entries()) {
-      this.drawingLayer.setSegment(
-        entry[1].pos.x,
-        entry[1].pos.y,
-        entry[1].newAlpha,
-        entry[1].newSegment
-      );
-    }
-  }
-
-  public undo(): void {
-    for (let entry of this.paintedPoints.entries()) {
-      this.drawingLayer.setSegment(
-        entry[1].pos.x,
-        entry[1].pos.y,
-        entry[1].oldAlpha,
-        entry[1].oldSegment
-      );
-    }
-  }
 }
