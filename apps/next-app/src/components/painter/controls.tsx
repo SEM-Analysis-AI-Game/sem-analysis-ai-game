@@ -32,7 +32,7 @@ export type Controls = {
 };
 
 export function PainterControls(): null {
-  const { mouse, gl } = useThree();
+  const { mouse, gl, size } = useThree();
 
   const [controls, setControls] = useControls();
 
@@ -47,13 +47,21 @@ export function PainterControls(): null {
   usePinch(
     (e) => {
       const zoom = e.offset[0];
+      const origin = new THREE.Vector2(
+        e.origin[0] - size.left,
+        e.origin[1] - size.top
+      )
+        .divide(new THREE.Vector2(size.width, size.height))
+        .subScalar(0.5)
+        .multiplyScalar(2.0);
+      origin.setY(-origin.y);
       const panBounds = new THREE.Vector2(1.0, 1.0).subScalar(
         1.0 / Math.sqrt(zoom)
       );
       setControls((controls) => ({
         zooming: e.pinching || false,
         zoom,
-        pan: mouse
+        pan: origin
           .clone()
           .divideScalar(zoom)
           .multiplyScalar(Math.max((zoom - controls.zoom) * 0.5, 0))
