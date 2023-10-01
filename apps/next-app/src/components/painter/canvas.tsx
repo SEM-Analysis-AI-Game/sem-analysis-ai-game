@@ -2,7 +2,7 @@
 
 import * as THREE from "three";
 import { Canvas } from "@react-three/fiber";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ControlsContext, PainterControls } from "./controls";
 import { PainterRenderer } from "./renderer";
 import { useBackground } from "./background-loader";
@@ -21,10 +21,19 @@ export function PainterCanvas(): JSX.Element {
     throw new Error("No background found");
   }
 
+  const [firstRender, setFirstRender] = useState(true);
+
   const history = useActionHistory();
 
+  useEffect(() => {
+    if (!firstRender) {
+      history.clear();
+    } else {
+      setFirstRender(false);
+    }
+  }, [background]);
+
   const [screenSize, drawingLayer] = useMemo(() => {
-    history.clear();
     const backgroundResolution = new THREE.Vector2(
       background.image.width,
       background.image.height

@@ -92,6 +92,8 @@ export function PainterControls(): null {
     }
   );
 
+  const [activeSegment, setActiveSegment] = useState(0);
+
   useEffect(() => {
     document.addEventListener("keydown", (e) => {
       if (e.ctrlKey) {
@@ -114,7 +116,13 @@ export function PainterControls(): null {
           .multiply(drawingLayer.pixelSize)
           .floor();
         if (!cursorDown) {
-          drawingLayer.updateActiveSegment(toolMouse.x, toolMouse.y);
+          const segment = drawingLayer.segment(toolMouse.x, toolMouse.y);
+          if (segment === -1) {
+            drawingLayer.incrementSegments();
+          }
+          setActiveSegment(
+            segment === -1 ? drawingLayer.getNumSegments() : segment
+          );
         }
         setCursorDown(true);
         setShiftDown(e.shiftKey);
@@ -154,7 +162,8 @@ export function PainterControls(): null {
         controls,
         setControls,
         drawingLayer,
-        history
+        history,
+        activeSegment
       );
     } else {
       tool.frameCallback(
@@ -164,7 +173,8 @@ export function PainterControls(): null {
         controls,
         setControls,
         drawingLayer,
-        history
+        history,
+        activeSegment
       );
     }
   });

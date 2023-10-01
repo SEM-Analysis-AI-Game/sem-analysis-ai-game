@@ -22,7 +22,8 @@ export abstract class Tool {
     controls: Controls,
     setControls: Dispatch<SetStateAction<Controls>>,
     drawingLayer: DrawingLayer,
-    history: ActionHistory
+    history: ActionHistory,
+    activeSegment: number
   ): void;
 
   constructor(size: number) {
