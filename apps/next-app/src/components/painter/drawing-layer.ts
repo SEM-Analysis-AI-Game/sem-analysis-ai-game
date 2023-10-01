@@ -3,12 +3,14 @@
 import * as THREE from "three";
 import { createContext, useContext } from "react";
 import { kSubdivisionSize } from "./renderer";
+import { ActionHistory } from "./action";
 
 export class DrawingLayer {
   private readonly drawingUniforms: THREE.Uniform<THREE.DataTexture>[];
   public readonly pixelSize: THREE.Vector2;
   public readonly trailing: THREE.Vector2;
   public readonly numSections: THREE.Vector2;
+  public readonly history: ActionHistory;
 
   private activeSegment: number;
   private numSegments: number;
@@ -16,6 +18,7 @@ export class DrawingLayer {
   private segmentColorMap: Map<number, THREE.Color>;
 
   constructor(pixelSize: THREE.Vector2) {
+    this.history = new ActionHistory();
     this.segmentColorMap = new Map();
     this.activeSegment = 0;
     this.numSegments = 0;
@@ -42,13 +45,21 @@ export class DrawingLayer {
     }
   }
 
+  public getActiveSegment(): number {
+    return this.activeSegment;
+  }
+
   public updateActiveSegment(x: number, y: number): void {
-    const segment = this.segmentBuffer[y * this.pixelSize.x + x];
+    const segment = this.segment(x, y);
     if (segment === -1) {
       this.activeSegment = this.numSegments;
     } else {
       this.activeSegment = segment;
     }
+  }
+
+  public segment(x: number, y: number): number {
+    return this.segmentBuffer[y * this.pixelSize.x + x];
   }
 
   public sectionSize(j: number, i: number): THREE.Vector2 {
@@ -58,29 +69,34 @@ export class DrawingLayer {
     );
   }
 
-  public drawPoints(points: { pos: THREE.Vector2; alpha: number }[]): void {
-    for (let pointIndex = 0; pointIndex < points.length; pointIndex++) {
-      const point = points[pointIndex];
-      const section = point.pos.clone().divideScalar(kSubdivisionSize).floor();
-      const uniform = this.uniform(section.x, section.y);
-      const sectionPos = point.pos
-        .clone()
-        .sub(section.clone().multiplyScalar(kSubdivisionSize));
-      const sectionSize = this.sectionSize(section.x, section.y);
-      const pixelIndex = (sectionPos.y * sectionSize.x + sectionPos.x) * 4;
-      const data = uniform.value.image.data;
-      const color = this.activeColor();
-      data[pixelIndex] = color.r * 255;
-      data[pixelIndex + 1] = color.g * 255;
-      data[pixelIndex + 2] = color.b * 255;
-      data[pixelIndex + 3] = point.alpha * 255;
-      uniform.value.needsUpdate = true;
-      this.segmentBuffer[point.pos.y * this.pixelSize.x + point.pos.x] =
-        this.activeSegment;
-      if (this.activeSegment === this.numSegments) {
-        this.numSegments++;
-      }
+  public setSegment(
+    x: number,
+    y: number,
+    alpha: number,
+    segment: number
+  ): void {
+    this.segmentBuffer[y * this.pixelSize.x + x] = segment;
+    const oldActiveSegment = this.activeSegment;
+    this.activeSegment = segment;
+    const color = this.activeColor();
+    const pos = new THREE.Vector2(x, y);
+    const section = pos.clone().divideScalar(kSubdivisionSize).floor();
+    const uniform = this.uniform(section.x, section.y);
+    const sectionPos = pos
+      .clone()
+      .sub(section.clone().multiplyScalar(kSubdivisionSize));
+    const sectionSize = this.sectionSize(section.x, section.y);
+    const pixelIndex = (sectionPos.y * sectionSize.x + sectionPos.x) * 4;
+    const data = uniform.value.image.data;
+    data[pixelIndex] = color.r * 255;
+    data[pixelIndex + 1] = color.g * 255;
+    data[pixelIndex + 2] = color.b * 255;
+    data[pixelIndex + 3] = alpha * 255;
+    uniform.value.needsUpdate = true;
+    if (this.activeSegment === this.numSegments) {
+      this.numSegments++;
     }
+    this.activeSegment = oldActiveSegment;
   }
 
   private activeColor(): THREE.Color {
