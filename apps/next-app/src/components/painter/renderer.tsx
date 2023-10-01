@@ -1,6 +1,6 @@
 import * as THREE from "three";
-import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useMemo } from "react";
+import { useFrame, useThree } from "@react-three/fiber";
 import { EffectComposer, ShaderPass } from "three-stdlib";
 import { useControls } from "./controls";
 import { useBackground } from "./background-loader";

@@ -1,5 +1,4 @@
 import * as THREE from "three";
-import { useFrame, useThree } from "@react-three/fiber";
 import {
   Dispatch,
   SetStateAction,
@@ -9,10 +8,11 @@ import {
   useMemo,
   useState,
 } from "react";
+import { useFrame, useThree } from "@react-three/fiber";
 import { usePinch } from "@use-gesture/react";
 import { useDrawingLayer } from "./drawing-layer";
 import { useTool } from "./tools";
-import { PanTool, kPanMultiplier } from "./tools/pan";
+import { PanTool, kPanMultiplier } from "./tools";
 import { useActionHistory } from "./action-history";
 
 export const ControlsContext = createContext<

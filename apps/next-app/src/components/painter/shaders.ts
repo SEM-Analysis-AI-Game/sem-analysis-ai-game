@@ -1,4 +1,4 @@
-import { kPanMultiplier } from "./tools/pan";
+import { kPanMultiplier } from "./tools";
 
 export const vertexShader = `
 varying vec3 vUv;
