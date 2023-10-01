@@ -20,6 +20,7 @@ export abstract class Tool {
     zooming: boolean,
     previousMousePos: THREE.Vector2,
     mousePos: THREE.Vector2,
+    controls: Controls,
     setControls: Dispatch<SetStateAction<Controls>>,
     drawingLayer: DrawingLayer
   ): void;
