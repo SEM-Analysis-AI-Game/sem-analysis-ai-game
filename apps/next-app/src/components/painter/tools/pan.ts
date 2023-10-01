@@ -24,17 +24,27 @@ export class PanTool extends Tool {
     drawingLayer: DrawingLayer
   ): void {
     if (cursorDown && this.anchor) {
-      const maxPan = new THREE.Vector2(1, 1)
-        .subScalar(1.0 / Math.sqrt(controls.zoom))
-        .divideScalar(kPanMultiplier);
-      setControls({
-        ...controls,
-        pan: controls.pan
-          .clone()
-          .add(this.anchor.clone().sub(mousePos).divide(drawingLayer.pixelSize))
-          .clamp(maxPan.clone().negate(), maxPan),
-      });
+      applyPan(controls, setControls, mousePos, this.anchor, drawingLayer);
     }
     this.anchor = mousePos.clone();
   }
+}
+
+export function applyPan(
+  controls: Controls,
+  setControls: Dispatch<SetStateAction<Controls>>,
+  mousePos: THREE.Vector2,
+  anchor: THREE.Vector2,
+  drawingLayer: DrawingLayer
+): void {
+  const maxPan = new THREE.Vector2(1, 1)
+    .subScalar(1.0 / Math.sqrt(controls.zoom))
+    .divideScalar(kPanMultiplier);
+  setControls({
+    ...controls,
+    pan: controls.pan
+      .clone()
+      .add(anchor.clone().sub(mousePos).divide(drawingLayer.pixelSize))
+      .clamp(maxPan.clone().negate(), maxPan),
+  });
 }
