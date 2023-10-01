@@ -1,14 +1,15 @@
 import * as THREE from "three";
-import { useThree } from "@react-three/fiber";
+import { useFrame, useThree } from "@react-three/fiber";
 import {
   Dispatch,
   SetStateAction,
   createContext,
   useContext,
+  useEffect,
   useMemo,
   useState,
 } from "react";
-import { useDrag, usePinch } from "@use-gesture/react";
+import { usePinch } from "@use-gesture/react";
 import { useDrawingLayer } from "./drawing-layer";
 import { useTool } from "./tools";
 import { PanTool, kPanMultiplier } from "./tools/pan";
@@ -40,6 +41,7 @@ export function PainterControls(): null {
   const [zooming, setZooming] = useState(false);
 
   const [cursorDown, setCursorDown] = useState(false);
+  const [shiftDown, setShiftDown] = useState(false);
 
   const [tool] = useTool();
 
@@ -87,16 +89,11 @@ export function PainterControls(): null {
     }
   );
 
-  useDrag(
-    (e) => {
-      const panMouse = mouse
-        .clone()
-        .divideScalar(Math.sqrt(controls.zoom))
-        .add(controls.pan)
-        .multiplyScalar(0.5)
-        .addScalar(0.5)
-        .multiply(drawingLayer.pixelSize)
-        .floor();
+  useEffect(() => {
+    document.addEventListener("keydown", (e) => {
+      console.log(e.code);
+    });
+    gl.domElement.addEventListener("pointerdown", (e) => {
       const toolMouse = mouse
         .clone()
         .divideScalar(Math.sqrt(controls.zoom))
@@ -105,37 +102,57 @@ export function PainterControls(): null {
         .addScalar(0.5)
         .multiply(drawingLayer.pixelSize)
         .floor();
-      if (!cursorDown && e.down) {
+      if (!cursorDown) {
         drawingLayer.updateActiveSegment(toolMouse.x, toolMouse.y);
       }
-      setCursorDown(e.down);
-      if (e.shiftKey) {
-        panTool.frameCallback(
-          cursorDown,
-          zooming,
-          panMouse,
-          controls,
-          setControls,
-          drawingLayer
-        );
-      } else {
-        tool.frameCallback(
-          cursorDown,
-          zooming,
-          tool.name === "Pan" ? panMouse : toolMouse,
-          controls,
-          setControls,
-          drawingLayer
-        );
-      }
-    },
-    {
-      pointer: {
-        touch: true,
-      },
-      target: gl.domElement,
+      setCursorDown(true);
+      setShiftDown(e.shiftKey);
+    });
+    gl.domElement.addEventListener("pointerup", () => {
+      setCursorDown(false);
+    });
+    gl.domElement.addEventListener("pointerleave", (e) => {
+      setCursorDown(false);
+    });
+  }, []);
+
+  useFrame(() => {
+    const panMouse = mouse
+      .clone()
+      .divideScalar(Math.sqrt(controls.zoom))
+      .add(controls.pan)
+      .multiplyScalar(0.5)
+      .addScalar(0.5)
+      .multiply(drawingLayer.pixelSize)
+      .floor();
+    const toolMouse = mouse
+      .clone()
+      .divideScalar(Math.sqrt(controls.zoom))
+      .add(controls.pan.clone().multiplyScalar(kPanMultiplier))
+      .multiplyScalar(0.5)
+      .addScalar(0.5)
+      .multiply(drawingLayer.pixelSize)
+      .floor();
+    if (shiftDown) {
+      panTool.frameCallback(
+        cursorDown,
+        zooming,
+        panMouse,
+        controls,
+        setControls,
+        drawingLayer
+      );
+    } else {
+      tool.frameCallback(
+        cursorDown,
+        zooming,
+        tool.name === "Pan" ? panMouse : toolMouse,
+        controls,
+        setControls,
+        drawingLayer
+      );
     }
-  );
+  });
 
   return null;
 }
