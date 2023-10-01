@@ -11,7 +11,7 @@ import {
 } from "./shaders";
 import { useDrawingLayer } from "./drawing-layer";
 
-export const kSubdivisionSize = 512;
+export const kSubdivisionSize = 256;
 
 export function PainterRenderer(): null {
   const { gl } = useThree();

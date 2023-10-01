@@ -8,9 +8,6 @@ import { PainterRenderer } from "./renderer";
 import { useBackground } from "./background-loader";
 import { DrawingLayer, DrawingLayerContext } from "./drawing-layer";
 
-const kCanvasWidth = 2 / 3;
-const kCanvasHeight = 9 / 10;
-
 const kInitialControls = {
   zoom: 1.0,
   pan: new THREE.Vector2(),
@@ -30,8 +27,8 @@ export function PainterCanvas(): JSX.Element {
     );
 
     const maxDim = Math.max(
-      background.image.width / (window.innerWidth * kCanvasWidth),
-      background.image.height / (window.innerHeight * kCanvasHeight)
+      background.image.width / window.innerWidth,
+      background.image.height / window.innerHeight
     );
     const inverse = Math.min(1.0 / maxDim, 1.0);
     const canvasSize = backgroundResolution

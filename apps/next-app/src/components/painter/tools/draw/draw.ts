@@ -98,7 +98,7 @@ export abstract class DrawTool extends Tool {
           pos.x,
           pos.y,
           this.alpha,
-          drawingLayer.getActiveSegment()
+          this.alpha === 0 ? -1 : drawingLayer.getActiveSegment()
         );
       };
 
