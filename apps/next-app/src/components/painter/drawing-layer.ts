@@ -45,6 +45,7 @@ export class DrawingLayer {
   }
 
   public recomputeSegments(action: CanvasAction): void {
+    let splitSegment = false;
     for (let segment of action.effectedSegments) {
       const segmentEntry = this.segmentMap.get(segment);
       if (!segmentEntry) {
@@ -119,10 +120,15 @@ export class DrawingLayer {
                 newAlpha: kDrawAlpha,
               });
             }
+            action.effectedSegments.add(segment);
+            splitSegment = true;
             this.setSegment(pos.x, pos.y, kDrawAlpha, newSegment);
           }
         }
       }
+    }
+    if (splitSegment) {
+      this.recomputeSegments(action);
     }
   }
 
@@ -204,11 +210,36 @@ export class DrawingLayer {
   private activeColor(): THREE.Color {
     const segment = this.segmentMap.get(this.activeSegment);
     if (!segment) {
-      const randomColor = new THREE.Color(
+      let randomColor = new THREE.Color(
         Math.random(),
         Math.random(),
         Math.random()
       );
+      let foundColor = false;
+      while (!foundColor) {
+        foundColor = true;
+        for (let i = 0; i < this.numSegments && foundColor; i++) {
+          const checkSegment = this.segmentMap.get(i);
+          if (checkSegment) {
+            if (
+              new THREE.Vector3(
+                checkSegment.color.r,
+                checkSegment.color.g,
+                checkSegment.color.b
+              ).distanceTo(
+                new THREE.Vector3(randomColor.r, randomColor.g, randomColor.b)
+              ) < 0.1
+            ) {
+              randomColor = new THREE.Color(
+                Math.random(),
+                Math.random(),
+                Math.random()
+              );
+              foundColor = false;
+            }
+          }
+        }
+      }
       this.segmentMap.set(this.activeSegment, {
         color: randomColor,
         points: new Set(),
