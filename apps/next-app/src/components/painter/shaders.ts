@@ -35,7 +35,9 @@ varying vec3 vUv;
 void main() {
     gl_FragColor = vec4(0.0);
 
-    vec2 transformedCoords = ((vUv.xy / sqrt(zoom)) + pan) * 0.5 + 0.5;
+    vec2 transformedCoords = ((vUv.xy / sqrt(zoom)) + pan * ${kPanMultiplier.toFixed(
+      1
+    )}) * 0.5 + 0.5;
     vec2 min = vec2(float(${position.x}), float(${position.y}));
     vec2 max = min + vec2(float(${size.x}), float(${size.y}));
 

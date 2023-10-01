@@ -94,8 +94,11 @@ export function PainterRenderer(): null {
 
   useEffect(() => {
     panUniform.value = controls.pan;
+  }, [controls.pan]);
+
+  useEffect(() => {
     zoomUniform.value = controls.zoom;
-  }, [controls]);
+  }, [controls.zoom]);
 
   return useFrame(() => {
     gl.clear();

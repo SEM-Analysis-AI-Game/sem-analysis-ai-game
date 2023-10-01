@@ -9,6 +9,8 @@ export const kPanMultiplier = 3.5;
 export class PanTool extends Tool {
   readonly name = "Pan";
 
+  private anchor: THREE.Vector2 | null = null;
+
   constructor(color: THREE.Color, size: number) {
     super(color, size);
   }
@@ -16,13 +18,12 @@ export class PanTool extends Tool {
   public frameCallback(
     cursorDown: boolean,
     zooming: boolean,
-    previousMousePos: THREE.Vector2,
     mousePos: THREE.Vector2,
     controls: Controls,
     setControls: Dispatch<SetStateAction<Controls>>,
     drawingLayer: DrawingLayer
   ): void {
-    if (cursorDown) {
+    if (cursorDown && this.anchor) {
       const maxPan = new THREE.Vector2(1, 1)
         .subScalar(1.0 / Math.sqrt(controls.zoom))
         .divideScalar(kPanMultiplier);
@@ -30,14 +31,10 @@ export class PanTool extends Tool {
         ...controls,
         pan: controls.pan
           .clone()
-          .add(
-            previousMousePos
-              .clone()
-              .sub(mousePos)
-              .divide(drawingLayer.pixelSize)
-          )
+          .add(this.anchor.clone().sub(mousePos).divide(drawingLayer.pixelSize))
           .clamp(maxPan.clone().negate(), maxPan),
       });
     }
+    this.anchor = mousePos.clone();
   }
 }
