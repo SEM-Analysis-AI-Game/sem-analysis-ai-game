@@ -5,12 +5,13 @@ import {
   SetStateAction,
   createContext,
   useContext,
+  useMemo,
   useState,
 } from "react";
 import { useDrag, usePinch } from "@use-gesture/react";
 import { useDrawingLayer } from "./drawing-layer";
 import { useTool } from "./tools";
-import { kPanMultiplier } from "./tools/pan";
+import { PanTool, kPanMultiplier } from "./tools/pan";
 
 export const ControlsContext = createContext<
   [Controls, Dispatch<SetStateAction<Controls>>] | null
@@ -41,6 +42,10 @@ export function PainterControls(): null {
   const [cursorDown, setCursorDown] = useState(false);
 
   const [tool] = useTool();
+
+  const panTool = useMemo(() => {
+    return new PanTool(0);
+  }, []);
 
   const drawingLayer = useDrawingLayer();
 
@@ -84,31 +89,45 @@ export function PainterControls(): null {
 
   useDrag(
     (e) => {
-      const newMouse = mouse
+      const panMouse = mouse
         .clone()
         .divideScalar(Math.sqrt(controls.zoom))
-        .add(
-          // This is kind of a hack to fix a strange bug with pan.
-          tool.name === "Pan"
-            ? controls.pan
-            : controls.pan.clone().multiplyScalar(kPanMultiplier)
-        )
+        .add(controls.pan)
+        .multiplyScalar(0.5)
+        .addScalar(0.5)
+        .multiply(drawingLayer.pixelSize)
+        .floor();
+      const toolMouse = mouse
+        .clone()
+        .divideScalar(Math.sqrt(controls.zoom))
+        .add(controls.pan.clone().multiplyScalar(kPanMultiplier))
         .multiplyScalar(0.5)
         .addScalar(0.5)
         .multiply(drawingLayer.pixelSize)
         .floor();
       if (!cursorDown && e.down) {
-        drawingLayer.updateActiveSegment(newMouse.x, newMouse.y);
+        drawingLayer.updateActiveSegment(toolMouse.x, toolMouse.y);
       }
       setCursorDown(e.down);
-      tool.frameCallback(
-        cursorDown,
-        zooming,
-        newMouse,
-        controls,
-        setControls,
-        drawingLayer
-      );
+      if (e.touches > 1 || e.shiftKey) {
+        panTool.frameCallback(
+          cursorDown,
+          zooming,
+          panMouse,
+          controls,
+          setControls,
+          drawingLayer
+        );
+      } else {
+        tool.frameCallback(
+          cursorDown,
+          zooming,
+          tool.name === "Pan" ? panMouse : toolMouse,
+          controls,
+          setControls,
+          drawingLayer
+        );
+      }
     },
     {
       pointer: {
