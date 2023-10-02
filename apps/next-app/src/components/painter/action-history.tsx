@@ -47,13 +47,9 @@ export class ActionHistory {
   public undo(): void {
     if (this.current.prev) {
       if (this.current.data) {
-        for (let entry of this.current.data.paintedPoints.entries()) {
-          this.current.data.drawingLayer.setSegment(
-            entry[1].pos.x,
-            entry[1].pos.y,
-            entry[1].oldSegment
-          );
-        }
+        this.current.data.paintedPoints.forEach((x, y, data) => {
+          this.current.data?.drawingLayer.setSegment(x, y, data.oldSegment);
+        });
         this.current = this.current.prev;
       } else {
         throw new Error("No data");
@@ -65,13 +61,9 @@ export class ActionHistory {
     if (this.current.next) {
       this.current = this.current.next;
       if (this.current.data) {
-        for (let entry of this.current.data.paintedPoints.entries()) {
-          this.current.data.drawingLayer.setSegment(
-            entry[1].pos.x,
-            entry[1].pos.y,
-            entry[1].newSegment
-          );
-        }
+        this.current.data.paintedPoints.forEach((x, y, data) => {
+          this.current.data?.drawingLayer.setSegment(x, y, data.newSegment);
+        });
       } else {
         throw new Error("No data");
       }
