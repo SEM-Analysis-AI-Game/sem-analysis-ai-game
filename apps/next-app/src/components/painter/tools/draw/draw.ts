@@ -49,7 +49,6 @@ export abstract class DrawTool extends Tool {
         const drawSegment = this.drawingSegment(activeSegment);
         if (!drawAction.paintedPoints.hasPoint(pos.x, pos.y)) {
           drawAction.paintedPoints.setPoint(pos.x, pos.y, {
-            pos,
             newSegment: drawSegment,
             oldSegment: oldSegment,
           });
