@@ -73,22 +73,19 @@ export class DrawingLayer {
       if (!segmentEntry) {
         throw new Error("Segment not found");
       }
+      const otherPortion = new PointContainer();
       let bfsStart: THREE.Vector2 | null = null;
       let totalPoints = 0;
       segmentEntry.points.forEach((x, y) => {
         if (!action.paintedPoints.hasPoint(x, y)) {
           totalPoints++;
-          bfsStart = new THREE.Vector2(x, y);
+          if (!bfsStart) {
+            bfsStart = new THREE.Vector2(x, y);
+          }
+          otherPortion.setPoint(x, y, null);
         }
       });
       if (bfsStart) {
-        const otherPortion = new PointContainer();
-        segmentEntry.points.forEach((x, y) => {
-          if (!action.paintedPoints.hasPoint(x, y)) {
-            otherPortion.setPoint(x, y, null);
-          }
-        });
-
         let visited = new PointContainer();
         let queue: BFSNode | null = {
           data: bfsStart,
@@ -128,11 +125,9 @@ export class DrawingLayer {
             if (!action.paintedPoints.hasPoint(x, y)) {
               action.paintedPoints.setPoint(x, y, {
                 newSegment,
-                pos: new THREE.Vector2(x, y),
                 oldSegment: segment,
               });
             }
-            action.effectedSegments.add(segment);
             splitSegment = true;
             this.setSegment(x, y, newSegment);
           });
@@ -201,36 +196,11 @@ export class DrawingLayer {
   private segmentColor(segment: number): THREE.Color {
     const data = this.segmentMap.get(segment);
     if (!data) {
-      let randomColor = new THREE.Color(
+      const randomColor = new THREE.Color(
         Math.random(),
         Math.random(),
         Math.random()
       );
-      let foundColor = false;
-      while (!foundColor) {
-        foundColor = true;
-        for (let i = 0; i < this.numSegments && foundColor; i++) {
-          const checkSegment = this.segmentMap.get(i);
-          if (checkSegment) {
-            if (
-              new THREE.Vector3(
-                checkSegment.color.r,
-                checkSegment.color.g,
-                checkSegment.color.b
-              ).distanceTo(
-                new THREE.Vector3(randomColor.r, randomColor.g, randomColor.b)
-              ) < 0.075
-            ) {
-              randomColor = new THREE.Color(
-                Math.random(),
-                Math.random(),
-                Math.random()
-              );
-              foundColor = false;
-            }
-          }
-        }
-      }
       this.segmentMap.set(segment, {
         color: randomColor,
         points: new PointContainer(),

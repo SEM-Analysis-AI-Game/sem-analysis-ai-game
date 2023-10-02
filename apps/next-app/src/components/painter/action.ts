@@ -3,7 +3,6 @@ import { PointContainer } from "./point-container";
 
 export class CanvasAction {
   public readonly paintedPoints: PointContainer<{
-    pos: THREE.Vector2;
     oldSegment: number;
     newSegment: number;
   }>;
