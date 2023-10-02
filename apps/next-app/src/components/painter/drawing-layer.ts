@@ -7,6 +7,18 @@ import { CanvasAction } from "./action";
 import { kDrawAlpha } from "./tools";
 import { PointContainer } from "./point-container";
 
+type BFSNode = {
+  readonly data: THREE.Vector2;
+  next: BFSNode | null;
+};
+
+const kNeighbors: [number, number][] = [
+  [-1, 0],
+  [1, 0],
+  [0, -1],
+  [0, 1],
+];
+
 export class DrawingLayer {
   private readonly drawingUniforms: THREE.Uniform<THREE.DataTexture>[];
   public readonly pixelSize: THREE.Vector2;
@@ -78,30 +90,34 @@ export class DrawingLayer {
         });
 
         let visited = new PointContainer();
-        let queue: THREE.Vector2[] = [bfsStart];
-        while (queue.length > 0) {
-          const current = queue.shift()!;
+        let queue: BFSNode | null = {
+          data: bfsStart,
+          next: null,
+        };
+        let tail = queue;
+        while (queue) {
+          const current = queue.data;
           if (!visited.hasPoint(current.x, current.y)) {
             visited.setPoint(current.x, current.y, null);
             otherPortion.deletePoint(current.x, current.y);
 
-            const neighbors: THREE.Vector2[] = [
-              new THREE.Vector2(current.x - 1, current.y),
-              new THREE.Vector2(current.x + 1, current.y),
-              new THREE.Vector2(current.x, current.y - 1),
-              new THREE.Vector2(current.x, current.y + 1),
-            ];
-
-            for (let neighbor of neighbors) {
+            for (let neighbor of kNeighbors) {
+              const neighborX = neighbor[0] + current.x;
+              const neighborY = neighbor[1] + current.y;
               if (
-                segmentEntry.points.hasPoint(neighbor.x, neighbor.y) &&
-                !action.paintedPoints.hasPoint(neighbor.x, neighbor.y) &&
-                !visited.hasPoint(neighbor.x, neighbor.y)
+                segmentEntry.points.hasPoint(neighborX, neighborY) &&
+                !action.paintedPoints.hasPoint(neighborX, neighborY) &&
+                !visited.hasPoint(neighborX, neighborY)
               ) {
-                queue.push(neighbor);
+                tail.next = {
+                  data: new THREE.Vector2(neighborX, neighborY),
+                  next: null,
+                };
+                tail = tail.next;
               }
             }
           }
+          queue = queue.next;
         }
 
         if (visited.size() < totalPoints) {
