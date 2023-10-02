@@ -18,23 +18,43 @@ export const fillPixel = (
   data[cursorPixelIndex + 3] = alpha * 255;
 };
 
+export function createCirclePointsInCircle(diameter: number): THREE.Vector2[] {
+  const radius = Math.floor((diameter + 1) / 2);
+  const points: THREE.Vector2[] = [];
+  for (let x = -radius; x < radius; x++) {
+    for (let y = -radius; y < radius; y++) {
+      if (x * x + y * y <= radius * radius) {
+        points.push(new THREE.Vector2(x, y));
+      }
+    }
+  }
+  return points;
+}
+
 export function drawCircle(params: {
   fill: (pos: THREE.Vector2) => void;
   pos: THREE.Vector2;
   diameter: number;
   resolution: THREE.Vector2;
+  memoizedPoints: THREE.Vector2[];
 }) {
   const radius = Math.floor((params.diameter + 1) / 2);
   const minX = Math.max(-radius + 1, -params.pos.x);
   const minY = Math.max(-radius + 1, -params.pos.y);
   const maxX = Math.min(radius, params.resolution.width - params.pos.x);
   const maxY = Math.min(radius, params.resolution.height - params.pos.y);
-  for (let x = minX; x < maxX; x++) {
-    for (let y = minY; y < maxY; y++) {
-      if (x * x + y * y <= radius * radius) {
-        const pos = new THREE.Vector2(params.pos.x + x, params.pos.y + y);
-        params.fill(pos);
-      }
+  for (let point of params.memoizedPoints) {
+    if (
+      point.x >= minX &&
+      point.x < maxX &&
+      point.y >= minY &&
+      point.y < maxY
+    ) {
+      const pos = new THREE.Vector2(
+        params.pos.x + point.x,
+        params.pos.y + point.y
+      );
+      params.fill(pos);
     }
   }
 }

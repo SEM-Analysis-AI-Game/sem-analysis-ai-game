@@ -1,11 +1,13 @@
-import { drawCircle } from "../../utils";
+import { createCirclePointsInCircle, drawCircle } from "../../utils";
 import { Eraser } from "./eraser";
 
 export class CircleEraser extends Eraser {
   readonly name = "Circle Eraser";
+  private readonly memoizedPoints: THREE.Vector2[];
 
   constructor(diameter: number) {
     super(diameter);
+    this.memoizedPoints = createCirclePointsInCircle(diameter);
   }
 
   protected paint(params: {
@@ -17,6 +19,7 @@ export class CircleEraser extends Eraser {
     return drawCircle({
       ...params,
       diameter: this.size,
+      memoizedPoints: this.memoizedPoints,
     });
   }
 }
