@@ -86,7 +86,6 @@ export abstract class DrawTool extends Tool {
     } else {
       this.lastMousePos = null;
       if (this.drawAction) {
-        drawingLayer.recomputeSegments(this.drawAction);
         history.push(this.drawAction);
         this.drawAction = null;
       }
