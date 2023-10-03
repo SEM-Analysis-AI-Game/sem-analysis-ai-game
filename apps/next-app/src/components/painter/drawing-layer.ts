@@ -12,6 +12,8 @@ type BFSNode = {
   next: BFSNode | null;
 };
 
+const kBorderAlphaBoost = 0.5;
+
 export class DrawingLayer {
   private readonly drawingUniforms: THREE.Uniform<THREE.DataTexture>[];
   public readonly pixelSize: THREE.Vector2;
@@ -216,7 +218,7 @@ export class DrawingLayer {
           this.fillPixel(
             neighbor.x,
             neighbor.y,
-            kDrawAlpha + 0.5,
+            kDrawAlpha + kBorderAlphaBoost,
             oldSegmentEntry.color
           );
         }
@@ -240,7 +242,8 @@ export class DrawingLayer {
         this.fillPixel(
           x,
           y,
-          kDrawAlpha + (inSegmentNeighbors.length < 4 ? 0.5 : 0.0),
+          kDrawAlpha +
+            (inSegmentNeighbors.length < 4 ? kBorderAlphaBoost : 0.0),
           color
         );
         for (let neighbor of inSegmentNeighbors) {
