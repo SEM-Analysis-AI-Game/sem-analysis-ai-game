@@ -12,6 +12,42 @@ type BFSNode = {
   next: BFSNode | null;
 };
 
+function breadthFirstSearch(
+  start: THREE.Vector2,
+  test: (pos: THREE.Vector2) => boolean,
+  neighbors: [number, number][]
+): PointContainer {
+  const visited = new PointContainer();
+  let queue: BFSNode | null = {
+    data: start,
+    next: null,
+  };
+  let tail = queue;
+  while (queue) {
+    const current = queue.data;
+    if (test(current)) {
+      if (!visited.hasPoint(current.x, current.y)) {
+        visited.setPoint(current.x, current.y, null);
+        for (let neighbor of neighbors) {
+          const neighborPos = new THREE.Vector2(
+            current.x + neighbor[0],
+            current.y + neighbor[1]
+          );
+          if (test(neighborPos)) {
+            tail.next = {
+              data: neighborPos,
+              next: null,
+            };
+            tail = tail.next;
+          }
+        }
+      }
+    }
+    queue = queue.next;
+  }
+  return visited;
+}
+
 const kBorderAlphaBoost = 0.5;
 
 export class DrawingLayer {
@@ -96,45 +132,23 @@ export class DrawingLayer {
           throw new Error("bfsStart is null");
         }
         let totalPoints = boundary.size();
-        const visited = new PointContainer();
-        let queue: BFSNode | null = {
-          data: bfsStart,
-          next: null,
-        };
-        let tail = queue;
-        while (queue) {
-          const current = queue.data;
-          if (!visited.hasPoint(current.x, current.y)) {
-            visited.setPoint(current.x, current.y, null);
-
-            for (let neighbor of [
-              new THREE.Vector2(current.x - 1, current.y),
-              new THREE.Vector2(current.x + 1, current.y),
-              new THREE.Vector2(current.x, current.y - 1),
-              new THREE.Vector2(current.x, current.y + 1),
-              new THREE.Vector2(current.x - 1, current.y - 1),
-              new THREE.Vector2(current.x + 1, current.y - 1),
-              new THREE.Vector2(current.x - 1, current.y + 1),
-              new THREE.Vector2(current.x + 1, current.y + 1),
-            ]) {
-              if (
-                boundary.hasPoint(neighbor.x, neighbor.y) &&
-                !visited.hasPoint(neighbor.x, neighbor.y)
-              ) {
-                tail.next = {
-                  data: neighbor,
-                  next: null,
-                };
-                tail = tail.next;
-              }
-            }
-          }
-          queue = queue.next;
-        }
+        const visited = breadthFirstSearch(
+          bfsStart,
+          (pos) => boundary.hasPoint(pos.x, pos.y),
+          [
+            [-1, 0],
+            [1, 0],
+            [0, -1],
+            [0, 1],
+            [-1, -1],
+            [1, -1],
+            [-1, 1],
+            [1, 1],
+          ]
+        );
         if (visited.size() < totalPoints) {
           this.numSegments++;
           const newSegment = this.numSegments;
-          const fillVisited = new PointContainer();
           let fillStart: THREE.Vector2 | null = null;
           boundary.forEach((x, y, data) => {
             if (
@@ -147,36 +161,16 @@ export class DrawingLayer {
           if (!fillStart) {
             throw new Error("fillStart is null");
           }
-          let fillQueue: BFSNode | null = {
-            data: fillStart,
-            next: null,
-          };
-          let fillTail = fillQueue;
-          while (fillQueue) {
-            const current = fillQueue.data;
-            if (!fillVisited.hasPoint(current.x, current.y)) {
-              fillVisited.setPoint(current.x, current.y, null);
-
-              for (let neighbor of [
-                new THREE.Vector2(current.x - 1, current.y),
-                new THREE.Vector2(current.x + 1, current.y),
-                new THREE.Vector2(current.x, current.y - 1),
-                new THREE.Vector2(current.x, current.y + 1),
-              ]) {
-                if (
-                  this.segment(neighbor.x, neighbor.y) === segment &&
-                  !fillVisited.hasPoint(neighbor.x, neighbor.y)
-                ) {
-                  fillTail.next = {
-                    data: neighbor,
-                    next: null,
-                  };
-                  fillTail = fillTail.next;
-                }
-              }
-            }
-            fillQueue = fillQueue.next;
-          }
+          const fillVisited = breadthFirstSearch(
+            fillStart,
+            (pos) => this.segment(pos.x, pos.y) === segment,
+            [
+              [-1, 0],
+              [1, 0],
+              [0, -1],
+              [0, 1],
+            ]
+          );
           fillVisited.forEach((x, y) => {
             if (!action.paintedPoints.hasPoint(x, y)) {
               action.paintedPoints.setPoint(x, y, {
