@@ -106,28 +106,25 @@ export function PainterControls(): null {
       }
     });
     gl.domElement.addEventListener("pointerdown", (e) => {
-      setControls((controls) => {
-        const toolMouse = mouse
-          .clone()
-          .divideScalar(Math.sqrt(controls.zoom))
-          .add(controls.pan.clone().multiplyScalar(kPanMultiplier))
-          .multiplyScalar(0.5)
-          .addScalar(0.5)
-          .multiply(drawingLayer.pixelSize)
-          .floor();
-        if (!cursorDown) {
-          const segment = drawingLayer.segment(toolMouse.x, toolMouse.y);
-          if (segment === -1) {
-            drawingLayer.incrementSegments();
-          }
-          setActiveSegment(
-            segment === -1 ? drawingLayer.getNumSegments() : segment
-          );
+      const toolMouse = mouse
+        .clone()
+        .divideScalar(Math.sqrt(controls.zoom))
+        .add(controls.pan.clone().multiplyScalar(kPanMultiplier))
+        .multiplyScalar(0.5)
+        .addScalar(0.5)
+        .multiply(drawingLayer.pixelSize)
+        .floor();
+      if (!cursorDown) {
+        const segment = drawingLayer.segment(toolMouse.x, toolMouse.y);
+        if (segment === -1) {
+          drawingLayer.incrementSegments();
         }
-        setCursorDown(true);
-        setShiftDown(e.shiftKey);
-        return controls;
-      });
+        setActiveSegment(
+          segment === -1 ? drawingLayer.getNumSegments() : segment
+        );
+      }
+      setCursorDown(true);
+      setShiftDown(e.shiftKey);
     });
     gl.domElement.addEventListener("pointerup", () => {
       setCursorDown(false);
@@ -135,7 +132,7 @@ export function PainterControls(): null {
     gl.domElement.addEventListener("pointerleave", (e) => {
       setCursorDown(false);
     });
-  }, []);
+  }, [drawingLayer]);
 
   useFrame(() => {
     const panMouse = mouse
@@ -166,6 +163,7 @@ export function PainterControls(): null {
         activeSegment
       );
     } else {
+      console.log(drawingLayer.getNumSegments());
       tool.frameCallback(
         cursorDown,
         zooming,
