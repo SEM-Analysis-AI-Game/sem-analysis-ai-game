@@ -11,6 +11,32 @@ export class PointContainer<D = null> {
     return this.currentSize;
   }
 
+  public map<T>(
+    callback: (x: number, y: number, data: D) => T
+  ): PointContainer<T> {
+    const result = new PointContainer<T>();
+    this.points.forEach((yMap, x) => {
+      yMap.forEach((data, y) => {
+        result.setPoint(x, y, callback(x, y, data));
+      });
+    });
+    return result;
+  }
+
+  public filter(
+    callback: (x: number, y: number, data: D) => boolean
+  ): PointContainer<D> {
+    const result = new PointContainer<D>();
+    this.points.forEach((yMap, x) => {
+      yMap.forEach((data, y) => {
+        if (callback(x, y, data)) {
+          result.setPoint(x, y, data);
+        }
+      });
+    });
+    return result;
+  }
+
   public setPoint(x: number, y: number, data: D): void {
     if (!this.points.has(x)) {
       this.points.set(x, new Map());

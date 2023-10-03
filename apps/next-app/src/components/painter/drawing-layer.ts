@@ -5,6 +5,12 @@ import { createContext, useContext } from "react";
 import { kSubdivisionSize } from "./renderer";
 import { kDrawAlpha } from "./tools";
 import { PointContainer } from "./point-container";
+import { CanvasAction } from "./action";
+
+type BFSNode = {
+  data: THREE.Vector2;
+  next: BFSNode | null;
+};
 
 export class DrawingLayer {
   private readonly drawingUniforms: THREE.Uniform<THREE.DataTexture>[];
@@ -71,6 +77,107 @@ export class DrawingLayer {
     );
   }
 
+  public recomputeSegments(action: CanvasAction): void {
+    for (let segment of action.effectedSegments) {
+      let boundary = this.segmentMap
+        .get(segment)!
+        .points.filter((x, y, data) => data.numNeighbors < 4);
+
+      while (boundary.size() > 0) {
+        let bfsStart: THREE.Vector2 | null = null;
+        boundary.forEach((x, y, data) => {
+          if (!bfsStart) {
+            bfsStart = new THREE.Vector2(x, y);
+          }
+        });
+        if (!bfsStart) {
+          throw new Error("bfsStart is null");
+        }
+        let totalPoints = boundary.size();
+        const visited = new PointContainer();
+        let queue: BFSNode | null = {
+          data: bfsStart,
+          next: null,
+        };
+        let tail = queue;
+        while (queue) {
+          const current = queue.data;
+          if (!visited.hasPoint(current.x, current.y)) {
+            visited.setPoint(current.x, current.y, null);
+
+            for (let neighbor of [
+              new THREE.Vector2(current.x - 1, current.y),
+              new THREE.Vector2(current.x + 1, current.y),
+              new THREE.Vector2(current.x, current.y - 1),
+              new THREE.Vector2(current.x, current.y + 1),
+              new THREE.Vector2(current.x - 1, current.y - 1),
+              new THREE.Vector2(current.x + 1, current.y - 1),
+              new THREE.Vector2(current.x - 1, current.y + 1),
+              new THREE.Vector2(current.x + 1, current.y + 1),
+            ]) {
+              if (
+                boundary.hasPoint(neighbor.x, neighbor.y) &&
+                !visited.hasPoint(neighbor.x, neighbor.y)
+              ) {
+                tail.next = {
+                  data: neighbor,
+                  next: null,
+                };
+                tail = tail.next;
+              }
+            }
+          }
+          queue = queue.next;
+        }
+        if (visited.size() < totalPoints) {
+          this.numSegments++;
+          const newSegment = this.numSegments;
+          const fillVisited = new PointContainer();
+          let fillQueue: BFSNode | null = {
+            data: bfsStart,
+            next: null,
+          };
+          let fillTail = fillQueue;
+          while (fillQueue) {
+            const current = fillQueue.data;
+            if (!fillVisited.hasPoint(current.x, current.y)) {
+              fillVisited.setPoint(current.x, current.y, null);
+
+              for (let neighbor of [
+                new THREE.Vector2(current.x - 1, current.y),
+                new THREE.Vector2(current.x + 1, current.y),
+                new THREE.Vector2(current.x, current.y - 1),
+                new THREE.Vector2(current.x, current.y + 1),
+              ]) {
+                if (
+                  this.segment(neighbor.x, neighbor.y) === segment &&
+                  !fillVisited.hasPoint(neighbor.x, neighbor.y)
+                ) {
+                  fillTail.next = {
+                    data: neighbor,
+                    next: null,
+                  };
+                  fillTail = fillTail.next;
+                }
+              }
+            }
+            fillQueue = fillQueue.next;
+          }
+          fillVisited.forEach((x, y) => {
+            if (!action.paintedPoints.hasPoint(x, y)) {
+              action.paintedPoints.setPoint(x, y, {
+                newSegment: newSegment,
+                oldSegment: segment,
+              });
+            }
+            this.setSegment(x, y, newSegment);
+          });
+        }
+        boundary = boundary.filter((x, y, data) => !visited.hasPoint(x, y));
+      }
+    }
+  }
+
   public setSegment(x: number, y: number, segment: number): void {
     const oldSegment = this.segment(x, y);
     this.segmentBuffer[y * this.pixelSize.x + x] = segment;
@@ -109,7 +216,7 @@ export class DrawingLayer {
 
     if (segment === -1 && oldSegment !== -1) {
       this.fillPixel(x, y, 0, color);
-    } else {
+    } else if (segment !== -1) {
       const segmentEntry = this.segmentMap.get(segment)!;
       if (!segmentEntry.points.hasPoint(x, y)) {
         const inSegmentNeighbors = neighbors.filter(
@@ -142,6 +249,12 @@ export class DrawingLayer {
         }
       }
     }
+  }
+
+  public segmentPoints(
+    segment: number
+  ): PointContainer<{ numNeighbors: number }> | undefined {
+    return this.segmentMap.get(segment)?.points;
   }
 
   private fillPixel(

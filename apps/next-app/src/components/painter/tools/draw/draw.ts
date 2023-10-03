@@ -5,6 +5,7 @@ import { DrawingLayer } from "../../drawing-layer";
 import { Dispatch, SetStateAction } from "react";
 import { ActionHistory } from "../../action-history";
 import { CanvasAction } from "../../action";
+import { PointContainer } from "../../point-container";
 
 export const kDrawAlpha = 0.5;
 
@@ -86,6 +87,7 @@ export abstract class DrawTool extends Tool {
     } else {
       this.lastMousePos = null;
       if (this.drawAction) {
+        drawingLayer.recomputeSegments(this.drawAction);
         history.push(this.drawAction);
         this.drawAction = null;
       }
