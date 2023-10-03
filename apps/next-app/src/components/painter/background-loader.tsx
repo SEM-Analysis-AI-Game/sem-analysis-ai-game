@@ -46,15 +46,15 @@ export function loadBackground(
 }
 
 export function BackgroundLoader(
-  props: PropsWithChildren<{ fallback: ReactNode; overlay: ReactNode }>
+  props: PropsWithChildren<{ fallback: ReactNode }>
 ): JSX.Element {
-  const backgroundState = useState<THREE.Texture>();
+  const [background, setBackground] = useState<THREE.Texture>();
 
   useEffect(() => {
     const img = localStorage.getItem("background");
     if (img) {
       loadBackground(img, (texture) => {
-        backgroundState[1](texture);
+        setBackground(texture);
       });
     } else {
       throw new Error("No background image found");
@@ -62,9 +62,8 @@ export function BackgroundLoader(
   }, []);
 
   return (
-    <BackgroundContext.Provider value={backgroundState}>
-      {props.overlay}
-      {backgroundState[0] ? props.children : props.fallback}
+    <BackgroundContext.Provider value={[background, setBackground]}>
+      {background ? props.children : props.fallback}
     </BackgroundContext.Provider>
   );
 }

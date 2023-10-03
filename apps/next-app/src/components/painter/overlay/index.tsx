@@ -2,6 +2,7 @@ import { UploadButton } from "@/components";
 import { ToolNames, kToolFactory } from "../tools";
 import { BrushSizeSlider } from "./brush-size-slider";
 import { ToolbarButton } from "./toolbar-button";
+import { ProgressTracker } from "./progress-tracker";
 
 export function PainterOverlay(): JSX.Element {
   return (
@@ -13,6 +14,7 @@ export function PainterOverlay(): JSX.Element {
       ))}
       <BrushSizeSlider />
       <UploadButton />
+      <ProgressTracker />
     </div>
   );
 }

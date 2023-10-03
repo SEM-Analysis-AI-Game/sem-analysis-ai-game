@@ -50,6 +50,11 @@ function breadthFirstSearch(
 
 const kBorderAlphaBoost = 0.5;
 
+export type Segment = {
+  color: THREE.Color;
+  points: PointContainer<{ numNeighbors: number }>;
+}
+
 export class DrawingLayer {
   private readonly drawingUniforms: THREE.Uniform<THREE.DataTexture>[];
   public readonly pixelSize: THREE.Vector2;
@@ -58,13 +63,7 @@ export class DrawingLayer {
 
   private numSegments: number;
   private readonly segmentBuffer: Int32Array;
-  private segmentMap: Map<
-    number,
-    {
-      color: THREE.Color;
-      points: PointContainer<{ numNeighbors: number }>;
-    }
-  >;
+  private segmentMap: Map<number, Segment>;
 
   constructor(pixelSize: THREE.Vector2) {
     this.segmentMap = new Map();

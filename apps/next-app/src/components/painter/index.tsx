@@ -1,8 +1,9 @@
+"use client"
+
 import { ActionHistoryProvider } from "./action-history";
 import { BackgroundLoader } from "./background-loader";
 import { PainterCanvas } from "./canvas";
 import { Loader } from "./loader";
-import { PainterOverlay } from "./overlay";
 import { PainterToolProvider } from "./tools";
 
 export function Painter(): JSX.Element {
@@ -10,7 +11,7 @@ export function Painter(): JSX.Element {
     <div className="flex h-screen justify-center items-center">
       <PainterToolProvider>
         <ActionHistoryProvider>
-          <BackgroundLoader overlay={<PainterOverlay />} fallback={<Loader />}>
+          <BackgroundLoader fallback={<Loader />}>
             <PainterCanvas />
           </BackgroundLoader>
         </ActionHistoryProvider>
