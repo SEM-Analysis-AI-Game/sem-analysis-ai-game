@@ -133,8 +133,20 @@ export class DrawingLayer {
           this.numSegments++;
           const newSegment = this.numSegments;
           const fillVisited = new PointContainer();
+          let fillStart: THREE.Vector2 | null = null;
+          boundary.forEach((x, y, data) => {
+            if (
+              !fillStart &&
+              visited.size() < totalPoints / 2 === visited.hasPoint(x, y)
+            ) {
+              fillStart = new THREE.Vector2(x, y);
+            }
+          });
+          if (!fillStart) {
+            throw new Error("fillStart is null");
+          }
           let fillQueue: BFSNode | null = {
-            data: bfsStart,
+            data: fillStart,
             next: null,
           };
           let fillTail = fillQueue;
