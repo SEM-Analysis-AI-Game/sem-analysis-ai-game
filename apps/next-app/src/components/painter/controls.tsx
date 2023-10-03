@@ -105,6 +105,9 @@ export function PainterControls(): null {
         }
       }
     });
+  }, [history]);
+
+  useEffect(() => {
     gl.domElement.addEventListener("pointerdown", (e) => {
       const toolMouse = mouse
         .clone()
@@ -126,13 +129,16 @@ export function PainterControls(): null {
       setCursorDown(true);
       setShiftDown(e.shiftKey);
     });
+  }, [drawingLayer, controls]);
+
+  useEffect(() => {
     gl.domElement.addEventListener("pointerup", () => {
       setCursorDown(false);
     });
     gl.domElement.addEventListener("pointerleave", (e) => {
       setCursorDown(false);
     });
-  }, [drawingLayer, controls]);
+  }, []);
 
   useFrame(() => {
     const panMouse = mouse
