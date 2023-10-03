@@ -132,7 +132,7 @@ export function PainterControls(): null {
     gl.domElement.addEventListener("pointerleave", (e) => {
       setCursorDown(false);
     });
-  }, [drawingLayer]);
+  }, [drawingLayer, controls]);
 
   useFrame(() => {
     const panMouse = mouse
@@ -163,7 +163,6 @@ export function PainterControls(): null {
         activeSegment
       );
     } else {
-      console.log(drawingLayer.getNumSegments());
       tool.frameCallback(
         cursorDown,
         zooming,
