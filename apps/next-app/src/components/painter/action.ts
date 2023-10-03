@@ -7,10 +7,13 @@ export class CanvasAction {
     newSegment: number;
   }>;
   public readonly drawingLayer: DrawingLayer;
-  public readonly effectedSegments: Set<number>;
+  public readonly effectedSegments: Map<
+    number,
+    { newBoundaryPoints: PointContainer }
+  >;
 
   constructor(drawingLayer: DrawingLayer) {
-    this.effectedSegments = new Set();
+    this.effectedSegments = new Map();
     this.paintedPoints = new PointContainer();
     this.drawingLayer = drawingLayer;
   }

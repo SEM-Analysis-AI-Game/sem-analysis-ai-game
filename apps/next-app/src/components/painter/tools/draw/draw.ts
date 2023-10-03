@@ -54,10 +54,24 @@ export abstract class DrawTool extends Tool {
             oldSegment: oldSegment,
           });
         }
+        const { newBoundaryPoints, removedBoundaryPoints } =
+          drawingLayer.setSegment(pos.x, pos.y, drawSegment);
         if (oldSegment !== -1 && oldSegment !== drawSegment) {
-          drawAction.effectedSegments.add(oldSegment);
+          const oldBoundaryPointEntry =
+            drawAction.effectedSegments.get(oldSegment);
+          if (oldBoundaryPointEntry) {
+            newBoundaryPoints.forEach((x, y) =>
+              oldBoundaryPointEntry.newBoundaryPoints.setPoint(x, y, null)
+            );
+            removedBoundaryPoints.forEach((x, y) =>
+              oldBoundaryPointEntry.newBoundaryPoints.deletePoint(x, y)
+            );
+          } else {
+            drawAction.effectedSegments.set(oldSegment, {
+              newBoundaryPoints,
+            });
+          }
         }
-        drawingLayer.setSegment(pos.x, pos.y, drawSegment);
       };
 
       this.paint({

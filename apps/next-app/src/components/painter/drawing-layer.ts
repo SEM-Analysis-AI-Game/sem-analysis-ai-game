@@ -14,7 +14,7 @@ type BFSNode = {
 
 function breadthFirstSearch(
   start: THREE.Vector2,
-  test: (pos: THREE.Vector2) => boolean,
+  test: (pos: THREE.Vector2, exitLoop: () => void) => boolean,
   neighbors: [number, number][]
 ): PointContainer {
   const visited = new PointContainer();
@@ -23,9 +23,13 @@ function breadthFirstSearch(
     next: null,
   };
   let tail = queue;
-  while (queue) {
+  let breakLoop = false;
+  while (queue && !breakLoop) {
     const current = queue.data;
-    if (test(current)) {
+    const exitLoop = () => {
+      breakLoop = true;
+    };
+    if (test(current, exitLoop)) {
       if (!visited.hasPoint(current.x, current.y)) {
         visited.setPoint(current.x, current.y, null);
         for (let neighbor of neighbors) {
@@ -33,7 +37,10 @@ function breadthFirstSearch(
             current.x + neighbor[0],
             current.y + neighbor[1]
           );
-          if (test(neighborPos)) {
+          if (test(neighborPos, exitLoop)) {
+            if (breakLoop) {
+              break;
+            }
             tail.next = {
               data: neighborPos,
               next: null,
@@ -117,23 +124,12 @@ export class DrawingLayer {
 
   public recomputeSegments(action: CanvasAction): void {
     for (let segment of action.effectedSegments) {
-      let boundary = this.segmentMap
-        .get(segment)!
-        .points.filter((x, y, data) => data.numNeighbors < 4);
-
+      let boundary = segment[1].newBoundaryPoints;
       while (boundary.size() > 0) {
-        let bfsStart: THREE.Vector2 | null = null;
-        boundary.forEach((x, y, data) => {
-          if (!bfsStart) {
-            bfsStart = new THREE.Vector2(x, y);
-          }
-        });
-        if (!bfsStart) {
-          throw new Error("bfsStart is null");
-        }
+        let bfsStart = boundary.firstWhere(() => true)!;
         let totalPoints = boundary.size();
         const visited = breadthFirstSearch(
-          bfsStart,
+          new THREE.Vector2(bfsStart[0], bfsStart[1]),
           (pos) => boundary.hasPoint(pos.x, pos.y),
           [
             [-1, 0],
@@ -149,21 +145,19 @@ export class DrawingLayer {
         if (visited.size() < totalPoints) {
           this.numSegments++;
           const newSegment = this.numSegments;
-          let fillStart: THREE.Vector2 | null = null;
-          boundary.forEach((x, y, data) => {
-            if (
-              !fillStart &&
-              visited.size() < totalPoints / 2 === visited.hasPoint(x, y)
-            ) {
-              fillStart = new THREE.Vector2(x, y);
-            }
-          });
-          if (!fillStart) {
-            throw new Error("fillStart is null");
-          }
+          let fillStart = boundary.firstWhere(() => true)!;
           const fillVisited = breadthFirstSearch(
-            fillStart,
-            (pos) => this.segment(pos.x, pos.y) === segment,
+            new THREE.Vector2(fillStart[0], fillStart[1]),
+            (pos, exitLoop) => {
+              if (this.segment(pos.x, pos.y) === segment[0]) {
+                boundary.deletePoint(pos.x, pos.y);
+                if (boundary.size() === 0) {
+                  exitLoop();
+                }
+                return true;
+              }
+              return false;
+            },
             [
               [-1, 0],
               [1, 0],
@@ -171,22 +165,35 @@ export class DrawingLayer {
               [0, 1],
             ]
           );
-          fillVisited.forEach((x, y) => {
-            if (!action.paintedPoints.hasPoint(x, y)) {
-              action.paintedPoints.setPoint(x, y, {
-                newSegment: newSegment,
-                oldSegment: segment,
-              });
-            }
-            this.setSegment(x, y, newSegment);
-          });
+          if (boundary.size() > 0) {
+            fillVisited.forEach((x, y) => {
+              if (!action.paintedPoints.hasPoint(x, y)) {
+                action.paintedPoints.setPoint(x, y, {
+                  newSegment: newSegment,
+                  oldSegment: segment[0],
+                });
+              }
+              this.setSegment(x, y, newSegment);
+            });
+          }
         }
-        boundary = boundary.filter((x, y, data) => !visited.hasPoint(x, y));
+        visited.forEach((x, y) => {
+          boundary.deletePoint(x, y);
+        });
       }
     }
   }
 
-  public setSegment(x: number, y: number, segment: number): void {
+  public setSegment(
+    x: number,
+    y: number,
+    segment: number
+  ): {
+    newBoundaryPoints: PointContainer;
+    removedBoundaryPoints: PointContainer;
+  } {
+    const newBoundaryPoints = new PointContainer();
+    const removedBoundaryPoints = new PointContainer();
     const oldSegment = this.segment(x, y);
     this.segmentBuffer[y * this.pixelSize.x + x] = segment;
     const color = this.segmentColor(segment);
@@ -196,11 +203,23 @@ export class DrawingLayer {
       new THREE.Vector2(x + 1, y),
       new THREE.Vector2(x, y - 1),
       new THREE.Vector2(x, y + 1),
-    ];
+    ].filter(
+      (neighbor) =>
+        neighbor.x >= 0 &&
+        neighbor.y >= 0 &&
+        neighbor.x < this.pixelSize.x &&
+        neighbor.y < this.pixelSize.y
+    );
 
     if (oldSegment !== -1 && segment !== oldSegment) {
       const oldSegmentEntry = this.segmentMap.get(oldSegment)!;
-      oldSegmentEntry.points.deletePoint(x, y);
+      const point = oldSegmentEntry.points.getPoint(x, y);
+      if (point) {
+        if (point.numNeighbors < 4) {
+          removedBoundaryPoints.setPoint(x, y, null);
+        }
+        oldSegmentEntry.points.deletePoint(x, y);
+      }
       for (let neighbor of neighbors.filter(
         (neighbor) => this.segment(neighbor.x, neighbor.y) === oldSegment
       )) {
@@ -209,12 +228,15 @@ export class DrawingLayer {
           neighbor.y
         );
         if (neighborEntry) {
-          this.fillPixel(
-            neighbor.x,
-            neighbor.y,
-            kDrawAlpha + kBorderAlphaBoost,
-            oldSegmentEntry.color
-          );
+          if (neighborEntry.numNeighbors === 4) {
+            this.fillPixel(
+              neighbor.x,
+              neighbor.y,
+              kDrawAlpha + kBorderAlphaBoost,
+              oldSegmentEntry.color
+            );
+            newBoundaryPoints.setPoint(neighbor.x, neighbor.y, null);
+          }
         }
         oldSegmentEntry.points.setPoint(neighbor.x, neighbor.y, {
           numNeighbors: neighborEntry ? neighborEntry.numNeighbors - 1 : 0,
@@ -258,6 +280,7 @@ export class DrawingLayer {
         }
       }
     }
+    return { newBoundaryPoints, removedBoundaryPoints };
   }
 
   public segmentPoints(

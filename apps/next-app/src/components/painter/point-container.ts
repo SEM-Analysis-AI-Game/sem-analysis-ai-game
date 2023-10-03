@@ -37,6 +37,19 @@ export class PointContainer<D = null> {
     return result;
   }
 
+  public firstWhere(
+    callback: (x: number, y: number, data: D) => boolean
+  ): [number, number, D] | undefined {
+    for (let x of this.points) {
+      for (let y of x[1]) {
+        if (callback(x[0], y[0], y[1])) {
+          return [x[0], y[0], y[1]];
+        }
+      }
+    }
+    return undefined;
+  }
+
   public setPoint(x: number, y: number, data: D): void {
     if (!this.points.has(x)) {
       this.points.set(x, new Map());
@@ -80,10 +93,10 @@ export class PointContainer<D = null> {
   }
 
   public forEach(callback: (x: number, y: number, data: D) => void): void {
-    this.points.forEach((yMap, x) => {
-      yMap.forEach((data, y) => {
-        callback(x, y, data);
-      });
-    });
+    for (let x of this.points) {
+      for (let y of x[1]) {
+        callback(x[0], y[0], y[1]);
+      }
+    }
   }
 }
