@@ -1,7 +1,7 @@
 import * as THREE from "three";
-import { Tool } from "../tool";
-import { DrawingLayer } from "../../drawing-layer";
 import { Dispatch, SetStateAction } from "react";
+import { Tool, ToolNames } from "../tool";
+import { DrawingLayer } from "../../drawing-layer";
 import { ActionHistory, CanvasAction } from "../../action-history";
 
 /**
@@ -12,7 +12,7 @@ export const kDrawAlpha = 0.5;
 /**
  * Tool for drawing strokes with the cursor.
  */
-export abstract class DrawTool extends Tool {
+export abstract class DrawTool<Name extends ToolNames> extends Tool<Name> {
   /**
    * The cursor position on the last frame.
    */

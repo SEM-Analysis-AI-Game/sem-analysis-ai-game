@@ -1,7 +1,7 @@
 import { createCirclePoints, drawMemoizedCircle } from "../../utils";
 import { Eraser } from "./eraser";
 
-export class CircleEraser extends Eraser {
+export class CircleEraser extends Eraser<"Circle Eraser"> {
   readonly name = "Circle Eraser";
 
   /**

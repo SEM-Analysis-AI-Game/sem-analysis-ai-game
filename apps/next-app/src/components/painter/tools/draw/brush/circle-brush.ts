@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { Brush } from "./brush";
 import { createCirclePoints, drawMemoizedCircle } from "../../utils";
 
-export class CircleBrush extends Brush {
+export class CircleBrush extends Brush<"Circle Brush"> {
   readonly name = "Circle Brush";
 
   /**

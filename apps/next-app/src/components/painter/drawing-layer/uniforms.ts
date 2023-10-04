@@ -1,9 +1,27 @@
 import * as THREE from "three";
 import { kSubdivisionSize } from "../renderer";
 
+/**
+ * Updates and stores the drawing layer uniforms. This is a 2D array of textures
+ * that are used to store the drawing layer. The drawing layer is subdivided
+ * into sections of size kSubdivisionSize. Each section is stored in a texture.
+ *
+ * The extra pixels that don't fit into a section are stored in the trailing
+ * vector.
+ *
+ * The numSections vector stores the number of sections in each dimension,
+ * not including the trailing section.
+ */
 export class DrawingLayerUniforms {
+  // The uniforms for each section.
   private readonly drawingUniforms: THREE.Uniform<THREE.DataTexture>[];
+
+  // The number of pixels in the trailing section. This section is not
+  // counted in numSections.
   private readonly trailing: THREE.Vector2;
+
+  // The number of sections in each dimension. This does not include the
+  // trailing section.
   public readonly numSections: THREE.Vector2;
 
   constructor(pixelSize: THREE.Vector2) {
@@ -30,6 +48,11 @@ export class DrawingLayerUniforms {
     }
   }
 
+  /**
+   * Gets the size of a section. This is kSubdivisionSize for all sections
+   * except the trailing section, which is the remainder of the drawing layer
+   * size divided by kSubdivisionSize.
+   */
   public sectionSize(j: number, i: number): THREE.Vector2 {
     return new THREE.Vector2(
       j === this.numSections.x ? this.trailing.x : kSubdivisionSize,
@@ -37,14 +60,24 @@ export class DrawingLayerUniforms {
     );
   }
 
+  /**
+   * Gets the section that a pixel is in.
+   */
   private section(x: number, y: number): THREE.Vector2 {
     return new THREE.Vector2(x, y).divideScalar(kSubdivisionSize).floor();
   }
 
+  /**
+   * Gets the uniform for a given section.
+   */
   public uniform(j: number, i: number): THREE.Uniform<THREE.DataTexture> {
     return this.drawingUniforms[i * (this.numSections.x + 1) + j];
   }
 
+  /**
+   * Paints a pixel on the appropriate drawing uniform and marks it to be
+   * updated on the next frame.
+   */
   public fillPixel(
     x: number,
     y: number,

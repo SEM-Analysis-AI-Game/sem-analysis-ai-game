@@ -1,3 +1,9 @@
+/**
+ * Useful data structure for storing points with
+ * constant access time.
+ *
+ * Uses nested maps to store the points.
+ */
 export class PointContainer<D = null> {
   private readonly points: Map<number, Map<number, D>>;
   private currentSize: number;

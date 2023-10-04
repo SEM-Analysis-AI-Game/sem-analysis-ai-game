@@ -13,8 +13,8 @@ export type ToolNames =
   | "Square Brush"
   | "Pan";
 
-export abstract class Tool {
-  public abstract readonly name: ToolNames;
+export abstract class Tool<T extends ToolNames = ToolNames> {
+  public abstract readonly name: T;
   public readonly size: number;
 
   public abstract frameCallback(

@@ -13,8 +13,15 @@ import {
 import { useDrawingLayer } from "./drawing-layer";
 import { usePan, useZoom } from "./controls";
 
+/**
+ * The canvas is subdivided into sections of this size.
+ * This is to optimize updates to the drawing layer.
+ */
 export const kSubdivisionSize = 256;
 
+/**
+ * Renders the background and drawing layer.
+ */
 export function PainterRenderer(): null {
   const { gl } = useThree();
 

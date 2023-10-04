@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { Brush } from "./brush";
 import { drawSquare } from "../../utils";
 
-export class SquareBrush extends Brush {
+export class SquareBrush extends Brush<"Square Brush"> {
   readonly name = "Square Brush";
 
   constructor(diameter: number) {

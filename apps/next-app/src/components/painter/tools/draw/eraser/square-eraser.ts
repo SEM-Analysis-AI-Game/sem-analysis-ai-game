@@ -2,7 +2,7 @@ import { Vector2 } from "three";
 import { Eraser } from "./eraser";
 import { drawSquare } from "../../utils";
 
-export class SquareEraser extends Eraser {
+export class SquareEraser extends Eraser<"Square Eraser"> {
   readonly name = "Square Eraser";
 
   constructor(diameter: number) {

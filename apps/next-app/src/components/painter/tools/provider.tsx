@@ -8,7 +8,7 @@ import {
   useContext,
   useState,
 } from "react";
-import { Tool } from "./tool";
+import { Tool, ToolNames } from "./tool";
 import { CircleBrush } from "./draw";
 
 /**

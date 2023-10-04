@@ -1,6 +1,7 @@
+import { ToolNames } from "../../tool";
 import { DrawTool } from "../draw";
 
-export abstract class Brush extends DrawTool {
+export abstract class Brush<Name extends ToolNames> extends DrawTool<Name> {
   constructor(size: number) {
     super(size);
   }

@@ -9,7 +9,7 @@ import { ActionHistory } from "../action-history";
  */
 export const kPanMultiplier = 3.5;
 
-export class PanTool extends Tool {
+export class PanTool extends Tool<"Pan"> {
   readonly name = "Pan";
 
   /**
