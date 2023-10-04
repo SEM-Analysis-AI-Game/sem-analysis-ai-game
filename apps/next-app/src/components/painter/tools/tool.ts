@@ -3,6 +3,9 @@ import { Dispatch, SetStateAction } from "react";
 import { DrawingLayer } from "../drawing-layer";
 import { ActionHistory } from "../action-history";
 
+/**
+ * The names of the tools. These are shown on the toolbar.
+ */
 export type ToolNames =
   | "Circle Eraser"
   | "Square Eraser"

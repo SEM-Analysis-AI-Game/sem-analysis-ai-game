@@ -1,14 +1,19 @@
 import * as THREE from "three";
 import { Brush } from "./brush";
-import { createCirclePointsInCircle, drawCircle } from "../../utils";
+import { createCirclePoints, drawMemoizedCircle } from "../../utils";
 
 export class CircleBrush extends Brush {
   readonly name = "Circle Brush";
+
+  /**
+   * The points of the circle are memoized so that we don't have to
+   * recalculate them every time we draw.
+   */
   private readonly memoizedPoints: THREE.Vector2[];
 
   constructor(diameter: number) {
     super(diameter);
-    this.memoizedPoints = createCirclePointsInCircle(diameter);
+    this.memoizedPoints = createCirclePoints(diameter);
   }
 
   protected paint(params: {
@@ -17,10 +22,10 @@ export class CircleBrush extends Brush {
     pos: THREE.Vector2;
     resolution: THREE.Vector2;
   }): void {
-    return drawCircle({
+    return drawMemoizedCircle({
       ...params,
       diameter: this.size,
-      memoizedPoints: this.memoizedPoints,
+      offsets: this.memoizedPoints,
     });
   }
 }

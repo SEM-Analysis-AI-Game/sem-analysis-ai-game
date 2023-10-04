@@ -1,8 +1,9 @@
 "use client";
 
 import { PropsWithChildren } from "react";
-import { ToolNames, kToolFactory } from "../tools";
+import { ToolNames } from "../tools";
 import { useTool } from "../tools/provider";
+import { kToolFactory } from "./tool-factory";
 
 /**
  * Client-side interactive tool selection menu

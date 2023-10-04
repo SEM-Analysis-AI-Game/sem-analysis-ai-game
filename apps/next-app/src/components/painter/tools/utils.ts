@@ -1,9 +1,15 @@
 import * as THREE from "three";
 
+/**
+ * Gets the DataTexture array index for a given pixel.
+ */
 function pixelToIndex(pos: THREE.Vector2, resolution: THREE.Vector2) {
   return (pos.y * resolution.width + pos.x) * 4;
 }
 
+/**
+ * Fills a pixel with the given color and alpha.
+ */
 export const fillPixel = (
   data: Uint8Array,
   resolution: THREE.Vector2,
@@ -18,7 +24,11 @@ export const fillPixel = (
   data[cursorPixelIndex + 3] = alpha * 255;
 };
 
-export function createCirclePointsInCircle(diameter: number): THREE.Vector2[] {
+/**
+ * Computes the points in a circle. This is used for memoizing the
+ * offsets of a circle for the circle drawing tools.
+ */
+export function createCirclePoints(diameter: number): THREE.Vector2[] {
   const radius = Math.floor((diameter + 1) / 2);
   const points: THREE.Vector2[] = [];
   for (let x = -radius; x < radius; x++) {
@@ -31,19 +41,23 @@ export function createCirclePointsInCircle(diameter: number): THREE.Vector2[] {
   return points;
 }
 
-export function drawCircle(params: {
+/**
+ * For each offset in the offsets array, draws a pixel at that
+ * position. The pixels are clamped to the resolution.
+ */
+export function drawMemoizedCircle(params: {
   fill: (pos: THREE.Vector2) => void;
   pos: THREE.Vector2;
   diameter: number;
   resolution: THREE.Vector2;
-  memoizedPoints: THREE.Vector2[];
+  offsets: THREE.Vector2[];
 }) {
   const radius = Math.floor((params.diameter + 1) / 2);
   const minX = Math.max(-radius + 1, -params.pos.x);
   const minY = Math.max(-radius + 1, -params.pos.y);
   const maxX = Math.min(radius, params.resolution.width - params.pos.x);
   const maxY = Math.min(radius, params.resolution.height - params.pos.y);
-  for (let point of params.memoizedPoints) {
+  for (let point of params.offsets) {
     if (
       point.x >= minX &&
       point.x < maxX &&
@@ -59,6 +73,9 @@ export function drawCircle(params: {
   }
 }
 
+/**
+ * Draws a square with the given parameters.
+ */
 export function drawSquare(params: {
   fill: (pos: THREE.Vector2) => void;
   pos: THREE.Vector2;

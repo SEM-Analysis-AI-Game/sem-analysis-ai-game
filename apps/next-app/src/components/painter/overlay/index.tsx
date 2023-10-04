@@ -1,7 +1,8 @@
 import { UploadButton } from "@/components";
-import { ToolNames, kToolFactory } from "../tools";
+import { ToolNames } from "../tools";
 import { BrushSizeSlider } from "./brush-size-slider";
 import { ToolbarButton } from "./toolbar-button";
+import { kToolFactory } from "./tool-factory";
 
 /**
  * Server-side rendered overlay for the painter.

@@ -19,11 +19,13 @@ export class CanvasAction {
   public readonly drawingLayer: DrawingLayer;
 
   /**
-   * The segments that were effected by this action.
+   * The segments that were effected by this action. This is not used for
+   * undoing or redoing, but is used for determining if a segment needs to
+   * be split. It is useful to track this information in the action since
+   * the action's lifetime consists of one brush stroke.
    *
    * The key is the segment ID, and the value is the new boundary points that
-   * were created by this action. These boundary points are used to determine
-   * if a segment needs to be split.
+   * were created by this action.
    */
   public readonly effectedSegments: Map<
     number,

@@ -4,13 +4,23 @@ import { Tool } from "./tool";
 import { DrawingLayer } from "../drawing-layer";
 import { ActionHistory } from "../action-history";
 
+/**
+ * The multiplier for the pan speed. This should be refactored out.
+ */
 export const kPanMultiplier = 3.5;
 
 export class PanTool extends Tool {
   readonly name = "Pan";
 
-  private anchor: THREE.Vector2 | null = null;
+  /**
+   * The mouse position on the last frame.
+   */
+  private lastMousePos: THREE.Vector2 | null = null;
 
+  /**
+   * Size is only stored in this tool so that when we switch from pan to a drawing
+   * tool we can preserve the size without needing some external state.
+   */
   constructor(size: number) {
     super(size);
   }
@@ -27,17 +37,22 @@ export class PanTool extends Tool {
     history: ActionHistory,
     activeSegment: number
   ): void {
-    if (cursorDown && this.anchor) {
+    if (cursorDown && this.lastMousePos) {
       const maxPan = new THREE.Vector2(1, 1)
         .subScalar(1.0 / Math.sqrt(zoom))
         .divideScalar(kPanMultiplier);
       setPan(
         pan
           .clone()
-          .add(this.anchor.clone().sub(mousePos).divide(drawingLayer.pixelSize))
+          .add(
+            this.lastMousePos
+              .clone()
+              .sub(mousePos)
+              .divide(drawingLayer.pixelSize)
+          )
           .clamp(maxPan.clone().negate(), maxPan)
       );
     }
-    this.anchor = mousePos.clone();
+    this.lastMousePos = mousePos.clone();
   }
 }

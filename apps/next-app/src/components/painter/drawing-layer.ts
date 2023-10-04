@@ -187,13 +187,9 @@ export class DrawingLayer {
   public setSegment(
     x: number,
     y: number,
-    segment: number
-  ): {
-    newBoundaryPoints: PointContainer;
-    removedBoundaryPoints: PointContainer;
-  } {
-    const newBoundaryPoints = new PointContainer();
-    const removedBoundaryPoints = new PointContainer();
+    segment: number,
+    action?: CanvasAction
+  ) {
     const oldSegment = this.segment(x, y);
     this.segmentBuffer[y * this.pixelSize.x + x] = segment;
     const color = this.segmentColor(segment);
@@ -215,8 +211,13 @@ export class DrawingLayer {
       const oldSegmentEntry = this.segmentMap.get(oldSegment)!;
       const point = oldSegmentEntry.points.getPoint(x, y);
       if (point) {
-        if (point.numNeighbors < 4) {
-          removedBoundaryPoints.setPoint(x, y, null);
+        if (point.numNeighbors < 4 && action) {
+          let newBoundaryMap = action.effectedSegments.get(oldSegment);
+          if (!newBoundaryMap) {
+            newBoundaryMap = { newBoundaryPoints: new PointContainer() };
+            action.effectedSegments.set(oldSegment, newBoundaryMap);
+          }
+          newBoundaryMap.newBoundaryPoints.deletePoint(x, y);
         }
         oldSegmentEntry.points.deletePoint(x, y);
       }
@@ -235,7 +236,18 @@ export class DrawingLayer {
               kDrawAlpha + kBorderAlphaBoost,
               oldSegmentEntry.color
             );
-            newBoundaryPoints.setPoint(neighbor.x, neighbor.y, null);
+            if (action) {
+              let newBoundaryMap = action.effectedSegments.get(oldSegment);
+              if (!newBoundaryMap) {
+                newBoundaryMap = { newBoundaryPoints: new PointContainer() };
+                action.effectedSegments.set(oldSegment, newBoundaryMap);
+              }
+              newBoundaryMap.newBoundaryPoints.setPoint(
+                neighbor.x,
+                neighbor.y,
+                null
+              );
+            }
           }
         }
         oldSegmentEntry.points.setPoint(neighbor.x, neighbor.y, {
@@ -280,7 +292,6 @@ export class DrawingLayer {
         }
       }
     }
-    return { newBoundaryPoints, removedBoundaryPoints };
   }
 
   public segmentPoints(

@@ -5,7 +5,11 @@ export abstract class Eraser extends DrawTool {
     super(size);
   }
 
-  protected drawingSegment(activeSegment: number): number {
+  /**
+   * By returning -1, we are removing segments from the
+   * drawing layer.
+   */
+  protected drawingSegment(): number {
     return -1;
   }
 }
