@@ -44,6 +44,7 @@ export function PainterCanvas(): JSX.Element {
     // this is the component responsible for tracking segments,
     // and filling pixels on the canvas.
     const drawing = new DrawingLayer(backgroundResolution);
+
     return [canvasSize, drawing];
   }, [background]);
 

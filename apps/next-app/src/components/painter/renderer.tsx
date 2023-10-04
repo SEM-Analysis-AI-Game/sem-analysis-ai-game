@@ -50,8 +50,8 @@ export function PainterRenderer(): null {
       );
 
       const drawingComps: EffectComposer[] = [];
-      for (let i = 0; i < drawingLayer.numSections.y + 1; i++) {
-        for (let j = 0; j < drawingLayer.numSections.x + 1; j++) {
+      for (let i = 0; i < drawingLayer.numSections().y + 1; i++) {
+        for (let j = 0; j < drawingLayer.numSections().x + 1; j++) {
           const sectionSize = drawingLayer.sectionSize(j, i);
           if (sectionSize.x > 0 && sectionSize.y > 0) {
             const drawing = new THREE.WebGLRenderTarget(
@@ -109,22 +109,14 @@ export function PainterRenderer(): null {
 
     backgroundComposer.render();
 
-    for (let i = 0; i < drawingLayer.numSections.y + 1; i++) {
-      for (let j = 0; j < drawingLayer.numSections.x + 1; j++) {
+    for (let i = 0; i < drawingLayer.numSections().y + 1; i++) {
+      for (let j = 0; j < drawingLayer.numSections().x + 1; j++) {
         if (
-          j === drawingLayer.numSections.x &&
-          drawingLayer.trailing.width === 0
+          drawingLayer.sectionSize(j, i).x !== 0 &&
+          drawingLayer.sectionSize(j, i).y !== 0
         ) {
-          continue;
+          drawingComposers[i * (drawingLayer.numSections().x + 1) + j].render();
         }
-        if (
-          i === drawingLayer.numSections.y &&
-          drawingLayer.trailing.height === 0
-        ) {
-          continue;
-        }
-
-        drawingComposers[i * (drawingLayer.numSections.x + 1) + j].render();
       }
     }
   });
