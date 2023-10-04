@@ -30,12 +30,16 @@ export class DrawingLayer {
    * the number of neighbors (adjacent pixels of the same segment)
    * each point has is stored in the point container. If a point
    * has < 4 neighbors, it is on the boundary of the segment.
+   *
+   * Also tracks the centroid of the segment, and the
    */
   private segmentMap: Map<
     number,
     {
       color: THREE.Color;
       points: PointContainer<{ numNeighbors: number }>;
+      centroid: THREE.Vector2;
+      medianEstimate: THREE.Vector2;
     }
   >;
 
@@ -58,6 +62,8 @@ export class DrawingLayer {
     this.segmentMap.set(this.segmentMap.size + 1, {
       color: randomColor,
       points: new PointContainer(),
+      centroid: new THREE.Vector2(),
+      medianEstimate: new THREE.Vector2(),
     });
   }
 
@@ -130,7 +136,12 @@ export class DrawingLayer {
         // starting at the random point until we cannot traverse any further.
         const visited = breadthFirstTraversal(
           new THREE.Vector2(bfsStart[0], bfsStart[1]),
-          (pos) => boundary.hasPoint(pos.x, pos.y),
+          (pos) =>
+            boundary.hasPoint(pos.x, pos.y) &&
+            pos.x >= 0 &&
+            pos.y >= 0 &&
+            pos.x < this.pixelSize.x &&
+            pos.y < this.pixelSize.y,
           // for this breadth-first traversal we can walk diagonally because
           // border pixels diagonal to eachother are still considered
           // contiguous
@@ -158,7 +169,13 @@ export class DrawingLayer {
           const fillVisited = breadthFirstTraversal(
             new THREE.Vector2(bfsStart[0], bfsStart[1]),
             (pos, exitLoop) => {
-              if (this.segment(pos.x, pos.y) === segment[0]) {
+              if (
+                this.segment(pos.x, pos.y) === segment[0] &&
+                pos.x >= 0 &&
+                pos.y >= 0 &&
+                pos.x < this.pixelSize.x &&
+                pos.y < this.pixelSize.y
+              ) {
                 // if we encounter any boundary points, we will remove
                 // them from the boundary container. This prevents further
                 // calculation against any disconnected boundary points
@@ -274,8 +291,19 @@ export class DrawingLayer {
         }
       }
 
-      // remove the point from the old segment's point container
-      oldSegmentEntry.points.deletePoint(x, y);
+      if (oldSegmentEntry.points.hasPoint(x, y)) {
+        if (oldSegmentEntry.points.size() === 1) {
+          oldSegmentEntry.centroid.set(0, 0);
+        } else {
+          oldSegmentEntry.centroid.sub(
+            new THREE.Vector2(x, y).divideScalar(
+              oldSegmentEntry.points.size() - 1
+            )
+          );
+        }
+        // remove the point from the old segment's point container
+        oldSegmentEntry.points.deletePoint(x, y);
+      }
 
       // each neighboring point (adjacent point of the old segment) is now
       // a boundary point, so we need to update the shader uniforms to highlight
@@ -333,6 +361,10 @@ export class DrawingLayer {
       // get all of the adjacent pixels that are in the same segment
       const inSegmentNeighbors = adjacent.filter(
         (neighbor) => this.segment(neighbor.x, neighbor.y) === segment
+      );
+
+      segmentEntry.centroid.add(
+        new THREE.Vector2(x, y).divideScalar(segmentEntry.points.size() + 1)
       );
 
       // update this pixel's point container entry to reflect that it has
