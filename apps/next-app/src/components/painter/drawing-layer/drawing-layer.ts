@@ -205,16 +205,36 @@ export class DrawingLayer {
     }
   }
 
+  /**
+   * Updates a pixel value from one segment to another, then computes updates to
+   * any segment boundaries. If a boundary point is created, it is added to the
+   * action's effectedSegments so it can be used to determine if a segment needs
+   * to be split. If no action is provided, the segment boundaries are still computed
+   * but not recorded.
+   *
+   * This method will also update the shader uniforms to reflect changes.
+   *
+   * the segment is a 1-based index
+   */
   public setSegment(
     x: number,
     y: number,
     segment: number,
     action?: CanvasAction
   ) {
+    // the segment we are overwriting
     const oldSegment = this.segment(x, y);
+
+    // early return if we are not actually changing the segment
+    if (oldSegment == segment) {
+      return;
+    }
+
+    // update the segment buffer (this is a flattened 2D array row-major)
     this.segmentBuffer[y * this.pixelSize.x + x] = segment;
 
-    const neighbors = [
+    // get adjacent points (clamped by resolution)
+    const adjacent = [
       new THREE.Vector2(x - 1, y),
       new THREE.Vector2(x + 1, y),
       new THREE.Vector2(x, y - 1),
@@ -227,49 +247,72 @@ export class DrawingLayer {
         neighbor.y < this.pixelSize.y
     );
 
+    // if we are overwriting a segment, we need to update the
+    // old segments boundary points. Updates done here need to be
+    // reported to the action argument if it is provided through the
+    // effectedSegments map.
     if (oldSegment !== -1 && segment !== oldSegment) {
       const oldSegmentEntry = this.segmentMap.get(oldSegment)!;
-      const point = oldSegmentEntry.points.getPoint(x, y);
-      if (point) {
-        if (point.numNeighbors < 4 && action) {
-          let newBoundaryMap = action.effectedSegments.get(oldSegment);
-          if (!newBoundaryMap) {
-            newBoundaryMap = { newBoundaryPoints: new PointContainer() };
-            action.effectedSegments.set(oldSegment, newBoundaryMap);
-          }
+      const point = oldSegmentEntry.points.getPoint(x, y)!;
+      // if this point used to be a boundary point, we need to remove it
+      // from the effectedSegments map in case we previously added it.
+      // the effectedSegments map is meant to represent just the new
+      // boundary points created at the end of this action.
+      if (point.numNeighbors < 4 && action) {
+        let newBoundaryMap = action.effectedSegments.get(oldSegment);
+        // create the newBoundaryMap for this segment if it wasn't already
+        // created
+        if (!newBoundaryMap) {
+          newBoundaryMap = { newBoundaryPoints: new PointContainer() };
+          action.effectedSegments.set(oldSegment, newBoundaryMap);
+        } else {
           newBoundaryMap.newBoundaryPoints.deletePoint(x, y);
         }
-        oldSegmentEntry.points.deletePoint(x, y);
       }
-      for (let neighbor of neighbors.filter(
+
+      // remove the point from the old segment's point container
+      oldSegmentEntry.points.deletePoint(x, y);
+
+      // each neighboring point (adjacent point of the old segment) is now
+      // a boundary point, so we need to update the shader uniforms to highlight
+      // them and also update the point container to reflect that they now have
+      // 1 less neighbor (thus making them boundary points)
+      for (let neighbor of adjacent.filter(
         (neighbor) => this.segment(neighbor.x, neighbor.y) === oldSegment
       )) {
         const neighborEntry = oldSegmentEntry.points.getPoint(
           neighbor.x,
           neighbor.y
-        );
-        if (neighborEntry) {
-          if (neighborEntry.numNeighbors === 4) {
-            this.uniforms.fillPixel(
+        )!;
+        if (neighborEntry.numNeighbors === 4) {
+          // this pixel used to not be a boundary pixel, but now it is.
+          // update the shader uniforms to reflect this.
+          this.uniforms.fillPixel(
+            neighbor.x,
+            neighbor.y,
+            kDrawAlpha + kBorderAlphaBoost,
+            oldSegmentEntry.color
+          );
+          // if there as an action argument passed in, we need to update the
+          // effectedSegments map to reflect that this pixel is now a boundary
+          // pixel.
+          if (action) {
+            let newBoundaryMap = action.effectedSegments.get(oldSegment);
+            // create the newBoundaryMap for this segment if it wasn't already
+            // created
+            if (!newBoundaryMap) {
+              newBoundaryMap = { newBoundaryPoints: new PointContainer() };
+              action.effectedSegments.set(oldSegment, newBoundaryMap);
+            }
+            newBoundaryMap.newBoundaryPoints.setPoint(
               neighbor.x,
               neighbor.y,
-              kDrawAlpha + kBorderAlphaBoost,
-              oldSegmentEntry.color
+              null
             );
-            if (action) {
-              let newBoundaryMap = action.effectedSegments.get(oldSegment);
-              if (!newBoundaryMap) {
-                newBoundaryMap = { newBoundaryPoints: new PointContainer() };
-                action.effectedSegments.set(oldSegment, newBoundaryMap);
-              }
-              newBoundaryMap.newBoundaryPoints.setPoint(
-                neighbor.x,
-                neighbor.y,
-                null
-              );
-            }
           }
         }
+        // update the point container to reflect that this pixel now has 1 less
+        // neighbor.
         oldSegmentEntry.points.setPoint(neighbor.x, neighbor.y, {
           numNeighbors: neighborEntry ? neighborEntry.numNeighbors - 1 : 0,
         });
@@ -277,39 +320,50 @@ export class DrawingLayer {
     }
 
     if (segment === -1 && oldSegment !== -1) {
+      // we are erasing a segment, so we need to update the shader uniforms
       this.uniforms.fillPixel(x, y, 0, new THREE.Color());
     } else if (segment !== -1) {
       const color = this.segmentColor(segment);
       const segmentEntry = this.segmentMap.get(segment)!;
-      if (!segmentEntry.points.hasPoint(x, y)) {
-        const inSegmentNeighbors = neighbors.filter(
-          (neighbor) => this.segment(neighbor.x, neighbor.y) === segment
-        );
-        segmentEntry.points.setPoint(x, y, {
-          numNeighbors: inSegmentNeighbors.length,
+
+      // get all of the adjacent pixels that are in the same segment
+      const inSegmentNeighbors = adjacent.filter(
+        (neighbor) => this.segment(neighbor.x, neighbor.y) === segment
+      );
+
+      // update this pixel's point container entry to reflect that it has
+      // the number of neighbors found above.
+      segmentEntry.points.setPoint(x, y, {
+        numNeighbors: inSegmentNeighbors.length,
+      });
+
+      // update the shader uniforms to reflect that this pixel is now
+      // part of the segment (applying a boost if it is a boundary pixel)
+      this.uniforms.fillPixel(
+        x,
+        y,
+        kDrawAlpha + (inSegmentNeighbors.length < 4 ? kBorderAlphaBoost : 0.0),
+        color
+      );
+
+      // update each neighbor
+      for (let neighbor of inSegmentNeighbors) {
+        const newNumNeighbors =
+          segmentEntry.points.getPoint(neighbor.x, neighbor.y)!.numNeighbors +
+          1;
+        segmentEntry.points.setPoint(neighbor.x, neighbor.y, {
+          numNeighbors: newNumNeighbors,
         });
-        this.uniforms.fillPixel(
-          x,
-          y,
-          kDrawAlpha +
-            (inSegmentNeighbors.length < 4 ? kBorderAlphaBoost : 0.0),
-          color
-        );
-        for (let neighbor of inSegmentNeighbors) {
-          const newNumNeighbors =
-            segmentEntry.points.getPoint(neighbor.x, neighbor.y)!.numNeighbors +
-            1;
-          segmentEntry.points.setPoint(neighbor.x, neighbor.y, {
-            numNeighbors: newNumNeighbors,
-          });
-          if (newNumNeighbors === 4) {
-            this.uniforms.fillPixel(
-              neighbor.x,
-              neighbor.y,
-              kDrawAlpha,
-              segmentEntry.color
-            );
-          }
+        // if this point used to be a boundary point, and it now has 4 neighbors,
+        // we should update the shader uniforms to reflect that it is no longer
+        // a boundary point.
+        if (newNumNeighbors === 4) {
+          this.uniforms.fillPixel(
+            neighbor.x,
+            neighbor.y,
+            kDrawAlpha,
+            segmentEntry.color
+          );
         }
       }
     }
