@@ -5,7 +5,7 @@ import { createContext, useContext } from "react";
 import { kSubdivisionSize } from "./renderer";
 import { kDrawAlpha } from "./tools";
 import { PointContainer } from "./point-container";
-import { CanvasAction } from "./action";
+import { CanvasAction } from "./action-history";
 
 type BFSNode = {
   data: THREE.Vector2;

@@ -3,8 +3,7 @@ import { Tool } from "../tool";
 import { Controls } from "../../controls";
 import { DrawingLayer } from "../../drawing-layer";
 import { Dispatch, SetStateAction } from "react";
-import { ActionHistory } from "../../action-history";
-import { CanvasAction } from "../../action";
+import { ActionHistory, CanvasAction } from "../../action-history";
 import { PointContainer } from "../../point-container";
 
 export const kDrawAlpha = 0.5;
