@@ -3,6 +3,7 @@ import { BackgroundLoader } from "./background-loader";
 import { PainterCanvas } from "./canvas";
 import { Loader } from "./loader";
 import { PainterOverlay } from "./overlay";
+import { PainterStatistics, StatisticsProvider } from "./statistics";
 import { PainterToolProvider } from "./tools";
 
 export function Painter(): JSX.Element {
@@ -10,9 +11,14 @@ export function Painter(): JSX.Element {
     <div className="flex h-screen justify-center items-center">
       <PainterToolProvider>
         <ActionHistoryProvider>
-          <BackgroundLoader overlay={<PainterOverlay />} fallback={<Loader />}>
-            <PainterCanvas />
-          </BackgroundLoader>
+          <StatisticsProvider>
+            <BackgroundLoader
+              overlay={<PainterOverlay />}
+              fallback={<Loader />}
+            >
+              <PainterCanvas />
+            </BackgroundLoader>
+          </StatisticsProvider>
         </ActionHistoryProvider>
       </PainterToolProvider>
     </div>
