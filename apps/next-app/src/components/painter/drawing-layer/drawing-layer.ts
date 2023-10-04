@@ -5,13 +5,31 @@ import { breadthFirstTraversal } from "./bft";
 import { DrawingLayerUniforms } from "./uniforms";
 import { kDrawAlpha } from "../tools";
 
+// The alpha is boosted by this amount when a pixel is on the border of a segment.
 const kBorderAlphaBoost = 0.5;
 
+/**
+ * The drawing layer is responsible for updating shader uniforms and
+ * tracking drawn segments. Segments are given 1-based indexes.
+ */
 export class DrawingLayer {
   public readonly pixelSize: THREE.Vector2;
+
+  // all of the shader uniform data is stored in this class
   private readonly uniforms: DrawingLayerUniforms;
+
+  // the number of segments that have been drawn
   private numSegments: number;
+
+  // the segment buffer stores the segment ID (1-indexed) for each
+  // pixel as a flattened 2D array (row-major). A -1 indicates that no
+  // segment has been drawn at that pixel.
   private readonly segmentBuffer: Int32Array;
+
+  // the segment map stores the color and points for each segment
+  // the number of neighbors (adjacent pixels of the same segment)
+  // each point has is stored in the point container. If a point
+  // has < 4 neighbors, it is on the boundary of the segment.
   private segmentMap: Map<
     number,
     {
@@ -28,8 +46,20 @@ export class DrawingLayer {
     this.uniforms = new DrawingLayerUniforms(pixelSize);
   }
 
+  /**
+   * Increase the total number of segments by one.
+   */
   public incrementSegments(): void {
     this.numSegments++;
+    const randomColor = new THREE.Color(
+      Math.random(),
+      Math.random(),
+      Math.random()
+    );
+    this.segmentMap.set(this.numSegments, {
+      color: randomColor,
+      points: new PointContainer(),
+    });
   }
 
   public getNumSegments(): number {
@@ -73,7 +103,7 @@ export class DrawingLayer {
           ]
         );
         if (visited.size() < totalPoints) {
-          this.numSegments++;
+          this.incrementSegments();
           const newSegment = this.numSegments;
           let fillStart = boundary.firstWhere(() => true)!;
           const fillVisited = breadthFirstTraversal(
@@ -225,19 +255,6 @@ export class DrawingLayer {
   }
 
   private segmentColor(segment: number): THREE.Color {
-    const data = this.segmentMap.get(segment);
-    if (!data) {
-      const randomColor = new THREE.Color(
-        Math.random(),
-        Math.random(),
-        Math.random()
-      );
-      this.segmentMap.set(segment, {
-        color: randomColor,
-        points: new PointContainer(),
-      });
-      return randomColor;
-    }
-    return data.color;
+    return this.segmentMap.get(segment)!.color;
   }
 }
