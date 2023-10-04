@@ -57,35 +57,79 @@ export class DrawingLayer {
     });
   }
 
+  /**
+   * Gets the total number of segments.
+   */
   public getNumSegments(): number {
     return this.segmentMap.size;
   }
 
+  /**
+   * Gets the segment index (1-based) for a given pixel.
+   */
   public segment(x: number, y: number): number {
     return this.segmentBuffer[y * this.pixelSize.x + x];
   }
 
+  /**
+   * Gets the number of sections in the x and y axis.
+   * This refers to the number of subdivisions the canvas has
+   * been split into for rendering optimizations. Only the
+   * renderer should be considered with this.
+   */
   public numSections(): THREE.Vector2 {
     return this.uniforms.numSections;
   }
 
+  /**
+   * Gets the uniform for a given section. These are listened to
+   * by the three.js ShaderMaterial in the renderer.
+   */
   public uniform(j: number, i: number): THREE.Uniform<THREE.DataTexture> {
     return this.uniforms.uniform(j, i);
   }
 
+  /**
+   * Gets the size of a given section. This should not be confused with
+   * segments, as segments are the 1-indexed segments that are drawn on
+   * the canvas, and sections are the subdivisions of the canvas that
+   * are used for rendering optimizations.
+   */
   public sectionSize(j: number, i: number): THREE.Vector2 {
     return this.uniforms.sectionSize(j, i);
   }
 
+  /**
+   * Given an action, finds and applies splits in segments
+   * that were effected by the action. The splits are
+   * written to the action's paintedPoints so they can
+   * be undone.
+   */
   public recomputeSegments(action: CanvasAction): void {
     for (let segment of action.effectedSegments) {
-      let boundary = segment[1].newBoundaryPoints;
+      // these are all of the newly drawn boundary points
+      // that were created by the action on the effected
+      // segment
+      const boundary = segment[1].newBoundaryPoints;
+
+      // we will be removing points from the boundary container
+      // and iterating until it is empty.
       while (boundary.size() > 0) {
+        // find a random point in the boundary container
         let bfsStart = boundary.firstWhere(() => true)!;
+
+        // get the total number of points remaining in the boundary
+        // container
         let totalPoints = boundary.size();
+
+        // traverse the contiguous boundary points breadth-first
+        // starting at the random point until we cannot traverse any further.
         const visited = breadthFirstTraversal(
           new THREE.Vector2(bfsStart[0], bfsStart[1]),
           (pos) => boundary.hasPoint(pos.x, pos.y),
+          // for this breadth-first traversal we can walk diagonally because
+          // border pixels diagonal to eachother are still considered
+          // contiguous
           [
             [-1, 0],
             [1, 0],
@@ -97,15 +141,28 @@ export class DrawingLayer {
             [1, 1],
           ]
         );
+
+        // if we didn't visit all of the points in the boundary
+        // container, that implies that there were more than one
+        // new contiguous boundaries drawn on the effected segment.
         if (visited.size() < totalPoints) {
+          // we will create a new segment and flood fill the effected
+          // segment breadth-first starting from our initial random
+          // point.
           this.incrementSegments();
           const newSegment = this.getNumSegments();
-          let fillStart = boundary.firstWhere(() => true)!;
           const fillVisited = breadthFirstTraversal(
-            new THREE.Vector2(fillStart[0], fillStart[1]),
+            new THREE.Vector2(bfsStart[0], bfsStart[1]),
             (pos, exitLoop) => {
               if (this.segment(pos.x, pos.y) === segment[0]) {
+                // if we encounter any boundary points, we will remove
+                // them from the boundary container. This prevents further
+                // calculation against any disconnected boundary points
+                // that also form a boundary for the new segment we are drawing.
                 boundary.deletePoint(pos.x, pos.y);
+
+                // if we have removed all of the boundary points, we can exit
+                // early.
                 if (boundary.size() === 0) {
                   exitLoop();
                 }
@@ -120,21 +177,30 @@ export class DrawingLayer {
               [0, 1],
             ]
           );
+
+          // if we exited the loop early then we have finished splitting the
+          // segment and thus we can continue to the next effected segment.
           if (boundary.size() > 0) {
             fillVisited.forEach((x, y) => {
+              // for each point we flood filled, we will update the
+              // action history for undo/redo if we have not already
+              // painted it previously during this action
               if (!action.paintedPoints.hasPoint(x, y)) {
                 action.paintedPoints.setPoint(x, y, {
                   newSegment: newSegment,
                   oldSegment: segment[0],
                 });
               }
+
+              // update the flood-filled pixels in the drawing layer
               this.setSegment(x, y, newSegment);
             });
           }
+        } else {
+          visited.forEach((x, y) => {
+            boundary.deletePoint(x, y);
+          });
         }
-        visited.forEach((x, y) => {
-          boundary.deletePoint(x, y);
-        });
       }
     }
   }
@@ -147,7 +213,6 @@ export class DrawingLayer {
   ) {
     const oldSegment = this.segment(x, y);
     this.segmentBuffer[y * this.pixelSize.x + x] = segment;
-    const color = this.segmentColor(segment);
 
     const neighbors = [
       new THREE.Vector2(x - 1, y),
@@ -212,8 +277,9 @@ export class DrawingLayer {
     }
 
     if (segment === -1 && oldSegment !== -1) {
-      this.uniforms.fillPixel(x, y, 0, color);
+      this.uniforms.fillPixel(x, y, 0, new THREE.Color());
     } else if (segment !== -1) {
+      const color = this.segmentColor(segment);
       const segmentEntry = this.segmentMap.get(segment)!;
       if (!segmentEntry.points.hasPoint(x, y)) {
         const inSegmentNeighbors = neighbors.filter(
