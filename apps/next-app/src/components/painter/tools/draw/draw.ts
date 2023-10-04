@@ -14,9 +14,9 @@ export const kDrawAlpha = 0.5;
  */
 export abstract class DrawTool extends Tool {
   /**
-   * The mouse position on the last frame.
+   * The cursor position on the last frame.
    */
-  private lastMousePos: THREE.Vector2 | null;
+  private lastCursorPos: THREE.Vector2 | null;
 
   /**
    * The action that is being drawn, or null if the cursor is not down.
@@ -25,7 +25,7 @@ export abstract class DrawTool extends Tool {
 
   constructor(size: number) {
     super(size);
-    this.lastMousePos = null;
+    this.lastCursorPos = null;
     this.drawAction = null;
   }
 
@@ -48,7 +48,7 @@ export abstract class DrawTool extends Tool {
   public frameCallback(
     cursorDown: boolean,
     zooming: boolean,
-    mousePos: THREE.Vector2,
+    cursorPos: THREE.Vector2,
     zoom: number,
     pan: THREE.Vector2,
     setZoom: Dispatch<SetStateAction<number>>,
@@ -89,32 +89,32 @@ export abstract class DrawTool extends Tool {
         drawingLayer.setSegment(pos.x, pos.y, drawSegment, drawAction);
       };
 
-      // paint the point at the mouse position
+      // paint the point at the cursor position
       this.paint({
         fill,
         size: this.size,
-        pos: mousePos,
+        pos: cursorPos,
         resolution: drawingLayer.pixelSize,
       });
 
       // if the cursor was already down on the last frame as well,
-      // interpolate between the last mouse position and the current
-      // mouse position and paint all the points in between.
-      if (this.lastMousePos) {
+      // interpolate between the last cursor position and the current
+      // cursor position and paint all the points in between.
+      if (this.lastCursorPos) {
         // current point in the interpolation
-        const current = mousePos.clone();
+        const current = cursorPos.clone();
 
         // step vector for the interpolation. This is length of the brush
         // divided by 2. This ensures that the interpolation will always
         // cover the entire brush.
-        const step = this.lastMousePos
+        const step = this.lastCursorPos
           .clone()
-          .sub(mousePos)
+          .sub(cursorPos)
           .normalize()
           .multiplyScalar(this.size / 2);
 
         // the dot product is positive when the interpolation is not complete.
-        while (step.dot(this.lastMousePos.clone().sub(current)) > 0) {
+        while (step.dot(this.lastCursorPos.clone().sub(current)) > 0) {
           this.paint({
             fill,
             size: this.size,
@@ -125,13 +125,13 @@ export abstract class DrawTool extends Tool {
         }
       }
 
-      // record the last mouse position so we can interpolate on the next frame
+      // record the last cursor position so we can interpolate on the next frame
       // as well.
-      this.lastMousePos = mousePos.clone();
+      this.lastCursorPos = cursorPos.clone();
     } else {
-      // clearing the last mouse position will cause the next cursor press
+      // clearing the last cursor position will cause the next cursor press
       // to initialize a new draw action.
-      this.lastMousePos = null;
+      this.lastCursorPos = null;
       if (this.drawAction) {
         // calculate any splitting of segments
         drawingLayer.recomputeSegments(this.drawAction);

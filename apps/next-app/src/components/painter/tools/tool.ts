@@ -20,7 +20,7 @@ export abstract class Tool {
   public abstract frameCallback(
     cursorDown: boolean,
     zooming: boolean,
-    mousePos: THREE.Vector2,
+    cursorPos: THREE.Vector2,
     zoom: number,
     pan: THREE.Vector2,
     setZoom: Dispatch<SetStateAction<number>>,

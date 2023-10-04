@@ -13,9 +13,9 @@ export class PanTool extends Tool {
   readonly name = "Pan";
 
   /**
-   * The mouse position on the last frame.
+   * The cursor position on the last frame.
    */
-  private lastMousePos: THREE.Vector2 | null = null;
+  private lastCursorPos: THREE.Vector2 | null = null;
 
   /**
    * Size is only stored in this tool so that when we switch from pan to a drawing
@@ -28,7 +28,7 @@ export class PanTool extends Tool {
   public frameCallback(
     cursorDown: boolean,
     zooming: boolean,
-    mousePos: THREE.Vector2,
+    cursorPos: THREE.Vector2,
     zoom: number,
     pan: THREE.Vector2,
     setZoom: Dispatch<SetStateAction<number>>,
@@ -37,7 +37,7 @@ export class PanTool extends Tool {
     history: ActionHistory,
     activeSegment: number
   ): void {
-    if (cursorDown && this.lastMousePos) {
+    if (cursorDown && this.lastCursorPos) {
       const maxPan = new THREE.Vector2(1, 1)
         .subScalar(1.0 / Math.sqrt(zoom))
         .divideScalar(kPanMultiplier);
@@ -45,14 +45,14 @@ export class PanTool extends Tool {
         pan
           .clone()
           .add(
-            this.lastMousePos
+            this.lastCursorPos
               .clone()
-              .sub(mousePos)
+              .sub(cursorPos)
               .divide(drawingLayer.pixelSize)
           )
           .clamp(maxPan.clone().negate(), maxPan)
       );
     }
-    this.lastMousePos = mousePos.clone();
+    this.lastCursorPos = cursorPos.clone();
   }
 }

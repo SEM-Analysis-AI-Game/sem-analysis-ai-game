@@ -13,14 +13,23 @@ import {
 const kInitialPan = new THREE.Vector2();
 const kInitialZoom = 1.0;
 
+/**
+ * Context for the current pan.
+ */
 export const PanContext = createContext<
   [THREE.Vector2, Dispatch<SetStateAction<THREE.Vector2>>] | null
 >(null);
 
+/**
+ * Context for the current zoom.
+ */
 export const ZoomContext = createContext<
   [number, Dispatch<SetStateAction<number>>] | null
 >(null);
 
+/**
+ * Hook to get/set the current pan. Must be used within a PanContext.
+ */
 export function usePan(): [
   THREE.Vector2,
   Dispatch<SetStateAction<THREE.Vector2>>
@@ -34,6 +43,9 @@ export function usePan(): [
   return pan;
 }
 
+/**
+ * Hook to get/set the current zoom. Must be used within a ZoomContext.
+ */
 export function useZoom(): [number, Dispatch<SetStateAction<number>>] {
   const zoom = useContext(ZoomContext);
 
@@ -44,6 +56,9 @@ export function useZoom(): [number, Dispatch<SetStateAction<number>>] {
   return zoom;
 }
 
+/**
+ * Provider for the current pan and zoom.
+ */
 export function PainterControls(props: PropsWithChildren): JSX.Element {
   const panState = useState(kInitialPan);
   const zoomState = useState(kInitialZoom);
