@@ -5,11 +5,12 @@ import { Canvas } from "@react-three/fiber";
 import { useMemo } from "react";
 import { PainterRenderer } from "./renderer";
 import { useBackground } from "./background-loader";
-import { DrawingLayer, DrawingLayerContext } from "./drawing-layer";
+import { DrawingLayerProvider } from "./drawing-layer";
 import { PainterController, PainterControls } from "./controls";
 
 /**
- * Responsible for sizing the canvas and setting up the drawing layer.
+ * Responsible for sizing the canvas and initializing the controls and
+ * renderer.
  */
 export function PainterCanvas(): JSX.Element {
   const [background] = useBackground();
@@ -19,8 +20,7 @@ export function PainterCanvas(): JSX.Element {
   }
 
   // Whenever the background changes we need to resize the canvas
-  // and create a new drawing layer.
-  const [screenSize, drawingLayer] = useMemo(() => {
+  const screenSize = useMemo(() => {
     const backgroundResolution = new THREE.Vector2(
       background.image.width,
       background.image.height
@@ -39,11 +39,7 @@ export function PainterCanvas(): JSX.Element {
       .multiplyScalar(inverse)
       .floor();
 
-    // this is the component responsible for tracking segments,
-    // and filling pixels on the canvas.
-    const drawing = new DrawingLayer(backgroundResolution);
-
-    return [canvasSize, drawing];
+    return canvasSize;
   }, [background]);
 
   return (
@@ -56,10 +52,10 @@ export function PainterCanvas(): JSX.Element {
     >
       <Canvas>
         <PainterControls>
-          <DrawingLayerContext.Provider value={drawingLayer}>
+          <DrawingLayerProvider>
             <PainterController />
             <PainterRenderer />
-          </DrawingLayerContext.Provider>
+          </DrawingLayerProvider>
         </PainterControls>
       </Canvas>
     </div>

@@ -1,7 +1,9 @@
 "use client";
 
-import { createContext, useContext } from "react";
+import * as THREE from "three";
+import { PropsWithChildren, createContext, useContext, useMemo } from "react";
 import { DrawingLayer } from "./drawing-layer";
+import { useBackground } from "../background-loader";
 
 /**
  * Context for the current drawing layer.
@@ -21,4 +23,24 @@ export function useDrawingLayer(): DrawingLayer {
   }
 
   return drawingLayer;
+}
+
+export function DrawingLayerProvider(props: PropsWithChildren): JSX.Element {
+  const [background] = useBackground();
+
+  if (!background) {
+    throw new Error("No background found");
+  }
+
+  const drawingLayer = useMemo(() => {
+    return new DrawingLayer(
+      new THREE.Vector2(background.image.width, background.image.height)
+    );
+  }, [background]);
+
+  return (
+    <DrawingLayerContext.Provider value={drawingLayer}>
+      {props.children}
+    </DrawingLayerContext.Provider>
+  );
 }
