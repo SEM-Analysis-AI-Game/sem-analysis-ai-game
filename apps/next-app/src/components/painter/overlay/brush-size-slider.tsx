@@ -2,6 +2,9 @@
 
 import { kInitialToolSize, kToolFactory, useTool } from "../tools";
 
+/**
+ * A slider to control the size of the current tool.
+ */
 export function BrushSizeSlider(): JSX.Element {
   const [tool, setTool] = useTool();
 

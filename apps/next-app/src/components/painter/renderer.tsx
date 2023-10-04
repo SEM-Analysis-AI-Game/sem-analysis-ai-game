@@ -1,8 +1,9 @@
+"use client";
+
 import * as THREE from "three";
 import { useEffect, useMemo } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { EffectComposer, ShaderPass } from "three-stdlib";
-import { useControls } from "./controls";
 import { useBackground } from "./background-loader";
 import {
   backgroundFragmentShader,
@@ -10,6 +11,7 @@ import {
   vertexShader,
 } from "./shaders";
 import { useDrawingLayer } from "./drawing-layer";
+import { usePan, useZoom } from "./controls";
 
 export const kSubdivisionSize = 256;
 
@@ -22,14 +24,15 @@ export function PainterRenderer(): null {
     throw new Error("Background not loaded");
   }
 
-  const [controls] = useControls();
+  const [currentZoom] = useZoom();
+  const [currentPan] = usePan();
 
   const drawingLayer = useDrawingLayer();
 
   const [backgroundComposer, drawingComposers, zoomUniform, panUniform] =
     useMemo(() => {
-      const zoom = new THREE.Uniform(controls.zoom);
-      const pan = new THREE.Uniform(controls.pan);
+      const zoom = new THREE.Uniform(currentZoom);
+      const pan = new THREE.Uniform(currentPan);
 
       const bgComposer = new EffectComposer(gl);
       bgComposer.addPass(
@@ -93,12 +96,12 @@ export function PainterRenderer(): null {
     }, [background]);
 
   useEffect(() => {
-    panUniform.value = controls.pan;
-  }, [controls.pan]);
+    panUniform.value = currentPan;
+  }, [currentPan]);
 
   useEffect(() => {
-    zoomUniform.value = controls.zoom;
-  }, [controls.zoom]);
+    zoomUniform.value = currentZoom;
+  }, [currentZoom]);
 
   return useFrame(() => {
     gl.clear();

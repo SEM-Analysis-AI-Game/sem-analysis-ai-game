@@ -1,7 +1,6 @@
 import * as THREE from "three";
 import { Dispatch, SetStateAction } from "react";
 import { Tool } from "./tool";
-import { Controls } from "../controls";
 import { DrawingLayer } from "../drawing-layer";
 import { ActionHistory } from "../action-history";
 
@@ -20,23 +19,24 @@ export class PanTool extends Tool {
     cursorDown: boolean,
     zooming: boolean,
     mousePos: THREE.Vector2,
-    controls: Controls,
-    setControls: Dispatch<SetStateAction<Controls>>,
+    zoom: number,
+    pan: THREE.Vector2,
+    setZoom: Dispatch<SetStateAction<number>>,
+    setPan: Dispatch<SetStateAction<THREE.Vector2>>,
     drawingLayer: DrawingLayer,
     history: ActionHistory,
     activeSegment: number
   ): void {
     if (cursorDown && this.anchor) {
       const maxPan = new THREE.Vector2(1, 1)
-        .subScalar(1.0 / Math.sqrt(controls.zoom))
+        .subScalar(1.0 / Math.sqrt(zoom))
         .divideScalar(kPanMultiplier);
-      setControls({
-        ...controls,
-        pan: controls.pan
+      setPan(
+        pan
           .clone()
           .add(this.anchor.clone().sub(mousePos).divide(drawingLayer.pixelSize))
-          .clamp(maxPan.clone().negate(), maxPan),
-      });
+          .clamp(maxPan.clone().negate(), maxPan)
+      );
     }
     this.anchor = mousePos.clone();
   }

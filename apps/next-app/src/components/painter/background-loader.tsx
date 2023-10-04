@@ -12,6 +12,9 @@ import {
   useState,
 } from "react";
 
+/**
+ * Context for the current background image.
+ */
 export const BackgroundContext = createContext<
   | [
       THREE.Texture | undefined,
@@ -20,6 +23,9 @@ export const BackgroundContext = createContext<
   | null
 >(null);
 
+/**
+ * Hook to get/set the current background image. Must be used within a BackgroundContext.
+ */
 export function useBackground(): [
   THREE.Texture | undefined,
   Dispatch<SetStateAction<THREE.Texture | undefined>>
@@ -33,6 +39,9 @@ export function useBackground(): [
   return state;
 }
 
+/**
+ * Load a background image from a data URI.
+ */
 export function loadBackground(
   dataUri: string,
   onLoaded: (texture: THREE.Texture) => void
@@ -45,6 +54,12 @@ export function loadBackground(
   });
 }
 
+/**
+ * Provider for the current background image. Loads the background image
+ * from localStorage upon mounting. The overlay can be server-side rendered.
+ * The fallback is rendered while the background image is loading, and the
+ * children are rendered once the background image is loaded.
+ */
 export function BackgroundLoader(
   props: PropsWithChildren<{ fallback: ReactNode; overlay: ReactNode }>
 ): JSX.Element {

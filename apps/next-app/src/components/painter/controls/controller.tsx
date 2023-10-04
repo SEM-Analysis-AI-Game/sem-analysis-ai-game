@@ -1,43 +1,19 @@
+"use client";
+
 import * as THREE from "three";
-import {
-  Dispatch,
-  SetStateAction,
-  createContext,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { usePinch } from "@use-gesture/react";
-import { useDrawingLayer } from "./drawing-layer";
-import { useTool } from "./tools";
-import { PanTool, kPanMultiplier } from "./tools";
-import { useActionHistory } from "./action-history";
+import { usePan, useZoom } from "./provider";
+import { PanTool, kPanMultiplier, useTool } from "../tools";
+import { useDrawingLayer } from "../drawing-layer";
+import { useActionHistory } from "../action-history";
 
-export const ControlsContext = createContext<
-  [Controls, Dispatch<SetStateAction<Controls>>] | null
->(null);
-
-export function useControls(): [Controls, Dispatch<SetStateAction<Controls>>] {
-  const controls = useContext(ControlsContext);
-
-  if (!controls) {
-    throw new Error("useControls must be used within a ControlsContext");
-  }
-
-  return controls;
-}
-
-export type Controls = {
-  zoom: number;
-  pan: THREE.Vector2;
-};
-
-export function PainterControls(): null {
+export function PainterController(): null {
   const { mouse, gl, size } = useThree();
 
-  const [controls, setControls] = useControls();
+  const [zoom, setZoom] = useZoom();
+  const [pan, setPan] = usePan();
 
   const [zooming, setZooming] = useState(false);
 
@@ -56,7 +32,7 @@ export function PainterControls(): null {
 
   usePinch(
     (e) => {
-      const zoom = e.offset[0];
+      const newZoom = e.offset[0];
       const origin = new THREE.Vector2(
         e.origin[0] - size.left,
         e.origin[1] - size.top
@@ -66,18 +42,18 @@ export function PainterControls(): null {
         .multiplyScalar(2.0);
       origin.setY(-origin.y);
       const panBounds = new THREE.Vector2(1.0, 1.0)
-        .subScalar(1.0 / Math.sqrt(zoom))
+        .subScalar(1.0 / Math.sqrt(newZoom))
         .divideScalar(kPanMultiplier);
       setZooming(e.pinching || false);
-      setControls((controls) => ({
-        zoom,
-        pan: origin
+      setPan(
+        origin
           .clone()
-          .divideScalar(zoom)
-          .multiplyScalar(Math.max((zoom - controls.zoom) * 0.5, 0))
-          .add(controls.pan)
-          .clamp(panBounds.clone().negate(), panBounds),
-      }));
+          .divideScalar(newZoom)
+          .multiplyScalar(Math.max((newZoom - zoom) * 0.5, 0))
+          .add(pan)
+          .clamp(panBounds.clone().negate(), panBounds)
+      );
+      setZoom(newZoom);
     },
     {
       pinchOnWheel: true,
@@ -111,8 +87,8 @@ export function PainterControls(): null {
     gl.domElement.addEventListener("pointerdown", (e) => {
       const toolMouse = mouse
         .clone()
-        .divideScalar(Math.sqrt(controls.zoom))
-        .add(controls.pan.clone().multiplyScalar(kPanMultiplier))
+        .divideScalar(Math.sqrt(zoom))
+        .add(pan.clone().multiplyScalar(kPanMultiplier))
         .multiplyScalar(0.5)
         .addScalar(0.5)
         .multiply(drawingLayer.pixelSize)
@@ -129,7 +105,7 @@ export function PainterControls(): null {
       setCursorDown(true);
       setShiftDown(e.shiftKey);
     });
-  }, [drawingLayer, controls]);
+  }, [drawingLayer, pan, zoom]);
 
   useEffect(() => {
     gl.domElement.addEventListener("pointerup", () => {
@@ -143,16 +119,16 @@ export function PainterControls(): null {
   useFrame(() => {
     const panMouse = mouse
       .clone()
-      .divideScalar(Math.sqrt(controls.zoom))
-      .add(controls.pan)
+      .divideScalar(Math.sqrt(zoom))
+      .add(pan)
       .multiplyScalar(0.5)
       .addScalar(0.5)
       .multiply(drawingLayer.pixelSize)
       .floor();
     const toolMouse = mouse
       .clone()
-      .divideScalar(Math.sqrt(controls.zoom))
-      .add(controls.pan.clone().multiplyScalar(kPanMultiplier))
+      .divideScalar(Math.sqrt(zoom))
+      .add(pan.clone().multiplyScalar(kPanMultiplier))
       .multiplyScalar(0.5)
       .addScalar(0.5)
       .multiply(drawingLayer.pixelSize)
@@ -162,8 +138,10 @@ export function PainterControls(): null {
         cursorDown,
         zooming,
         panMouse,
-        controls,
-        setControls,
+        zoom,
+        pan,
+        setZoom,
+        setPan,
         drawingLayer,
         history,
         activeSegment
@@ -173,8 +151,10 @@ export function PainterControls(): null {
         cursorDown,
         zooming,
         tool.name === "Pan" ? panMouse : toolMouse,
-        controls,
-        setControls,
+        zoom,
+        pan,
+        setZoom,
+        setPan,
         drawingLayer,
         history,
         activeSegment

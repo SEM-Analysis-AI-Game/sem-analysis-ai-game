@@ -4,6 +4,9 @@ import { PropsWithChildren } from "react";
 import { ToolNames, kToolFactory } from "../tools";
 import { useTool } from "../tools/provider";
 
+/**
+ * Client-side interactive tool selection menu
+ */
 export function ToolbarButton(
   props: PropsWithChildren<{ toolName: ToolNames }>
 ): JSX.Element {

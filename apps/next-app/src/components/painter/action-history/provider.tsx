@@ -3,8 +3,14 @@
 import { createContext, useContext, useMemo } from "react";
 import { ActionHistory } from "./history";
 
+/**
+ * Context for the current action history.
+ */
 export const ActionHistoryContext = createContext<ActionHistory | null>(null);
 
+/**
+ * Hook to get the current action history. Must be used within an ActionHistoryContext.
+ */
 export function useActionHistory(): ActionHistory {
   const history = useContext(ActionHistoryContext);
 
@@ -17,6 +23,9 @@ export function useActionHistory(): ActionHistory {
   return history;
 }
 
+/**
+ * Provider for the current action history.
+ */
 export function ActionHistoryProvider(props: {
   children: JSX.Element;
 }): JSX.Element {

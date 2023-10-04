@@ -2,17 +2,12 @@
 
 import * as THREE from "three";
 import { Canvas } from "@react-three/fiber";
-import { useMemo, useState } from "react";
-import { ControlsContext, PainterControls } from "./controls";
+import { useMemo } from "react";
 import { PainterRenderer } from "./renderer";
 import { useBackground } from "./background-loader";
 import { DrawingLayer, DrawingLayerContext } from "./drawing-layer";
 import { useActionHistory } from "./action-history";
-
-const kInitialControls = {
-  zoom: 1.0,
-  pan: new THREE.Vector2(),
-};
+import { PainterController, PainterControls } from "./controls";
 
 export function PainterCanvas(): JSX.Element {
   const [background] = useBackground();
@@ -43,8 +38,6 @@ export function PainterCanvas(): JSX.Element {
     return [canvasSize, new DrawingLayer(backgroundResolution)];
   }, [background]);
 
-  const controls = useState(kInitialControls);
-
   return (
     <div
       className="block m-auto overflow-hidden"
@@ -54,12 +47,12 @@ export function PainterCanvas(): JSX.Element {
       }}
     >
       <Canvas>
-        <ControlsContext.Provider value={controls}>
+        <PainterControls>
           <DrawingLayerContext.Provider value={drawingLayer}>
-            <PainterControls />
+            <PainterController />
             <PainterRenderer />
           </DrawingLayerContext.Provider>
-        </ControlsContext.Provider>
+        </PainterControls>
       </Canvas>
     </div>
   );

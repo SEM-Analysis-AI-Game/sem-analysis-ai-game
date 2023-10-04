@@ -1,6 +1,5 @@
 import * as THREE from "three";
 import { Dispatch, SetStateAction } from "react";
-import { Controls } from "../controls";
 import { DrawingLayer } from "../drawing-layer";
 import { ActionHistory } from "../action-history";
 
@@ -19,8 +18,10 @@ export abstract class Tool {
     cursorDown: boolean,
     zooming: boolean,
     mousePos: THREE.Vector2,
-    controls: Controls,
-    setControls: Dispatch<SetStateAction<Controls>>,
+    zoom: number,
+    pan: THREE.Vector2,
+    setZoom: Dispatch<SetStateAction<number>>,
+    setPan: Dispatch<SetStateAction<THREE.Vector2>>,
     drawingLayer: DrawingLayer,
     history: ActionHistory,
     activeSegment: number

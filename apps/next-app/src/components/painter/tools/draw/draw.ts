@@ -1,10 +1,8 @@
 import * as THREE from "three";
 import { Tool } from "../tool";
-import { Controls } from "../../controls";
 import { DrawingLayer } from "../../drawing-layer";
 import { Dispatch, SetStateAction } from "react";
 import { ActionHistory, CanvasAction } from "../../action-history";
-import { PointContainer } from "../../point-container";
 
 export const kDrawAlpha = 0.5;
 
@@ -29,8 +27,10 @@ export abstract class DrawTool extends Tool {
     cursorDown: boolean,
     zooming: boolean,
     mousePos: THREE.Vector2,
-    controls: Controls,
-    setControls: Dispatch<SetStateAction<Controls>>,
+    zoom: number,
+    pan: THREE.Vector2,
+    setZoom: Dispatch<SetStateAction<number>>,
+    setPan: Dispatch<SetStateAction<THREE.Vector2>>,
     drawingLayer: DrawingLayer,
     history: ActionHistory,
     activeSegment: number
