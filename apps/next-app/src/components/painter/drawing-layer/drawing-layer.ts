@@ -14,19 +14,23 @@ const kBorderAlphaBoost = 0.5;
  */
 export class DrawingLayer {
   public readonly pixelSize: THREE.Vector2;
-
-  // all of the shader uniform data is stored in this class
+  /**
+   * all of the shader uniform data is stored in this class
+   */
   private readonly uniforms: DrawingLayerUniforms;
-
-  // the segment buffer stores the segment ID (1-indexed) for each
-  // pixel as a flattened 2D array (row-major). A -1 indicates that no
-  // segment has been drawn at that pixel.
+  /**
+   * the segment buffer stores the segment ID (1-indexed) for each
+   * pixel as a flattened 2D array (row-major). A -1 indicates that no
+   * segment has been drawn at that pixel.
+   */
   private readonly segmentBuffer: Int32Array;
 
-  // the segment map stores the color and points for each segment
-  // the number of neighbors (adjacent pixels of the same segment)
-  // each point has is stored in the point container. If a point
-  // has < 4 neighbors, it is on the boundary of the segment.
+  /**
+   * the segment map stores the color and points for each segment
+   * the number of neighbors (adjacent pixels of the same segment)
+   * each point has is stored in the point container. If a point
+   * has < 4 neighbors, it is on the boundary of the segment.
+   */
   private segmentMap: Map<
     number,
     {

@@ -13,15 +13,20 @@ import { kSubdivisionSize } from "../renderer";
  * not including the trailing section.
  */
 export class DrawingLayerUniforms {
-  // The uniforms for each section.
+  /**
+   * The uniforms for each section.
+   */
   private readonly drawingUniforms: THREE.Uniform<THREE.DataTexture>[];
-
-  // The number of pixels in the trailing section. This section is not
-  // counted in numSections.
+  /**
+   * The number of pixels in the trailing section. This section is not
+   * counted in numSections.
+   */
   private readonly trailing: THREE.Vector2;
 
-  // The number of sections in each dimension. This does not include the
-  // trailing section.
+  /**
+   * The number of sections in each dimension. This does not include the
+   * trailing section.
+   */
   public readonly numSections: THREE.Vector2;
 
   constructor(pixelSize: THREE.Vector2) {

@@ -17,10 +17,8 @@ export class PanTool extends Tool<"Pan"> {
    */
   private lastCursorPos: THREE.Vector2 | null = null;
 
-  /**
-   * Size is only stored in this tool so that when we switch from pan to a drawing
-   * tool we can preserve the size without needing some external state.
-   */
+  // Size is only stored in this tool so that when we switch from pan to a drawing
+  // tool we can preserve the size without needing some external state.
   constructor(size: number) {
     super(size);
   }
