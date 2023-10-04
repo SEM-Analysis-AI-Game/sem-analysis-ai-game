@@ -7,6 +7,9 @@ import {
   loadBackground,
 } from "../painter/background-loader";
 
+/**
+ * Client-side state for the upload button.
+ */
 export function UploadButtonClientSide(props: PropsWithChildren): JSX.Element {
   const router = useRouter();
   const pathName = usePathname();
@@ -28,10 +31,12 @@ export function UploadButtonClientSide(props: PropsWithChildren): JSX.Element {
             const img = ev.target?.result;
             if (img) {
               const dataUri = img.toString();
+              // Save to localStorage
               localStorage.setItem("background", dataUri);
               if (pathName !== "/paint") {
                 router.push("/paint");
               }
+              // Update BackgroundContext if it exists
               if (backgroundState) {
                 loadBackground(dataUri, (texture) => {
                   backgroundState[1](texture);

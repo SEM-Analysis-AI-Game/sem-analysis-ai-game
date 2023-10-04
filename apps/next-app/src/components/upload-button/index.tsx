@@ -1,5 +1,9 @@
 import { UploadButtonClientSide } from "./client-side";
 
+/**
+ * Server-side rendered upload button. Routes to the /paint route and
+ * updates BackgroundContext if one is found.
+ */
 export function UploadButton(): JSX.Element {
   return (
     <UploadButtonClientSide>
