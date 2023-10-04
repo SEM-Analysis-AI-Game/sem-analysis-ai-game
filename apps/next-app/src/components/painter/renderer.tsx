@@ -31,16 +31,19 @@ export function PainterRenderer(): null {
     throw new Error("Background not loaded");
   }
 
+  // These are used to update the background and drawing layer uniforms.
   const [currentZoom] = useZoom();
   const [currentPan] = usePan();
 
   const drawingLayer = useDrawingLayer();
 
+  // creates composers and uniforms on mount.
   const [backgroundComposer, drawingComposers, zoomUniform, panUniform] =
     useMemo(() => {
       const zoom = new THREE.Uniform(currentZoom);
       const pan = new THREE.Uniform(currentPan);
 
+      // renders the background with pan and zoom applied.
       const bgComposer = new EffectComposer(gl);
       bgComposer.addPass(
         new ShaderPass(
@@ -56,6 +59,7 @@ export function PainterRenderer(): null {
         )
       );
 
+      // renders each section of the drawing layer.
       const drawingComps: EffectComposer[] = [];
       for (let i = 0; i < drawingLayer.numSections().y + 1; i++) {
         for (let j = 0; j < drawingLayer.numSections().x + 1; j++) {
@@ -71,6 +75,7 @@ export function PainterRenderer(): null {
 
             const drawingComposer = new EffectComposer(gl, drawing);
 
+            // build the shader for this section
             const drawingShader = buildFragmentShader(
               sectionSize.clone().divide(drawingLayer.pixelSize),
               new THREE.Vector2(j, i)
@@ -102,14 +107,15 @@ export function PainterRenderer(): null {
       return [bgComposer, drawingComps, zoom, pan];
     }, [background]);
 
+  // update the uniforms when the pan or zoom changes.
   useEffect(() => {
     panUniform.value = currentPan;
   }, [currentPan]);
-
   useEffect(() => {
     zoomUniform.value = currentZoom;
   }, [currentZoom]);
 
+  // render the composers on each frame
   return useFrame(() => {
     gl.clear();
     gl.autoClear = false;
