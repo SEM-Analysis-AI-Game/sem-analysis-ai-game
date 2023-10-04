@@ -55,6 +55,18 @@ export type Segment = {
   points: PointContainer<{ numNeighbors: number }>;
 }
 
+type SegmentMap = Map<number, Segment>;
+
+export type SegmentInformation = {
+  numSegments: number;
+  numTotalPoints: number;
+  numFilledPoints: number;
+  segments: {
+    color: THREE.Color;
+    numPoints: number;
+  }[];
+}
+
 export class DrawingLayer {
   private readonly drawingUniforms: THREE.Uniform<THREE.DataTexture>[];
   public readonly pixelSize: THREE.Vector2;
@@ -63,7 +75,8 @@ export class DrawingLayer {
 
   private numSegments: number;
   private readonly segmentBuffer: Int32Array;
-  private segmentMap: Map<number, Segment>;
+  private segmentMap: SegmentMap;
+  public readonly segmentInformation: SegmentInformation;
 
   constructor(pixelSize: THREE.Vector2) {
     this.segmentMap = new Map();
@@ -72,9 +85,9 @@ export class DrawingLayer {
     this.segmentBuffer = new Int32Array(pixelSize.x * pixelSize.y).fill(-1);
     this.numSections = pixelSize.clone().divideScalar(kSubdivisionSize).floor();
     this.trailing = pixelSize
-      .clone()
-      .sub(this.numSections.clone().multiplyScalar(kSubdivisionSize));
-
+    .clone()
+    .sub(this.numSections.clone().multiplyScalar(kSubdivisionSize));
+    
     this.drawingUniforms = [];
     for (let i = 0; i < this.numSections.y + 1; i++) {
       for (let j = 0; j < this.numSections.x + 1; j++) {
@@ -88,6 +101,13 @@ export class DrawingLayer {
         );
         this.drawingUniforms.push(drawingUniform);
       }
+    }
+
+    this.segmentInformation = {
+      numSegments: 0,
+      segments: [],
+      numTotalPoints: pixelSize.x * pixelSize.y,
+      numFilledPoints: 0
     }
   }
 
@@ -114,8 +134,23 @@ export class DrawingLayer {
     );
   }
 
+  private recomputeSegmentInformation(): void {
+    this.segmentInformation.segments = [];
+    this.segmentInformation.numFilledPoints = 0;
+    for (const [id, segment] of this.segmentMap) {
+      if (segment.points.size() > 0) {
+        this.segmentInformation.segments.push({
+           color: segment.color,
+           numPoints: segment.points.size()
+         });
+         this.segmentInformation.numFilledPoints += segment.points.size();
+      } 
+    }
+    this.segmentInformation.numSegments = this.segmentInformation.segments.length;
+  }
+
   public recomputeSegments(action: CanvasAction): void {
-    for (let segment of action.effectedSegments) {
+    for (let segment of action.affectedSegments) {
       let boundary = this.segmentMap
         .get(segment)!
         .points.filter((x, y, data) => data.numNeighbors < 4);
@@ -183,6 +218,8 @@ export class DrawingLayer {
         boundary = boundary.filter((x, y, data) => !visited.hasPoint(x, y));
       }
     }
+
+    this.recomputeSegmentInformation();
   }
 
   public setSegment(x: number, y: number, segment: number): void {

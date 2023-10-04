@@ -55,7 +55,7 @@ export abstract class DrawTool extends Tool {
           });
         }
         if (oldSegment !== -1 && oldSegment !== drawSegment) {
-          drawAction.effectedSegments.add(oldSegment);
+          drawAction.affectedSegments.add(oldSegment);
         }
         drawingLayer.setSegment(pos.x, pos.y, drawSegment);
       };
