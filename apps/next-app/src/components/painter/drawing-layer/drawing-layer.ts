@@ -18,9 +18,6 @@ export class DrawingLayer {
   // all of the shader uniform data is stored in this class
   private readonly uniforms: DrawingLayerUniforms;
 
-  // the number of segments that have been drawn
-  private numSegments: number;
-
   // the segment buffer stores the segment ID (1-indexed) for each
   // pixel as a flattened 2D array (row-major). A -1 indicates that no
   // segment has been drawn at that pixel.
@@ -41,7 +38,6 @@ export class DrawingLayer {
   constructor(pixelSize: THREE.Vector2) {
     this.pixelSize = pixelSize;
     this.segmentMap = new Map();
-    this.numSegments = 0;
     this.segmentBuffer = new Int32Array(pixelSize.x * pixelSize.y).fill(-1);
     this.uniforms = new DrawingLayerUniforms(pixelSize);
   }
@@ -50,20 +46,19 @@ export class DrawingLayer {
    * Increase the total number of segments by one.
    */
   public incrementSegments(): void {
-    this.numSegments++;
     const randomColor = new THREE.Color(
       Math.random(),
       Math.random(),
       Math.random()
     );
-    this.segmentMap.set(this.numSegments, {
+    this.segmentMap.set(this.segmentMap.size + 1, {
       color: randomColor,
       points: new PointContainer(),
     });
   }
 
   public getNumSegments(): number {
-    return this.numSegments;
+    return this.segmentMap.size;
   }
 
   public segment(x: number, y: number): number {
@@ -104,7 +99,7 @@ export class DrawingLayer {
         );
         if (visited.size() < totalPoints) {
           this.incrementSegments();
-          const newSegment = this.numSegments;
+          const newSegment = this.getNumSegments();
           let fillStart = boundary.firstWhere(() => true)!;
           const fillVisited = breadthFirstTraversal(
             new THREE.Vector2(fillStart[0], fillStart[1]),
