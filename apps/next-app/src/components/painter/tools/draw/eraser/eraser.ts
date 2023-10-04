@@ -7,7 +7,7 @@ export abstract class Eraser<Name extends ToolNames> extends DrawTool<Name> {
   }
 
   /**
-   * By returning -1, we are pixels from segments.
+   * By returning -1, we are removing pixels from segments.
    */
   protected drawingSegment(): number {
     return -1;
