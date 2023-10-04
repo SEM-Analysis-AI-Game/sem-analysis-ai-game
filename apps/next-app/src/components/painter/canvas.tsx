@@ -18,10 +18,8 @@ export function PainterCanvas(): JSX.Element {
     throw new Error("No background found");
   }
 
-  /**
-   * Whenever the background changes we need to resize the canvas and
-   * create a new drawing layer.
-   */
+  // Whenever the background changes we need to resize the canvas
+  // and create a new drawing layer.
   const [screenSize, drawingLayer] = useMemo(() => {
     const backgroundResolution = new THREE.Vector2(
       background.image.width,
