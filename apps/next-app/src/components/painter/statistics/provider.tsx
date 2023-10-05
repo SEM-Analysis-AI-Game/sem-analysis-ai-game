@@ -20,7 +20,10 @@ export const PainterStatisticsContext = createContext<
 /**
  * Get/Set the current statistics. Must be used within a PainterStatisticsContext.
  */
-export function useStatistics(): PainterStatistics {
+export function useStatistics(): [
+  PainterStatistics,
+  Dispatch<SetStateAction<PainterStatistics>>
+] {
   const statistics = useContext(PainterStatisticsContext);
 
   if (!statistics) {
@@ -33,7 +36,9 @@ export function useStatistics(): PainterStatistics {
 }
 
 export function StatisticsProvider(props: PropsWithChildren): JSX.Element {
-  const statistics = useState({});
+  const statistics = useState({
+    segments: new Map(),
+  });
 
   return (
     <PainterStatisticsContext.Provider value={statistics}>

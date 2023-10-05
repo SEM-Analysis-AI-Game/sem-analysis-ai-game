@@ -30,16 +30,12 @@ export class DrawingLayer {
    * the number of neighbors (adjacent pixels of the same segment)
    * each point has is stored in the point container. If a point
    * has < 4 neighbors, it is on the boundary of the segment.
-   *
-   * Also tracks the centroid of the segment, and the
    */
   private segmentMap: Map<
     number,
     {
       color: THREE.Color;
       points: PointContainer<{ numNeighbors: number }>;
-      centroid: THREE.Vector2;
-      medianEstimate: THREE.Vector2;
     }
   >;
 
@@ -62,8 +58,6 @@ export class DrawingLayer {
     this.segmentMap.set(this.segmentMap.size + 1, {
       color: randomColor,
       points: new PointContainer(),
-      centroid: new THREE.Vector2(),
-      medianEstimate: new THREE.Vector2(),
     });
   }
 
@@ -280,30 +274,15 @@ export class DrawingLayer {
       // the effectedSegments map is meant to represent just the new
       // boundary points created at the end of this action.
       if (point.numNeighbors < 4 && action) {
-        let newBoundaryMap = action.effectedSegments.get(oldSegment);
-        // create the newBoundaryMap for this segment if it wasn't already
-        // created
-        if (!newBoundaryMap) {
-          newBoundaryMap = { newBoundaryPoints: new PointContainer() };
-          action.effectedSegments.set(oldSegment, newBoundaryMap);
-        } else {
-          newBoundaryMap.newBoundaryPoints.deletePoint(x, y);
+        let effectedSegment = action.effectedSegments.get(oldSegment);
+        // create the data for this segment if it wasn't already created
+        if (effectedSegment) {
+          effectedSegment.newBoundaryPoints.deletePoint(x, y);
         }
       }
 
-      if (oldSegmentEntry.points.hasPoint(x, y)) {
-        if (oldSegmentEntry.points.size() === 1) {
-          oldSegmentEntry.centroid.set(0, 0);
-        } else {
-          oldSegmentEntry.centroid.sub(
-            new THREE.Vector2(x, y).divideScalar(
-              oldSegmentEntry.points.size() - 1
-            )
-          );
-        }
-        // remove the point from the old segment's point container
-        oldSegmentEntry.points.deletePoint(x, y);
-      }
+      // remove the point from the old segment's point container
+      oldSegmentEntry.points.deletePoint(x, y);
 
       // each neighboring point (adjacent point of the old segment) is now
       // a boundary point, so we need to update the shader uniforms to highlight
@@ -329,14 +308,15 @@ export class DrawingLayer {
           // effectedSegments map to reflect that this pixel is now a boundary
           // pixel.
           if (action) {
-            let newBoundaryMap = action.effectedSegments.get(oldSegment);
-            // create the newBoundaryMap for this segment if it wasn't already
-            // created
-            if (!newBoundaryMap) {
-              newBoundaryMap = { newBoundaryPoints: new PointContainer() };
-              action.effectedSegments.set(oldSegment, newBoundaryMap);
+            let effectedSegment = action.effectedSegments.get(oldSegment);
+            // create the data for this segment if it wasn't already created
+            if (!effectedSegment) {
+              effectedSegment = {
+                newBoundaryPoints: new PointContainer(),
+              };
+              action.effectedSegments.set(oldSegment, effectedSegment);
             }
-            newBoundaryMap.newBoundaryPoints.setPoint(
+            effectedSegment.newBoundaryPoints.setPoint(
               neighbor.x,
               neighbor.y,
               null
@@ -361,10 +341,6 @@ export class DrawingLayer {
       // get all of the adjacent pixels that are in the same segment
       const inSegmentNeighbors = adjacent.filter(
         (neighbor) => this.segment(neighbor.x, neighbor.y) === segment
-      );
-
-      segmentEntry.centroid.add(
-        new THREE.Vector2(x, y).divideScalar(segmentEntry.points.size() + 1)
       );
 
       // update this pixel's point container entry to reflect that it has

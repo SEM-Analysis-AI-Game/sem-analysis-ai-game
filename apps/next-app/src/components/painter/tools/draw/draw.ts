@@ -3,6 +3,7 @@ import { Dispatch, SetStateAction } from "react";
 import { Tool, ToolNames } from "../tool";
 import { DrawingLayer } from "../../drawing-layer";
 import { ActionHistory, CanvasAction } from "../../action-history";
+import { PainterStatistics } from "../../statistics";
 
 /**
  * This is the alpha used to fill in points when drawing.
@@ -53,6 +54,8 @@ export abstract class DrawTool<Name extends ToolNames> extends Tool<Name> {
     pan: THREE.Vector2,
     setZoom: Dispatch<SetStateAction<number>>,
     setPan: Dispatch<SetStateAction<THREE.Vector2>>,
+    statistics: PainterStatistics,
+    setStatistics: Dispatch<SetStateAction<PainterStatistics>>,
     drawingLayer: DrawingLayer,
     history: ActionHistory,
     activeSegment: number
@@ -135,6 +138,33 @@ export abstract class DrawTool<Name extends ToolNames> extends Tool<Name> {
       if (this.drawAction) {
         // calculate any splitting of segments
         drawingLayer.recomputeSegments(this.drawAction);
+
+        const statisticsMap = statistics.segments;
+        this.drawAction.paintedPoints.forEach((x, y, data) => {
+          if (data.oldSegment !== -1) {
+            const oldSegmentStats = statisticsMap.get(data.oldSegment)!;
+            oldSegmentStats.positionSums.sub(new THREE.Vector2(x, y));
+            oldSegmentStats.numPoints--;
+          }
+
+          if (data.newSegment !== -1) {
+            const newSegmentStats = statisticsMap.get(data.newSegment);
+            if (newSegmentStats) {
+              newSegmentStats.positionSums.add(new THREE.Vector2(x, y));
+              newSegmentStats.numPoints++;
+            } else {
+              statisticsMap.set(data.newSegment, {
+                numPoints: 1,
+                positionSums: new THREE.Vector2(x, y),
+                medianEstimate: new THREE.Vector2(),
+              });
+            }
+          }
+
+          setStatistics({
+            segments: statisticsMap,
+          });
+        });
 
         // push onto undo/redo stack
         history.push(this.drawAction);

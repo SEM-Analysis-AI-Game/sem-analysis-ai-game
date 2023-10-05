@@ -1,5 +1,3 @@
-import { kPanMultiplier } from "./tools";
-
 /**
  * This shader does nothing but pass the texture through.
  */
@@ -31,9 +29,7 @@ const kApplyPanAndZoom = `
 uniform vec2 pan;
 uniform float zoom;
 void applyPanAndZoom(in vec2 uv, out vec2 transformedCoords) {
-  transformedCoords = ((uv / sqrt(zoom)) + pan * ${toGLSLFloat(
-    kPanMultiplier
-  )}) * 0.5 + 0.5;
+  transformedCoords = ((uv / sqrt(zoom)) + pan) * 0.5 + 0.5;
 }
 `;
 

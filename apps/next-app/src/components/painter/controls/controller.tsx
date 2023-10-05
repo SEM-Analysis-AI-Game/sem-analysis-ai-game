@@ -5,10 +5,11 @@ import { useEffect, useMemo, useState } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { usePinch } from "@use-gesture/react";
 import { usePan, useZoom } from "./provider";
-import { PanTool, kPanMultiplier, useTool } from "../tools";
+import { PanTool, useTool } from "../tools";
 import { useDrawingLayer } from "../drawing-layer";
 import { useActionHistory } from "../action-history";
 import { useBackground } from "../background-loader";
+import { useStatistics } from "../statistics";
 
 /**
  * Listens for input events and updates pan, zoom, and the
@@ -66,20 +67,10 @@ export function PainterController(): null {
         .multiplyScalar(2.0);
       origin.setY(-origin.y);
 
-      // we want to pan along with the zoom in the direction of the origin.
-      // TODO: we need a smoother way of doing this, this is not the typical
-      // zooming behavior.
-      const panBounds = new THREE.Vector2(1.0, 1.0)
-        .subScalar(1.0 / Math.sqrt(newZoom))
-        .divideScalar(kPanMultiplier);
-      setPan(
-        origin
-          .clone()
-          .divideScalar(newZoom)
-          .multiplyScalar(Math.max((newZoom - zoom) * 0.5, 0))
-          .add(pan)
-          .clamp(panBounds.clone().negate(), panBounds)
+      const panBounds = new THREE.Vector2(1.0, 1.0).subScalar(
+        1.0 / Math.sqrt(newZoom)
       );
+      setPan(pan.clamp(panBounds.clone().negate(), panBounds));
       setZoom(newZoom);
     },
     {
@@ -118,14 +109,18 @@ export function PainterController(): null {
     history.clear();
   }, [background]);
 
+  // used for updating the statistics information after
+  // each draw action.
+  const [statistics, setStatistics] = useStatistics();
+
   // handle cursor down events
   useEffect(() => {
     gl.domElement.addEventListener("pointerdown", (e) => {
       // the cursor position used for the tool
-      const toolCursor = mouse
+      const cursor = mouse
         .clone()
         .divideScalar(Math.sqrt(zoom))
-        .add(pan.clone().multiplyScalar(kPanMultiplier))
+        .add(pan)
         .multiplyScalar(0.5)
         .addScalar(0.5)
         .multiply(drawingLayer.pixelSize)
@@ -133,7 +128,7 @@ export function PainterController(): null {
       // if the cursor was not previously down
       if (!cursorDown) {
         // get the segment at the cursor position
-        const segment = drawingLayer.segment(toolCursor.x, toolCursor.y);
+        const segment = drawingLayer.segment(cursor.x, cursor.y);
 
         // if no segment is found at the cursor position, increment the
         // number of segments and use the new segment, otherwise use the found
@@ -162,10 +157,7 @@ export function PainterController(): null {
 
   // handle each canvas frame
   useFrame(() => {
-    // TODO: there are two different positions used for the cursor position.
-    // this is a hack allowing us to use kPanMultiplier. We should figure
-    // out a different way to accomplish this.
-    const panCursor = mouse
+    const cursor = mouse
       .clone()
       .divideScalar(Math.sqrt(zoom))
       .add(pan)
@@ -173,43 +165,22 @@ export function PainterController(): null {
       .addScalar(0.5)
       .multiply(drawingLayer.pixelSize)
       .floor();
-    const toolCursor = mouse
-      .clone()
-      .divideScalar(Math.sqrt(zoom))
-      .add(pan.clone().multiplyScalar(kPanMultiplier))
-      .multiplyScalar(0.5)
-      .addScalar(0.5)
-      .multiply(drawingLayer.pixelSize)
-      .floor();
     // use the secondary pan tool if shift is held. we should
     // try to also implement two-finger drag here on mobile.
-    if (shiftDown) {
-      panTool.frameCallback(
-        cursorDown,
-        zooming,
-        panCursor,
-        zoom,
-        pan,
-        setZoom,
-        setPan,
-        drawingLayer,
-        history,
-        activeSegment
-      );
-    } else {
-      tool.frameCallback(
-        cursorDown,
-        zooming,
-        tool.name === "Pan" ? panCursor : toolCursor,
-        zoom,
-        pan,
-        setZoom,
-        setPan,
-        drawingLayer,
-        history,
-        activeSegment
-      );
-    }
+    (shiftDown ? panTool : tool).frameCallback(
+      cursorDown,
+      zooming,
+      cursor,
+      zoom,
+      pan,
+      setZoom,
+      setPan,
+      statistics,
+      setStatistics,
+      drawingLayer,
+      history,
+      activeSegment
+    );
   });
 
   return null;

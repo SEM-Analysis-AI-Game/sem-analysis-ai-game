@@ -3,6 +3,7 @@ import { ToolNames } from "../tools";
 import { BrushSizeSlider } from "./brush-size-slider";
 import { ToolbarButton } from "./toolbar-button";
 import { kToolFactory } from "./tool-factory";
+import { SegmentInfo } from "./segment-info";
 
 /**
  * Server-side rendered overlay for the painter.
@@ -19,6 +20,7 @@ export function PainterOverlay(): JSX.Element {
       ))}
       <BrushSizeSlider />
       <UploadButton />
+      <SegmentInfo />
     </div>
   );
 }

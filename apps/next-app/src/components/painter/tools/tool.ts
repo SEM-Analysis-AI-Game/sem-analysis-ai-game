@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { Dispatch, SetStateAction } from "react";
 import { DrawingLayer } from "../drawing-layer";
 import { ActionHistory } from "../action-history";
+import { PainterStatistics } from "../statistics";
 
 /**
  * The names of the tools. These are shown on the toolbar.
@@ -25,6 +26,8 @@ export abstract class Tool<T extends ToolNames = ToolNames> {
     pan: THREE.Vector2,
     setZoom: Dispatch<SetStateAction<number>>,
     setPan: Dispatch<SetStateAction<THREE.Vector2>>,
+    statistics: PainterStatistics,
+    setStatistics: Dispatch<SetStateAction<PainterStatistics>>,
     drawingLayer: DrawingLayer,
     history: ActionHistory,
     activeSegment: number

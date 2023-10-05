@@ -3,11 +3,7 @@ import { Dispatch, SetStateAction } from "react";
 import { Tool } from "./tool";
 import { DrawingLayer } from "../drawing-layer";
 import { ActionHistory } from "../action-history";
-
-/**
- * The multiplier for the pan speed. This should be refactored out.
- */
-export const kPanMultiplier = 3.5;
+import { PainterStatistics } from "../statistics";
 
 export class PanTool extends Tool<"Pan"> {
   readonly name = "Pan";
@@ -31,26 +27,32 @@ export class PanTool extends Tool<"Pan"> {
     pan: THREE.Vector2,
     setZoom: Dispatch<SetStateAction<number>>,
     setPan: Dispatch<SetStateAction<THREE.Vector2>>,
+    statistics: PainterStatistics,
+    setStatistics: Dispatch<SetStateAction<PainterStatistics>>,
     drawingLayer: DrawingLayer,
     history: ActionHistory,
     activeSegment: number
   ): void {
-    if (cursorDown && this.lastCursorPos) {
-      const maxPan = new THREE.Vector2(1, 1)
-        .subScalar(1.0 / Math.sqrt(zoom))
-        .divideScalar(kPanMultiplier);
-      setPan(
-        pan
-          .clone()
-          .add(
-            this.lastCursorPos
-              .clone()
-              .sub(cursorPos)
-              .divide(drawingLayer.pixelSize)
-          )
-          .clamp(maxPan.clone().negate(), maxPan)
-      );
+    if (cursorDown) {
+      if (this.lastCursorPos) {
+        const panBounds = new THREE.Vector2(1, 1).subScalar(
+          1.0 / Math.sqrt(zoom)
+        );
+        setPan(
+          pan
+            .clone()
+            .sub(
+              cursorPos
+                .clone()
+                .sub(this.lastCursorPos!)
+                .divide(drawingLayer.pixelSize)
+            )
+            .clamp(panBounds.clone().negate(), panBounds)
+        );
+      }
+      this.lastCursorPos = cursorPos.clone();
+    } else {
+      this.lastCursorPos = null;
     }
-    this.lastCursorPos = cursorPos.clone();
   }
 }
