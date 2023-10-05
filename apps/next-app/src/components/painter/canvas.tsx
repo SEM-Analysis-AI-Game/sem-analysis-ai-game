@@ -7,6 +7,7 @@ import { PainterRenderer } from "./renderer";
 import { useBackground } from "./background-loader";
 import { DrawingLayerProvider } from "./drawing-layer";
 import { PainterController, PainterControls } from "./controls";
+import { SegmentInfo } from "./statistics";
 
 /**
  * Responsible for sizing the canvas and initializing the controls and
@@ -50,6 +51,15 @@ export function PainterCanvas(): JSX.Element {
         height: screenSize.y,
       }}
     >
+      <SegmentInfo
+        size={screenSize}
+        padding={
+          new THREE.Vector2(
+            (window.innerWidth - screenSize.x) / 2,
+            (window.innerHeight - screenSize.y) / 2
+          )
+        }
+      />
       <Canvas>
         <PainterControls>
           <DrawingLayerProvider>
