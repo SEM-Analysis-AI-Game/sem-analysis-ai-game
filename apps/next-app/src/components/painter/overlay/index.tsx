@@ -3,8 +3,8 @@ import { ToolNames } from "../tools";
 import { BrushSizeSlider } from "./brush-size-slider";
 import { ToolbarButton } from "./toolbar-button";
 import { kToolFactory } from "./tool-factory";
-import { UndoButton } from "./undo-button";
-import { RedoButton } from "./redo-button";
+import { HistoryButton } from "./history-button";
+import { HistoryOptions } from "./history-options";
 
 /**
  * Server-side rendered overlay for the painter.
@@ -21,8 +21,11 @@ export function PainterOverlay(): JSX.Element {
       ))}
       <BrushSizeSlider />
       <div className="flex justify-between">
-        <UndoButton />
-        <RedoButton />
+        {HistoryOptions.map((option) => (
+          <HistoryButton key={option.option} redo={option.value}>
+            {option.option}
+          </HistoryButton>
+        ))}
       </div>
       <UploadButton />
     </div>
