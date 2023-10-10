@@ -86,6 +86,45 @@ export abstract class DrawTool<Name extends ToolNames> extends Tool<Name> {
           });
         }
 
+        // update the statistics for the old segment and the new segment
+        setStatistics((stats) => {
+          if (drawSegment !== -1) {
+            const drawingSegmentStats = stats.segments.get(drawSegment);
+            if (drawingSegmentStats) {
+              if (drawingSegmentStats.numPoints > 0) {
+                drawingSegmentStats.centroid
+                  .multiplyScalar(drawingSegmentStats.numPoints)
+                  .add(pos)
+                  .divideScalar(drawingSegmentStats.numPoints + 1);
+              } else {
+                drawingSegmentStats.centroid.set(pos.x, pos.y);
+              }
+              drawingSegmentStats.numPoints++;
+            } else {
+              stats.segments.set(drawSegment, {
+                numPoints: 1,
+                centroid: pos.clone(),
+                medianEstimate: new THREE.Vector2(),
+              });
+            }
+          }
+          if (oldSegment !== -1) {
+            const oldSegmentStats = stats.segments.get(oldSegment);
+            if (oldSegmentStats) {
+              oldSegmentStats.centroid
+                .multiplyScalar(oldSegmentStats.numPoints)
+                .sub(pos)
+                .divideScalar(oldSegmentStats.numPoints - 1);
+              oldSegmentStats.numPoints--;
+            } else {
+              throw new Error("old segment not found");
+            }
+          }
+          return {
+            segments: stats.segments,
+          };
+        });
+
         // Updates the segment in the drawing layer. Passing drawAction
         // as the last argument will cause the updates boundaries to be
         // recorded in the action history.
@@ -137,34 +176,7 @@ export abstract class DrawTool<Name extends ToolNames> extends Tool<Name> {
       this.lastCursorPos = null;
       if (this.drawAction) {
         // calculate any splitting of segments
-        drawingLayer.recomputeSegments(this.drawAction);
-
-        const statisticsMap = statistics.segments;
-        this.drawAction.paintedPoints.forEach((x, y, data) => {
-          if (data.oldSegment !== -1) {
-            const oldSegmentStats = statisticsMap.get(data.oldSegment)!;
-            oldSegmentStats.positionSums.sub(new THREE.Vector2(x, y));
-            oldSegmentStats.numPoints--;
-          }
-
-          if (data.newSegment !== -1) {
-            const newSegmentStats = statisticsMap.get(data.newSegment);
-            if (newSegmentStats) {
-              newSegmentStats.positionSums.add(new THREE.Vector2(x, y));
-              newSegmentStats.numPoints++;
-            } else {
-              statisticsMap.set(data.newSegment, {
-                numPoints: 1,
-                positionSums: new THREE.Vector2(x, y),
-                medianEstimate: new THREE.Vector2(),
-              });
-            }
-          }
-
-          setStatistics({
-            segments: statisticsMap,
-          });
-        });
+        drawingLayer.recomputeSegments(this.drawAction, setStatistics);
 
         // push onto undo/redo stack
         history.push(this.drawAction);

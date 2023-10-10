@@ -7,7 +7,8 @@ import { PainterRenderer } from "./renderer";
 import { useBackground } from "./background-loader";
 import { DrawingLayerProvider } from "./drawing-layer";
 import { PainterController, PainterControls } from "./controls";
-import { SegmentInfo } from "./statistics";
+import { SegmentInfoOverlay, StatisticsProvider } from "./statistics";
+import { ActionHistoryProvider } from "./action-history";
 
 /**
  * Responsible for sizing the canvas and initializing the controls and
@@ -51,23 +52,27 @@ export function PainterCanvas(): JSX.Element {
         height: screenSize.y,
       }}
     >
-      <SegmentInfo
-        size={screenSize}
-        padding={
-          new THREE.Vector2(
-            (window.innerWidth - screenSize.x) / 2,
-            (window.innerHeight - screenSize.y) / 2
-          )
-        }
-      />
-      <Canvas>
-        <PainterControls>
-          <DrawingLayerProvider>
-            <PainterController />
-            <PainterRenderer />
-          </DrawingLayerProvider>
-        </PainterControls>
-      </Canvas>
+      <StatisticsProvider>
+        <ActionHistoryProvider>
+          <PainterControls>
+            <DrawingLayerProvider>
+              <SegmentInfoOverlay
+                size={screenSize}
+                padding={
+                  new THREE.Vector2(
+                    (window.innerWidth - screenSize.x) / 2,
+                    (window.innerHeight - screenSize.y) / 2
+                  )
+                }
+              />
+              <Canvas>
+                <PainterController />
+                <PainterRenderer />
+              </Canvas>
+            </DrawingLayerProvider>
+          </PainterControls>
+        </ActionHistoryProvider>
+      </StatisticsProvider>
     </div>
   );
 }

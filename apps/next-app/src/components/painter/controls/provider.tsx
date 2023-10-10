@@ -28,6 +28,13 @@ export const ZoomContext = createContext<
 >(null);
 
 /**
+ * Context for the current cursor down.
+ */
+export const CursorDownContext = createContext<
+  [boolean, Dispatch<SetStateAction<boolean>>] | null
+>(null);
+
+/**
  * Hook to get/set the current pan. Must be used within a PanContext.
  */
 export function usePan(): [
@@ -57,17 +64,33 @@ export function useZoom(): [number, Dispatch<SetStateAction<number>>] {
 }
 
 /**
+ * Hook to get/set the current cursor down. Must be used within a CursorDownContext.
+ */
+export function useCursorDown(): [boolean, Dispatch<SetStateAction<boolean>>] {
+  const cursorDown = useContext(CursorDownContext);
+
+  if (!cursorDown) {
+    throw new Error("useCursorDown must be used within a CursorDownContext");
+  }
+
+  return cursorDown;
+}
+
+/**
  * Provider for the current pan and zoom.
  */
 export function PainterControls(props: PropsWithChildren): JSX.Element {
+  const cursorDownState = useState(false);
   const panState = useState(kInitialPan);
   const zoomState = useState(kInitialZoom);
 
   return (
-    <PanContext.Provider value={panState}>
-      <ZoomContext.Provider value={zoomState}>
-        {props.children}
-      </ZoomContext.Provider>
-    </PanContext.Provider>
+    <CursorDownContext.Provider value={cursorDownState}>
+      <PanContext.Provider value={panState}>
+        <ZoomContext.Provider value={zoomState}>
+          {props.children}
+        </ZoomContext.Provider>
+      </PanContext.Provider>
+    </CursorDownContext.Provider>
   );
 }

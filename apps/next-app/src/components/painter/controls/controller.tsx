@@ -1,10 +1,10 @@
 "use client";
 
 import * as THREE from "three";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { usePinch } from "@use-gesture/react";
-import { usePan, useZoom } from "./provider";
+import { useCursorDown, usePan, useZoom } from "./provider";
 import { PanTool, useTool } from "../tools";
 import { useDrawingLayer } from "../drawing-layer";
 import { useActionHistory } from "../action-history";
@@ -34,8 +34,9 @@ export function PainterController(): null {
   // so that we can disable drawing tools while zooming.
   const [zooming, setZooming] = useState(false);
 
-  const [cursorDown, setCursorDown] = useState(false);
   const [shiftDown, setShiftDown] = useState(false);
+  const [cursorDown, setCursorDown] = useCursorDown();
+  const [cursorPreviouslyDown, setCursorPreviouslyDown] = useState(false);
 
   const [tool] = useTool();
 
@@ -113,40 +114,12 @@ export function PainterController(): null {
   // each draw action.
   const [statistics, setStatistics] = useStatistics();
 
-  // handle cursor down events
+  // handle cursor up/down event and cursor leave canvas event.
   useEffect(() => {
     gl.domElement.addEventListener("pointerdown", (e) => {
-      // the cursor position used for the tool
-      const cursor = mouse
-        .clone()
-        .divideScalar(Math.sqrt(zoom))
-        .add(pan)
-        .multiplyScalar(0.5)
-        .addScalar(0.5)
-        .multiply(drawingLayer.pixelSize)
-        .floor();
-      // if the cursor was not previously down
-      if (!cursorDown) {
-        // get the segment at the cursor position
-        const segment = drawingLayer.segment(cursor.x, cursor.y);
-
-        // if no segment is found at the cursor position, increment the
-        // number of segments and use the new segment, otherwise use the found
-        // segment.
-        if (segment === -1) {
-          drawingLayer.incrementSegments();
-        }
-        setActiveSegment(
-          segment === -1 ? drawingLayer.getNumSegments() : segment
-        );
-      }
       setCursorDown(true);
       setShiftDown(e.shiftKey);
     });
-  }, [drawingLayer, pan, zoom]);
-
-  // handle cursor up event and cursor leave canvas event.
-  useEffect(() => {
     gl.domElement.addEventListener("pointerup", () => {
       setCursorDown(false);
     });
@@ -165,6 +138,29 @@ export function PainterController(): null {
       .addScalar(0.5)
       .multiply(drawingLayer.pixelSize)
       .floor();
+
+    let currentSegment = activeSegment;
+
+    // if the cursor was not previously down
+    if (!cursorPreviouslyDown && cursorDown) {
+      // get the segment at the cursor position
+      const segment = drawingLayer.segment(cursor.x, cursor.y);
+
+      // if no segment is found at the cursor position, increment the
+      // number of segments and use the new segment, otherwise use the found
+      // segment.
+      if (segment === -1) {
+        drawingLayer.incrementSegments();
+      }
+      currentSegment = segment === -1 ? drawingLayer.getNumSegments() : segment;
+      setActiveSegment(currentSegment);
+      setCursorPreviouslyDown(true);
+    }
+
+    if (!cursorDown && cursorPreviouslyDown) {
+      setCursorPreviouslyDown(false);
+    }
+
     // use the secondary pan tool if shift is held. we should
     // try to also implement two-finger drag here on mobile.
     (shiftDown ? panTool : tool).frameCallback(
@@ -179,7 +175,7 @@ export function PainterController(): null {
       setStatistics,
       drawingLayer,
       history,
-      activeSegment
+      currentSegment
     );
   });
 

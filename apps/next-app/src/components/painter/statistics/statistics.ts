@@ -3,7 +3,7 @@ export type PainterStatistics = {
     number,
     {
       numPoints: number;
-      positionSums: THREE.Vector2;
+      centroid: THREE.Vector2;
       medianEstimate: THREE.Vector2;
     }
   >;

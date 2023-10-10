@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useMemo } from "react";
 import { ActionHistory } from "./history";
+import { useStatistics } from "../statistics";
 
 /**
  * Context for the current action history.
@@ -29,7 +30,9 @@ export function useActionHistory(): ActionHistory {
 export function ActionHistoryProvider(props: {
   children: JSX.Element;
 }): JSX.Element {
-  const history = useMemo(() => new ActionHistory(), []);
+  const [, setStatistics] = useStatistics();
+
+  const history = useMemo(() => new ActionHistory(setStatistics), []);
 
   return (
     <ActionHistoryContext.Provider value={history}>

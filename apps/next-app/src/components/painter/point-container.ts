@@ -60,10 +60,7 @@ export class PointContainer<D = null> {
     if (!this.points.has(x)) {
       this.points.set(x, new Map());
     }
-    const xMap = this.points.get(x);
-    if (!xMap) {
-      throw new Error("xMap is undefined");
-    }
+    const xMap = this.points.get(x)!;
     if (!xMap.has(y)) {
       this.currentSize++;
     }
@@ -88,10 +85,7 @@ export class PointContainer<D = null> {
     if (!this.points.has(x)) {
       return;
     }
-    const xMap = this.points.get(x);
-    if (!xMap) {
-      throw new Error("xMap is undefined");
-    }
+    const xMap = this.points.get(x)!;
     if (xMap.has(y)) {
       xMap.delete(y);
       this.currentSize--;
