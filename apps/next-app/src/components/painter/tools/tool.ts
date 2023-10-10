@@ -1,8 +1,8 @@
 import * as THREE from "three";
 import { Dispatch, SetStateAction } from "react";
 import { DrawingLayer } from "../drawing-layer";
-import { ActionHistory } from "../action-history";
 import { StatisticsUpdate } from "../statistics";
+import { ActionHistoryEvent } from "../action-history";
 
 /**
  * The names of the tools. These are shown on the toolbar.
@@ -28,7 +28,7 @@ export abstract class Tool<T extends ToolNames = ToolNames> {
     setPan: Dispatch<SetStateAction<THREE.Vector2>>,
     updateStatistics: Dispatch<StatisticsUpdate>,
     drawingLayer: DrawingLayer,
-    history: ActionHistory
+    updateHistory: Dispatch<ActionHistoryEvent>
   ): void;
 
   constructor(size: number) {

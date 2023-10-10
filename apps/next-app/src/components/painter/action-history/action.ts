@@ -2,13 +2,13 @@ import { DrawingLayer } from "../drawing-layer";
 import { PointContainer } from "../point-container";
 
 /**
- * This class represents an action that can be undone or redone.
+ * Represents an action that can be undone or redone.
  */
-export class CanvasAction {
+export type CanvasAction = {
   /**
    * The points that were painted by this action.
    */
-  public readonly paintedPoints: PointContainer<{
+  readonly paintedPoints: PointContainer<{
     oldSegment: number;
     newSegment: number;
   }>;
@@ -16,7 +16,7 @@ export class CanvasAction {
   /**
    * The drawing layer that this action was applied to.
    */
-  public readonly drawingLayer: DrawingLayer;
+  readonly drawingLayer: DrawingLayer;
 
   /**
    * The segments that were effected by this action. This is not used for
@@ -27,14 +27,5 @@ export class CanvasAction {
    * The key is the segment ID, and the value is the new boundary points that
    * were created by this action.
    */
-  public readonly effectedSegments: Map<
-    number,
-    { newBoundaryPoints: PointContainer }
-  >;
-
-  constructor(drawingLayer: DrawingLayer) {
-    this.effectedSegments = new Map();
-    this.paintedPoints = new PointContainer();
-    this.drawingLayer = drawingLayer;
-  }
-}
+  readonly effectedSegments: Map<number, { newBoundaryPoints: PointContainer }>;
+};

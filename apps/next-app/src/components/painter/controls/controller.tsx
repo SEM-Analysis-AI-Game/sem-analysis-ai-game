@@ -48,7 +48,7 @@ export function PainterController(): null {
 
   // these are passed to the tool to be modified.
   const drawingLayer = useDrawingLayer();
-  const history = useActionHistory();
+  const [, updateHistory] = useActionHistory();
 
   // this handles pinch + mouse wheel zooming
   usePinch(
@@ -86,54 +86,35 @@ export function PainterController(): null {
     }
   );
 
-  // this is used to track the current segment that we are drawing on.
-  // it is updated when the user clicks on the canvas.
-  const [activeSegment, setActiveSegment] = useState(0);
-
   // keybinds for undo/redo
   useEffect(() => {
     document.addEventListener("keydown", (e) => {
       if (e.ctrlKey) {
         if (e.code === "KeyZ") {
-          history.undo();
+          updateHistory({ type: "undo" });
         }
         if (e.code === "KeyY") {
-          history.redo();
+          updateHistory({ type: "redo" });
         }
       }
     });
-  }, [history]);
+  }, []);
 
   // clear the history when the background changes
   useEffect(() => {
-    history.clear();
+    updateHistory({ type: "clear" });
   }, [background]);
 
   // used for updating the statistics information after
   // each draw action.
   const [, updateStatistics] = useStatistics();
 
-  const [pointerDownHandler, setPointerDownHandler] = useState(
-    () => (e: PointerEvent) => {
-      setCursorDown(true);
-      setShiftDown(e.shiftKey);
-      drawingLayer.activeSegment = -1;
-    }
-  );
-
-  // handle cursor down event
-  useEffect(() => {
-    gl.domElement.removeEventListener("pointerdown", pointerDownHandler);
-    setPointerDownHandler(() => (e: PointerEvent) => {
-      setCursorDown(true);
-      setShiftDown(e.shiftKey);
-      drawingLayer.activeSegment = -1;
-    });
-    gl.domElement.addEventListener("pointerdown", pointerDownHandler);
-  }, [drawingLayer, pointerDownHandler]);
-
   // handle cursor up/down event and cursor leave canvas event.
   useEffect(() => {
+    gl.domElement.addEventListener("pointerdown", (e) => {
+      setCursorDown(true);
+      setShiftDown(e.shiftKey);
+    });
     gl.domElement.addEventListener("pointerup", () => {
       setCursorDown(false);
     });
@@ -168,6 +149,10 @@ export function PainterController(): null {
         segment === -1 ? drawingLayer.getNumSegments() : segment;
     }
 
+    if (!cursorDown) {
+      drawingLayer.activeSegment = -1;
+    }
+
     // use the secondary pan tool if shift is held. we should
     // try to also implement two-finger drag here on mobile.
     (shiftDown ? panTool : tool).frameCallback(
@@ -180,7 +165,7 @@ export function PainterController(): null {
       setPan,
       updateStatistics,
       drawingLayer,
-      history
+      updateHistory
     );
   });
 
