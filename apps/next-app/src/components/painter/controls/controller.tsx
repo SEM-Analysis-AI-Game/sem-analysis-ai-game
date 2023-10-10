@@ -1,7 +1,7 @@
 "use client";
 
 import * as THREE from "three";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { usePinch } from "@use-gesture/react";
 import { useCursorDown, usePan, useZoom } from "./provider";
@@ -113,13 +113,27 @@ export function PainterController(): null {
   // each draw action.
   const [, updateStatistics] = useStatistics();
 
-  // handle cursor up/down event and cursor leave canvas event.
+  const [pointerDownHandler, setPointerDownHandler] = useState(
+    () => (e: PointerEvent) => {
+      setCursorDown(true);
+      setShiftDown(e.shiftKey);
+      drawingLayer.activeSegment = -1;
+    }
+  );
+
+  // handle cursor down event
   useEffect(() => {
-    gl.domElement.addEventListener("pointerdown", (e) => {
+    gl.domElement.removeEventListener("pointerdown", pointerDownHandler);
+    setPointerDownHandler(() => (e: PointerEvent) => {
       setCursorDown(true);
       setShiftDown(e.shiftKey);
       drawingLayer.activeSegment = -1;
     });
+    gl.domElement.addEventListener("pointerdown", pointerDownHandler);
+  }, [drawingLayer, pointerDownHandler]);
+
+  // handle cursor up/down event and cursor leave canvas event.
+  useEffect(() => {
     gl.domElement.addEventListener("pointerup", () => {
       setCursorDown(false);
     });

@@ -26,10 +26,10 @@ export function SegmentDisplay(
       <button onClick={(e) => console.log(e)}>
         <h1
           style={{
-            fontSize: Math.min(
+            fontSize: Math.max(
               Math.sqrt(statistics.segments.get(props.segment)!.numPoints) *
                 kFontScale,
-              8
+              12
             ),
           }}
         >
