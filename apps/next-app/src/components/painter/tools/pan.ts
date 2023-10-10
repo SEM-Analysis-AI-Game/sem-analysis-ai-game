@@ -2,9 +2,9 @@ import * as THREE from "three";
 import { Dispatch } from "react";
 import { Tool } from "./tool";
 import { DrawingLayer } from "../drawing-layer";
-import { StatisticsUpdate } from "../statistics";
 import { ActionHistoryEvent } from "../action-history";
 import { Controls, ControlsEvent } from "../controls";
+import { StatisticsEvent } from "../statistics";
 
 export class PanTool extends Tool<"Pan"> {
   readonly name = "Pan";
@@ -24,7 +24,7 @@ export class PanTool extends Tool<"Pan"> {
     cursorPos: THREE.Vector2,
     controls: Controls,
     updateControls: Dispatch<ControlsEvent>,
-    updateStatistics: Dispatch<StatisticsUpdate>,
+    updateStatistics: Dispatch<StatisticsEvent>,
     drawingLayer: DrawingLayer,
     updateHistory: Dispatch<ActionHistoryEvent>
   ): void {

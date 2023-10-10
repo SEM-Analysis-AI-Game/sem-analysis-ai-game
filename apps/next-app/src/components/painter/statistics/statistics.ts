@@ -11,73 +11,68 @@ export type PainterStatistics = {
   >;
 };
 
-export class StatisticsUpdate {
-  readonly x: number;
-  readonly y: number;
-  readonly oldSegment: number;
-  readonly newSegment: number;
+export type StatisticsEvent = Update | Clear;
 
-  constructor(x: number, y: number, oldSegment: number, newSegment: number) {
-    this.x = x;
-    this.y = y;
-    this.oldSegment = oldSegment;
-    this.newSegment = newSegment;
-  }
-}
+type Update = {
+  type: "update";
+  x: number;
+  y: number;
+  oldSegment: number;
+  newSegment: number;
+};
 
-export class StatisticsClear {
-  constructor() {}
-}
+type Clear = {
+  type: "clear";
+};
 
 export function statisticsReducer(
   state: PainterStatistics,
-  update: StatisticsUpdate | StatisticsClear
+  event: StatisticsEvent
 ): PainterStatistics {
-  if (update instanceof StatisticsClear) {
-    return {
-      segments: new Map(),
-    };
-  } else if (update instanceof StatisticsUpdate) {
-    const segments = state.segments;
-    if (update.newSegment !== -1) {
-      let newSegmentEntry = segments.get(update.newSegment);
-      if (!newSegmentEntry) {
-        newSegmentEntry = {
-          numPoints: 0,
-          centroid: new THREE.Vector2(),
-          medianEstimate: new THREE.Vector2(),
-        };
-        segments.set(update.newSegment, newSegmentEntry);
+  switch (event.type) {
+    case "clear":
+      return {
+        segments: new Map(),
+      };
+    case "update":
+      const segments = state.segments;
+      if (event.newSegment !== -1) {
+        let newSegmentEntry = segments.get(event.newSegment);
+        if (!newSegmentEntry) {
+          newSegmentEntry = {
+            numPoints: 0,
+            centroid: new THREE.Vector2(),
+            medianEstimate: new THREE.Vector2(),
+          };
+          segments.set(event.newSegment, newSegmentEntry);
+        }
+        if (newSegmentEntry.numPoints > 0) {
+          newSegmentEntry.centroid
+            .multiplyScalar(newSegmentEntry.numPoints)
+            .add(new THREE.Vector2(event.x, event.y))
+            .divideScalar(newSegmentEntry.numPoints + 1);
+        } else {
+          newSegmentEntry.centroid.set(event.x, event.y);
+        }
+        newSegmentEntry.numPoints++;
       }
-      if (newSegmentEntry.numPoints > 0) {
-        newSegmentEntry.centroid
-          .multiplyScalar(newSegmentEntry.numPoints)
-          .add(new THREE.Vector2(update.x, update.y))
-          .divideScalar(newSegmentEntry.numPoints + 1);
-      } else {
-        newSegmentEntry.centroid.set(update.x, update.y);
-      }
-      newSegmentEntry.numPoints++;
-    }
 
-    if (update.oldSegment !== -1) {
-      let oldSegmentEntry = segments.get(update.oldSegment);
-      if (!oldSegmentEntry) {
-        oldSegmentEntry = {
-          numPoints: 0,
-          centroid: new THREE.Vector2(),
-          medianEstimate: new THREE.Vector2(),
-        };
-        segments.set(update.oldSegment, oldSegmentEntry);
+      if (event.oldSegment !== -1) {
+        let oldSegmentEntry = segments.get(event.oldSegment);
+        if (!oldSegmentEntry) {
+          oldSegmentEntry = {
+            numPoints: 0,
+            centroid: new THREE.Vector2(),
+            medianEstimate: new THREE.Vector2(),
+          };
+          segments.set(event.oldSegment, oldSegmentEntry);
+        }
+        oldSegmentEntry.centroid
+          .multiplyScalar(oldSegmentEntry.numPoints)
+          .sub(new THREE.Vector2(event.x, event.y))
+          .divideScalar(oldSegmentEntry.numPoints - 1);
+        oldSegmentEntry.numPoints--;
       }
-      oldSegmentEntry.centroid
-        .multiplyScalar(oldSegmentEntry.numPoints)
-        .sub(new THREE.Vector2(update.x, update.y))
-        .divideScalar(oldSegmentEntry.numPoints - 1);
-      oldSegmentEntry.numPoints--;
-    }
-    return { segments };
-  } else {
-    throw new Error("Invalid statistics update");
+      return { segments };
   }
 }

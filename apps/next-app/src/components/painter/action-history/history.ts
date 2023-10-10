@@ -1,6 +1,6 @@
 import { Dispatch } from "react";
 import { CanvasAction } from "./action";
-import { StatisticsUpdate } from "../statistics";
+import { StatisticsEvent } from "../statistics";
 
 /**
  * Represents a node in the action history linked list.
@@ -40,7 +40,7 @@ export type ActionHistoryEvent = Push | Undo | Redo | Clear;
 export type ActionHistory = {
   readonly head: Node<CanvasAction>;
   current: Node<CanvasAction>;
-  readonly updateStatistics: Dispatch<StatisticsUpdate>;
+  readonly updateStatistics: Dispatch<StatisticsEvent>;
 };
 
 export function historyReducer(
@@ -66,9 +66,13 @@ export function historyReducer(
         const current = state.current.next;
         current.data!.paintedPoints.forEach((x, y, data) => {
           current.data!.drawingLayer.setSegment(x, y, data.newSegment);
-          state.updateStatistics(
-            new StatisticsUpdate(x, y, data.oldSegment, data.newSegment)
-          );
+          state.updateStatistics({
+            type: "update",
+            x,
+            y,
+            oldSegment: data.oldSegment,
+            newSegment: data.newSegment,
+          });
         });
         return {
           ...state,
@@ -83,9 +87,13 @@ export function historyReducer(
           // Utilize the old segment data to undo the action.
           // This is the segment that was painted over by the action.
           state.current.data!.drawingLayer.setSegment(x, y, data.oldSegment);
-          state.updateStatistics(
-            new StatisticsUpdate(x, y, data.newSegment, data.oldSegment)
-          );
+          state.updateStatistics({
+            type: "update",
+            x,
+            y,
+            oldSegment: data.newSegment,
+            newSegment: data.oldSegment,
+          });
         });
         return {
           ...state,

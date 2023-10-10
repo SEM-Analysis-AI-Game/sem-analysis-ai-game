@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { Dispatch } from "react";
 import { DrawingLayer } from "../drawing-layer";
-import { StatisticsUpdate } from "../statistics";
+import { StatisticsEvent } from "../statistics";
 import { ActionHistoryEvent } from "../action-history";
 import { Controls, ControlsEvent } from "../controls";
 
@@ -23,7 +23,7 @@ export abstract class Tool<T extends ToolNames = ToolNames> {
     cursorPos: THREE.Vector2,
     controls: Controls,
     updateControls: Dispatch<ControlsEvent>,
-    updateStatistics: Dispatch<StatisticsUpdate>,
+    updateStatistics: Dispatch<StatisticsEvent>,
     drawingLayer: DrawingLayer,
     updateHistory: Dispatch<ActionHistoryEvent>
   ): void;

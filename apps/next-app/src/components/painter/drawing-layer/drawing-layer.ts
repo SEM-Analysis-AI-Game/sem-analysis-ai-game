@@ -5,7 +5,7 @@ import { breadthFirstTraversal } from "./bft";
 import { DrawingLayerUniforms } from "./uniforms";
 import { kDrawAlpha } from "../tools";
 import { Dispatch } from "react";
-import { StatisticsUpdate } from "../statistics";
+import { StatisticsEvent } from "../statistics";
 
 // The alpha is boosted by this amount when a pixel is on the border of a segment.
 const kBorderAlphaBoost = 0.5;
@@ -119,7 +119,7 @@ export class DrawingLayer {
    */
   public recomputeSegments(
     action: CanvasAction,
-    updateStatistics: Dispatch<StatisticsUpdate>
+    updateStatistics: Dispatch<StatisticsEvent>
   ): void {
     for (let segment of action.effectedSegments) {
       // these are all of the newly drawn boundary points
@@ -220,9 +220,13 @@ export class DrawingLayer {
               }
 
               // update the segment statistics for the new segment and the old
-              updateStatistics(
-                new StatisticsUpdate(x, y, segment[0], newSegment)
-              );
+              updateStatistics({
+                type: "update",
+                oldSegment: segment[0],
+                x,
+                y,
+                newSegment,
+              });
 
               // update the flood-filled pixels in the drawing layer
               this.setSegment(x, y, newSegment);

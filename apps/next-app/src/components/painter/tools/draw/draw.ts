@@ -3,9 +3,9 @@ import { Dispatch } from "react";
 import { Tool, ToolNames } from "../tool";
 import { DrawingLayer } from "../../drawing-layer";
 import { ActionHistoryEvent, CanvasAction } from "../../action-history";
-import { StatisticsUpdate } from "../../statistics";
 import { PointContainer } from "../../point-container";
 import { Controls, ControlsEvent } from "../../controls";
+import { StatisticsEvent } from "../../statistics";
 
 /**
  * This is the alpha used to fill in points when drawing.
@@ -52,7 +52,7 @@ export abstract class DrawTool<Name extends ToolNames> extends Tool<Name> {
     cursorPos: THREE.Vector2,
     controls: Controls,
     updateControls: Dispatch<ControlsEvent>,
-    updateStatistics: Dispatch<StatisticsUpdate>,
+    updateStatistics: Dispatch<StatisticsEvent>,
     drawingLayer: DrawingLayer,
     updateHistory: Dispatch<ActionHistoryEvent>
   ): void {
@@ -87,9 +87,13 @@ export abstract class DrawTool<Name extends ToolNames> extends Tool<Name> {
         }
 
         // update the statistics for the old segment and the new segment
-        updateStatistics(
-          new StatisticsUpdate(pos.x, pos.y, oldSegment, drawSegment)
-        );
+        updateStatistics({
+          type: "update",
+          x: pos.x,
+          y: pos.y,
+          oldSegment,
+          newSegment: drawSegment,
+        });
 
         // Updates the segment in the drawing layer. Passing drawAction
         // as the last argument will cause the updates boundaries to be

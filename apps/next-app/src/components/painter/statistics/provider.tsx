@@ -10,8 +10,7 @@ import {
 } from "react";
 import {
   PainterStatistics,
-  StatisticsClear,
-  StatisticsUpdate,
+  StatisticsEvent,
   statisticsReducer,
 } from "./statistics";
 import { useBackground } from "../background-loader";
@@ -20,7 +19,7 @@ import { useBackground } from "../background-loader";
  * Context for the current statistics.
  */
 export const PainterStatisticsContext = createContext<
-  [PainterStatistics, Dispatch<StatisticsUpdate | StatisticsClear>] | null
+  [PainterStatistics, Dispatch<StatisticsEvent>] | null
 >(null);
 
 /**
@@ -28,7 +27,7 @@ export const PainterStatisticsContext = createContext<
  */
 export function useStatistics(): [
   PainterStatistics,
-  Dispatch<StatisticsUpdate | StatisticsClear>
+  Dispatch<StatisticsEvent>
 ] {
   const statistics = useContext(PainterStatisticsContext);
 
@@ -49,7 +48,7 @@ export function StatisticsProvider(props: PropsWithChildren): JSX.Element {
   const [background] = useBackground();
 
   useEffect(() => {
-    statisticsState[1](new StatisticsClear());
+    statisticsState[1]({ type: "clear" });
   }, [background]);
 
   return (
