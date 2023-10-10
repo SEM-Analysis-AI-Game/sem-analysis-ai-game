@@ -139,11 +139,8 @@ export function PainterController(): null {
     // use the secondary pan tool if shift is held. we should
     // try to also implement two-finger drag here on mobile.
     (controls.shiftDown ? panTool : tool).frameCallback(
-      controls.cursorDown,
-      controls.zooming,
       cursor,
-      controls.zoom,
-      controls.pan,
+      controls,
       updateControls,
       updateStatistics,
       drawingLayer,

@@ -5,7 +5,7 @@ import { DrawingLayer } from "../../drawing-layer";
 import { ActionHistoryEvent, CanvasAction } from "../../action-history";
 import { StatisticsUpdate } from "../../statistics";
 import { PointContainer } from "../../point-container";
-import { ControlsEvent } from "../../controls";
+import { Controls, ControlsEvent } from "../../controls";
 
 /**
  * This is the alpha used to fill in points when drawing.
@@ -49,18 +49,15 @@ export abstract class DrawTool<Name extends ToolNames> extends Tool<Name> {
   protected abstract drawingSegment(activeSegment: number): number;
 
   public frameCallback(
-    cursorDown: boolean,
-    zooming: boolean,
     cursorPos: THREE.Vector2,
-    zoom: number,
-    pan: THREE.Vector2,
+    controls: Controls,
     updateControls: Dispatch<ControlsEvent>,
     updateStatistics: Dispatch<StatisticsUpdate>,
     drawingLayer: DrawingLayer,
     updateHistory: Dispatch<ActionHistoryEvent>
   ): void {
     // don't draw if zooming
-    if (cursorDown && !zooming) {
+    if (controls.cursorDown && !controls.zooming) {
       // if the cursor has just been pressed, initialize the draw action
       if (!this.drawAction) {
         this.drawAction = {

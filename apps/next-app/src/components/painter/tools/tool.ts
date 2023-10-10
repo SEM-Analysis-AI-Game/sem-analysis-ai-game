@@ -1,9 +1,9 @@
 import * as THREE from "three";
-import { Dispatch, SetStateAction } from "react";
+import { Dispatch } from "react";
 import { DrawingLayer } from "../drawing-layer";
 import { StatisticsUpdate } from "../statistics";
 import { ActionHistoryEvent } from "../action-history";
-import { ControlsEvent } from "../controls";
+import { Controls, ControlsEvent } from "../controls";
 
 /**
  * The names of the tools. These are shown on the toolbar.
@@ -20,11 +20,8 @@ export abstract class Tool<T extends ToolNames = ToolNames> {
   public readonly size: number;
 
   public abstract frameCallback(
-    cursorDown: boolean,
-    zooming: boolean,
     cursorPos: THREE.Vector2,
-    zoom: number,
-    pan: THREE.Vector2,
+    controls: Controls,
     updateControls: Dispatch<ControlsEvent>,
     updateStatistics: Dispatch<StatisticsUpdate>,
     drawingLayer: DrawingLayer,

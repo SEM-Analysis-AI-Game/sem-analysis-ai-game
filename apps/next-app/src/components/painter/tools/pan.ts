@@ -4,7 +4,7 @@ import { Tool } from "./tool";
 import { DrawingLayer } from "../drawing-layer";
 import { StatisticsUpdate } from "../statistics";
 import { ActionHistoryEvent } from "../action-history";
-import { ControlsEvent } from "../controls";
+import { Controls, ControlsEvent } from "../controls";
 
 export class PanTool extends Tool<"Pan"> {
   readonly name = "Pan";
@@ -21,21 +21,18 @@ export class PanTool extends Tool<"Pan"> {
   }
 
   public frameCallback(
-    cursorDown: boolean,
-    zooming: boolean,
     cursorPos: THREE.Vector2,
-    zoom: number,
-    pan: THREE.Vector2,
+    controls: Controls,
     updateControls: Dispatch<ControlsEvent>,
     updateStatistics: Dispatch<StatisticsUpdate>,
     drawingLayer: DrawingLayer,
     updateHistory: Dispatch<ActionHistoryEvent>
   ): void {
-    if (cursorDown) {
+    if (controls.cursorDown) {
       if (this.lastCursorPos) {
         updateControls({
           type: "pan",
-          newPan: pan
+          newPan: controls.pan
             .clone()
             .sub(
               cursorPos
