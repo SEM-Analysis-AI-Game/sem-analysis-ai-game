@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  Dispatch,
-  createContext,
-  useContext,
-  useMemo,
-  useReducer,
-} from "react";
+import { Dispatch, createContext, useContext, useReducer } from "react";
 import { ActionHistory, ActionHistoryEvent, historyReducer } from "./history";
 import { useStatistics } from "../statistics";
 

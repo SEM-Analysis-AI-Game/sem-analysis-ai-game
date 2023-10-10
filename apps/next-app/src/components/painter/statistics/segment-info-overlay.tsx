@@ -3,8 +3,8 @@
 import * as THREE from "three";
 import { useMemo } from "react";
 import { useStatistics } from ".";
-import { useCursorDown, useZoom } from "../controls";
 import { SegmentDisplay } from "./segment-display";
+import { useControls } from "../controls";
 
 export function SegmentInfoOverlay(props: {
   padding: THREE.Vector2;
@@ -13,9 +13,7 @@ export function SegmentInfoOverlay(props: {
 }): JSX.Element {
   const [statistics] = useStatistics();
 
-  const [cursorDown] = useCursorDown();
-
-  const [zoom] = useZoom();
+  const [controls] = useControls();
 
   const centroidWidgets = useMemo(() => {
     const meansWithZoom: Map<number, THREE.Vector2> = new Map();
@@ -26,7 +24,7 @@ export function SegmentInfoOverlay(props: {
           .clone()
           .multiplyScalar(2)
           .sub(props.backgroundResolution)
-          .multiplyScalar(Math.sqrt(zoom))
+          .multiplyScalar(Math.sqrt(controls.zoom))
           .add(props.backgroundResolution)
           .divideScalar(2);
         if (
@@ -62,11 +60,11 @@ export function SegmentInfoOverlay(props: {
     }
 
     return widgets;
-  }, [statistics, zoom]);
+  }, [statistics, controls.zoom]);
 
   return (
     <div
-      className={`absolute ${cursorDown ? "pointer-events-none" : ""}`}
+      className={`absolute ${controls.cursorDown ? "pointer-events-none" : ""}`}
       style={{
         width: `${props.canvasSize.x}px`,
         height: `${props.canvasSize.y}px`,

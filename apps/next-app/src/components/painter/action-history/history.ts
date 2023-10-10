@@ -95,5 +95,4 @@ export function historyReducer(
         return state;
       }
   }
-  throw new Error("Invalid action history event");
 }

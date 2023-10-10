@@ -1,10 +1,11 @@
 import * as THREE from "three";
-import { Dispatch, SetStateAction } from "react";
+import { Dispatch } from "react";
 import { Tool, ToolNames } from "../tool";
 import { DrawingLayer } from "../../drawing-layer";
 import { ActionHistoryEvent, CanvasAction } from "../../action-history";
 import { StatisticsUpdate } from "../../statistics";
 import { PointContainer } from "../../point-container";
+import { ControlsEvent } from "../../controls";
 
 /**
  * This is the alpha used to fill in points when drawing.
@@ -53,8 +54,7 @@ export abstract class DrawTool<Name extends ToolNames> extends Tool<Name> {
     cursorPos: THREE.Vector2,
     zoom: number,
     pan: THREE.Vector2,
-    setZoom: Dispatch<SetStateAction<number>>,
-    setPan: Dispatch<SetStateAction<THREE.Vector2>>,
+    updateControls: Dispatch<ControlsEvent>,
     updateStatistics: Dispatch<StatisticsUpdate>,
     drawingLayer: DrawingLayer,
     updateHistory: Dispatch<ActionHistoryEvent>

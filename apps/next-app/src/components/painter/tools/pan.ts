@@ -1,9 +1,10 @@
 import * as THREE from "three";
-import { Dispatch, SetStateAction } from "react";
+import { Dispatch } from "react";
 import { Tool } from "./tool";
 import { DrawingLayer } from "../drawing-layer";
 import { StatisticsUpdate } from "../statistics";
 import { ActionHistoryEvent } from "../action-history";
+import { ControlsEvent } from "../controls";
 
 export class PanTool extends Tool<"Pan"> {
   readonly name = "Pan";
@@ -25,28 +26,24 @@ export class PanTool extends Tool<"Pan"> {
     cursorPos: THREE.Vector2,
     zoom: number,
     pan: THREE.Vector2,
-    setZoom: Dispatch<SetStateAction<number>>,
-    setPan: Dispatch<SetStateAction<THREE.Vector2>>,
+    updateControls: Dispatch<ControlsEvent>,
     updateStatistics: Dispatch<StatisticsUpdate>,
     drawingLayer: DrawingLayer,
     updateHistory: Dispatch<ActionHistoryEvent>
   ): void {
     if (cursorDown) {
       if (this.lastCursorPos) {
-        const panBounds = new THREE.Vector2(1, 1).subScalar(
-          1.0 / Math.sqrt(zoom)
-        );
-        setPan(
-          pan
+        updateControls({
+          type: "pan",
+          newPan: pan
             .clone()
             .sub(
               cursorPos
                 .clone()
                 .sub(this.lastCursorPos!)
                 .divide(drawingLayer.pixelSize)
-            )
-            .clamp(panBounds.clone().negate(), panBounds)
-        );
+            ),
+        });
       }
       this.lastCursorPos = cursorPos.clone();
     } else {

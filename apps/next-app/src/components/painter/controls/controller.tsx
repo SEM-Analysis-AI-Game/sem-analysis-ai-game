@@ -1,15 +1,14 @@
 "use client";
 
-import * as THREE from "three";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { usePinch } from "@use-gesture/react";
-import { useCursorDown, usePan, useZoom } from "./provider";
 import { PanTool, useTool } from "../tools";
 import { useDrawingLayer } from "../drawing-layer";
 import { useActionHistory } from "../action-history";
 import { useBackground } from "../background-loader";
 import { useStatistics } from "../statistics";
+import { useControls } from "./provider";
 
 /**
  * Listens for input events and updates pan, zoom, and the
@@ -17,27 +16,13 @@ import { useStatistics } from "../statistics";
  */
 export function PainterController(): null {
   // these are provided by the canvas
-  const { mouse, gl, size } = useThree();
+  const { mouse, gl } = useThree();
 
   const [background] = useBackground();
 
   if (!background) {
     throw new Error("Background not loaded");
   }
-
-  // these are updated here, while the renderer listens for
-  // changes to these values.
-  const [zoom, setZoom] = useZoom();
-  const [pan, setPan] = usePan();
-
-  // this is used to track whether we are currently zooming
-  // so that we can disable drawing tools while zooming.
-  const [zooming, setZooming] = useState(false);
-
-  const [shiftDown, setShiftDown] = useState(false);
-  const [cursorDown, setCursorDown] = useCursorDown();
-
-  const [tool] = useTool();
 
   // this is a secondary tool for panning that can be
   // used by holding shift, and maybe eventually we can
@@ -46,32 +31,19 @@ export function PainterController(): null {
     return new PanTool(0);
   }, []);
 
-  // these are passed to the tool to be modified.
+  const [tool] = useTool();
   const drawingLayer = useDrawingLayer();
   const [, updateHistory] = useActionHistory();
+  const [controls, updateControls] = useControls();
 
   // this handles pinch + mouse wheel zooming
   usePinch(
     (e) => {
-      const newZoom = e.offset[0];
-      setZooming(e.pinching || false);
-
-      // center point (screen coordinates with flipped Y-axis) of the pinching
-      // motion, or current mouse position if we are using the mouse wheel.
-      const origin = new THREE.Vector2(
-        e.origin[0] - size.left,
-        e.origin[1] - size.top
-      )
-        .divide(new THREE.Vector2(size.width, size.height))
-        .subScalar(0.5)
-        .multiplyScalar(2.0);
-      origin.setY(-origin.y);
-
-      const panBounds = new THREE.Vector2(1.0, 1.0).subScalar(
-        1.0 / Math.sqrt(newZoom)
-      );
-      setPan(pan.clamp(panBounds.clone().negate(), panBounds));
-      setZoom(newZoom);
+      updateControls({
+        type: "zoom",
+        newZoom: e.offset[0],
+        zooming: e.pinching || false,
+      });
     },
     {
       pinchOnWheel: true,
@@ -112,14 +84,25 @@ export function PainterController(): null {
   // handle cursor up/down event and cursor leave canvas event.
   useEffect(() => {
     gl.domElement.addEventListener("pointerdown", (e) => {
-      setCursorDown(true);
-      setShiftDown(e.shiftKey);
+      updateControls({
+        type: "cursor",
+        cursorDown: true,
+        shiftDown: e.shiftKey,
+      });
     });
-    gl.domElement.addEventListener("pointerup", () => {
-      setCursorDown(false);
+    gl.domElement.addEventListener("pointerup", (e) => {
+      updateControls({
+        type: "cursor",
+        cursorDown: false,
+        shiftDown: e.shiftKey,
+      });
     });
     gl.domElement.addEventListener("pointerleave", (e) => {
-      setCursorDown(false);
+      updateControls({
+        type: "cursor",
+        cursorDown: false,
+        shiftDown: e.shiftKey,
+      });
     });
   }, []);
 
@@ -127,15 +110,15 @@ export function PainterController(): null {
   useFrame(() => {
     const cursor = mouse
       .clone()
-      .divideScalar(Math.sqrt(zoom))
-      .add(pan)
+      .divideScalar(Math.sqrt(controls.zoom))
+      .add(controls.pan)
       .multiplyScalar(0.5)
       .addScalar(0.5)
       .multiply(drawingLayer.pixelSize)
       .floor();
 
     // if the cursor was not previously down
-    if (cursorDown && drawingLayer.activeSegment === -1) {
+    if (controls.cursorDown && drawingLayer.activeSegment === -1) {
       // get the segment at the cursor position
       let segment = drawingLayer.segment(cursor.x, cursor.y);
 
@@ -149,20 +132,19 @@ export function PainterController(): null {
         segment === -1 ? drawingLayer.getNumSegments() : segment;
     }
 
-    if (!cursorDown) {
+    if (!controls.cursorDown) {
       drawingLayer.activeSegment = -1;
     }
 
     // use the secondary pan tool if shift is held. we should
     // try to also implement two-finger drag here on mobile.
-    (shiftDown ? panTool : tool).frameCallback(
-      cursorDown,
-      zooming,
+    (controls.shiftDown ? panTool : tool).frameCallback(
+      controls.cursorDown,
+      controls.zooming,
       cursor,
-      zoom,
-      pan,
-      setZoom,
-      setPan,
+      controls.zoom,
+      controls.pan,
+      updateControls,
       updateStatistics,
       drawingLayer,
       updateHistory

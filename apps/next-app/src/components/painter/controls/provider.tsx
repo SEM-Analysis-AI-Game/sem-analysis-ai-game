@@ -4,93 +4,50 @@ import * as THREE from "three";
 import {
   Dispatch,
   PropsWithChildren,
-  SetStateAction,
   createContext,
   useContext,
-  useState,
+  useReducer,
 } from "react";
+import { Controls, ControlsEvent, controlsReducer } from "./controls";
 
 const kInitialPan = new THREE.Vector2();
 const kInitialZoom = 1.0;
 
 /**
- * Context for the current pan.
+ * Context for the controls
  */
-export const PanContext = createContext<
-  [THREE.Vector2, Dispatch<SetStateAction<THREE.Vector2>>] | null
+export const ControlsContext = createContext<
+  [Controls, Dispatch<ControlsEvent>] | null
 >(null);
 
 /**
- * Context for the current zoom.
+ * Hook to get/update the current controls. Must be used within a ControlsContext.
  */
-export const ZoomContext = createContext<
-  [number, Dispatch<SetStateAction<number>>] | null
->(null);
+export function useControls(): [Controls, Dispatch<ControlsEvent>] {
+  const controls = useContext(ControlsContext);
 
-/**
- * Context for the current cursor down.
- */
-export const CursorDownContext = createContext<
-  [boolean, Dispatch<SetStateAction<boolean>>] | null
->(null);
-
-/**
- * Hook to get/set the current pan. Must be used within a PanContext.
- */
-export function usePan(): [
-  THREE.Vector2,
-  Dispatch<SetStateAction<THREE.Vector2>>
-] {
-  const pan = useContext(PanContext);
-
-  if (!pan) {
-    throw new Error("usePan must be used within a PanContext");
+  if (!controls) {
+    throw new Error("useControls must be used within a ControlsContext");
   }
 
-  return pan;
+  return controls;
 }
 
 /**
- * Hook to get/set the current zoom. Must be used within a ZoomContext.
- */
-export function useZoom(): [number, Dispatch<SetStateAction<number>>] {
-  const zoom = useContext(ZoomContext);
-
-  if (!zoom) {
-    throw new Error("useZoom must be used within a ZoomContext");
-  }
-
-  return zoom;
-}
-
-/**
- * Hook to get/set the current cursor down. Must be used within a CursorDownContext.
- */
-export function useCursorDown(): [boolean, Dispatch<SetStateAction<boolean>>] {
-  const cursorDown = useContext(CursorDownContext);
-
-  if (!cursorDown) {
-    throw new Error("useCursorDown must be used within a CursorDownContext");
-  }
-
-  return cursorDown;
-}
-
-/**
- * Provider for the current pan and zoom.
+ * Provider for the current controls.
  */
 export function PainterControls(props: PropsWithChildren): JSX.Element {
-  const cursorDownState = useState(false);
-  const panState = useState(kInitialPan);
-  const zoomState = useState(kInitialZoom);
+  const controls = useReducer(controlsReducer, {
+    cursorDown: false,
+    zooming: false,
+    shiftDown: false,
+    pan: kInitialPan,
+    zoom: kInitialZoom,
+  });
 
   return (
-    <CursorDownContext.Provider value={cursorDownState}>
-      <PanContext.Provider value={panState}>
-        <ZoomContext.Provider value={zoomState}>
-          {props.children}
-        </ZoomContext.Provider>
-      </PanContext.Provider>
-    </CursorDownContext.Provider>
+    <ControlsContext.Provider value={controls}>
+      {props.children}
+    </ControlsContext.Provider>
   );
 }

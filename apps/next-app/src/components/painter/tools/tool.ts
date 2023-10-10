@@ -3,6 +3,7 @@ import { Dispatch, SetStateAction } from "react";
 import { DrawingLayer } from "../drawing-layer";
 import { StatisticsUpdate } from "../statistics";
 import { ActionHistoryEvent } from "../action-history";
+import { ControlsEvent } from "../controls";
 
 /**
  * The names of the tools. These are shown on the toolbar.
@@ -24,8 +25,7 @@ export abstract class Tool<T extends ToolNames = ToolNames> {
     cursorPos: THREE.Vector2,
     zoom: number,
     pan: THREE.Vector2,
-    setZoom: Dispatch<SetStateAction<number>>,
-    setPan: Dispatch<SetStateAction<THREE.Vector2>>,
+    updateControls: Dispatch<ControlsEvent>,
     updateStatistics: Dispatch<StatisticsUpdate>,
     drawingLayer: DrawingLayer,
     updateHistory: Dispatch<ActionHistoryEvent>

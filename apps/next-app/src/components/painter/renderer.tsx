@@ -11,7 +11,7 @@ import {
   vertexShader,
 } from "./shaders";
 import { useDrawingLayer } from "./drawing-layer";
-import { usePan, useZoom } from "./controls";
+import { useControls } from "./controls";
 
 /**
  * The canvas is subdivided into sections of this size.
@@ -31,17 +31,16 @@ export function PainterRenderer(): null {
     throw new Error("Background not loaded");
   }
 
-  // These are used to update the background and drawing layer uniforms.
-  const [currentZoom] = useZoom();
-  const [currentPan] = usePan();
+  // This is used to update the background and drawing layer uniforms.
+  const [controls] = useControls();
 
   const drawingLayer = useDrawingLayer();
 
   // creates composers and uniforms on mount.
   const [backgroundComposer, drawingComposers, zoomUniform, panUniform] =
     useMemo(() => {
-      const zoom = new THREE.Uniform(currentZoom);
-      const pan = new THREE.Uniform(currentPan);
+      const zoom = new THREE.Uniform(controls.zoom);
+      const pan = new THREE.Uniform(controls.pan);
 
       // renders the background with pan and zoom applied.
       const bgComposer = new EffectComposer(gl);
@@ -109,11 +108,9 @@ export function PainterRenderer(): null {
 
   // update the uniforms when the pan or zoom changes.
   useEffect(() => {
-    panUniform.value = currentPan;
-  }, [currentPan]);
-  useEffect(() => {
-    zoomUniform.value = currentZoom;
-  }, [currentZoom]);
+    panUniform.value = controls.pan;
+    zoomUniform.value = controls.zoom;
+  }, [controls]);
 
   // render the composers on each frame
   return useFrame(() => {
