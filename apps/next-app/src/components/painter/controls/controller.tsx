@@ -1,7 +1,7 @@
 "use client";
 
 import * as THREE from "three";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { usePinch } from "@use-gesture/react";
 import { useCursorDown, usePan, useZoom } from "./provider";
@@ -112,7 +112,7 @@ export function PainterController(): null {
 
   // used for updating the statistics information after
   // each draw action.
-  const [statistics, setStatistics] = useStatistics();
+  const [, updateStatistics] = useStatistics();
 
   // handle cursor up/down event and cursor leave canvas event.
   useEffect(() => {
@@ -171,8 +171,7 @@ export function PainterController(): null {
       pan,
       setZoom,
       setPan,
-      statistics,
-      setStatistics,
+      updateStatistics,
       drawingLayer,
       history,
       currentSegment

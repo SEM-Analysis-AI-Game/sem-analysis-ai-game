@@ -3,7 +3,7 @@ import { Dispatch, SetStateAction } from "react";
 import { Tool, ToolNames } from "../tool";
 import { DrawingLayer } from "../../drawing-layer";
 import { ActionHistory, CanvasAction } from "../../action-history";
-import { PainterStatistics } from "../../statistics";
+import { StatisticsUpdate } from "../../statistics";
 
 /**
  * This is the alpha used to fill in points when drawing.
@@ -54,8 +54,7 @@ export abstract class DrawTool<Name extends ToolNames> extends Tool<Name> {
     pan: THREE.Vector2,
     setZoom: Dispatch<SetStateAction<number>>,
     setPan: Dispatch<SetStateAction<THREE.Vector2>>,
-    statistics: PainterStatistics,
-    setStatistics: Dispatch<SetStateAction<PainterStatistics>>,
+    updateStatistics: Dispatch<StatisticsUpdate>,
     drawingLayer: DrawingLayer,
     history: ActionHistory,
     activeSegment: number
@@ -87,43 +86,9 @@ export abstract class DrawTool<Name extends ToolNames> extends Tool<Name> {
         }
 
         // update the statistics for the old segment and the new segment
-        setStatistics((stats) => {
-          if (drawSegment !== -1) {
-            const drawingSegmentStats = stats.segments.get(drawSegment);
-            if (drawingSegmentStats) {
-              if (drawingSegmentStats.numPoints > 0) {
-                drawingSegmentStats.centroid
-                  .multiplyScalar(drawingSegmentStats.numPoints)
-                  .add(pos)
-                  .divideScalar(drawingSegmentStats.numPoints + 1);
-              } else {
-                drawingSegmentStats.centroid.set(pos.x, pos.y);
-              }
-              drawingSegmentStats.numPoints++;
-            } else {
-              stats.segments.set(drawSegment, {
-                numPoints: 1,
-                centroid: pos.clone(),
-                medianEstimate: new THREE.Vector2(),
-              });
-            }
-          }
-          if (oldSegment !== -1) {
-            const oldSegmentStats = stats.segments.get(oldSegment);
-            if (oldSegmentStats) {
-              oldSegmentStats.centroid
-                .multiplyScalar(oldSegmentStats.numPoints)
-                .sub(pos)
-                .divideScalar(oldSegmentStats.numPoints - 1);
-              oldSegmentStats.numPoints--;
-            } else {
-              throw new Error("old segment not found");
-            }
-          }
-          return {
-            segments: stats.segments,
-          };
-        });
+        updateStatistics(
+          new StatisticsUpdate(pos.x, pos.y, oldSegment, drawSegment)
+        );
 
         // Updates the segment in the drawing layer. Passing drawAction
         // as the last argument will cause the updates boundaries to be
@@ -176,7 +141,7 @@ export abstract class DrawTool<Name extends ToolNames> extends Tool<Name> {
       this.lastCursorPos = null;
       if (this.drawAction) {
         // calculate any splitting of segments
-        drawingLayer.recomputeSegments(this.drawAction, setStatistics);
+        drawingLayer.recomputeSegments(this.drawAction, updateStatistics);
 
         // push onto undo/redo stack
         history.push(this.drawAction);

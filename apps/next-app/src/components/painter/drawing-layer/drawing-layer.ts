@@ -4,8 +4,8 @@ import { PointContainer } from "../point-container";
 import { breadthFirstTraversal } from "./bft";
 import { DrawingLayerUniforms } from "./uniforms";
 import { kDrawAlpha } from "../tools";
-import { Dispatch, SetStateAction } from "react";
-import { PainterStatistics } from "../statistics";
+import { Dispatch } from "react";
+import { StatisticsUpdate } from "../statistics";
 
 // The alpha is boosted by this amount when a pixel is on the border of a segment.
 const kBorderAlphaBoost = 0.5;
@@ -113,7 +113,7 @@ export class DrawingLayer {
    */
   public recomputeSegments(
     action: CanvasAction,
-    setStatistics: Dispatch<SetStateAction<PainterStatistics>>
+    updateStatistics: Dispatch<StatisticsUpdate>
   ): void {
     for (let segment of action.effectedSegments) {
       // these are all of the newly drawn boundary points
@@ -214,39 +214,9 @@ export class DrawingLayer {
               }
 
               // update the segment statistics for the new segment and the old
-              setStatistics((stats) => {
-                const oldSegmentStats = stats.segments.get(segment[0])!;
-                const newSegmentStats = stats.segments.get(newSegment)!;
-                const pos = new THREE.Vector2(x, y);
-
-                if (newSegmentStats) {
-                  if (newSegmentStats.numPoints > 0) {
-                    newSegmentStats.centroid
-                      .multiplyScalar(newSegmentStats.numPoints)
-                      .add(pos)
-                      .divideScalar(newSegmentStats.numPoints + 1);
-                  } else {
-                    newSegmentStats.centroid.set(pos.x, pos.y);
-                  }
-                  newSegmentStats.numPoints++;
-                } else {
-                  stats.segments.set(newSegment, {
-                    numPoints: 1,
-                    centroid: pos.clone(),
-                    medianEstimate: new THREE.Vector2(),
-                  });
-                }
-
-                oldSegmentStats.centroid
-                  .multiplyScalar(oldSegmentStats.numPoints)
-                  .sub(pos)
-                  .divideScalar(oldSegmentStats.numPoints - 1);
-                oldSegmentStats.numPoints--;
-
-                return {
-                  segments: stats.segments,
-                };
-              });
+              updateStatistics(
+                new StatisticsUpdate(x, y, segment[0], newSegment)
+              );
 
               // update the flood-filled pixels in the drawing layer
               this.setSegment(x, y, newSegment);

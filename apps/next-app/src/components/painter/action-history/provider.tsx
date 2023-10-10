@@ -30,9 +30,9 @@ export function useActionHistory(): ActionHistory {
 export function ActionHistoryProvider(props: {
   children: JSX.Element;
 }): JSX.Element {
-  const [, setStatistics] = useStatistics();
+  const [, updateStatistics] = useStatistics();
 
-  const history = useMemo(() => new ActionHistory(setStatistics), []);
+  const history = useMemo(() => new ActionHistory(updateStatistics), []);
 
   return (
     <ActionHistoryContext.Provider value={history}>

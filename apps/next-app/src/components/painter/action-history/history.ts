@@ -1,7 +1,6 @@
-import * as THREE from "three";
-import { Dispatch, SetStateAction } from "react";
+import { Dispatch } from "react";
 import { CanvasAction } from "./action";
-import { PainterStatistics } from "../statistics";
+import { StatisticsUpdate } from "../statistics";
 
 /**
  * This class represents a node in the action history linked list.
@@ -46,12 +45,12 @@ class HeadNode<T> extends HistoryNode<T> {
 export class ActionHistory {
   private readonly head: HeadNode<CanvasAction>;
   private current: HistoryNode<CanvasAction>;
-  private readonly setStatistics: Dispatch<SetStateAction<PainterStatistics>>;
+  private readonly updateStatistics: Dispatch<StatisticsUpdate>;
 
-  constructor(setStatistics: Dispatch<SetStateAction<PainterStatistics>>) {
+  constructor(updateStatistics: Dispatch<StatisticsUpdate>) {
     this.head = new HeadNode();
     this.current = this.head;
-    this.setStatistics = setStatistics;
+    this.updateStatistics = updateStatistics;
   }
 
   /**
@@ -67,30 +66,9 @@ export class ActionHistory {
         // Utilize the old segment data to undo the action.
         // This is the segment that was painted over by the action.
         this.current.data!.drawingLayer.setSegment(x, y, data.oldSegment);
-        this.setStatistics((statistics) => {
-          const segments = statistics.segments;
-          if (data.oldSegment !== -1) {
-            const oldSegmentEntry = segments.get(data.oldSegment)!;
-            if (oldSegmentEntry.numPoints > 0) {
-              oldSegmentEntry.centroid
-                .multiplyScalar(oldSegmentEntry.numPoints)
-                .add(new THREE.Vector2(x, y))
-                .divideScalar(oldSegmentEntry.numPoints + 1);
-            } else {
-              oldSegmentEntry.centroid.set(x, y);
-            }
-            oldSegmentEntry.numPoints++;
-          }
-          if (data.newSegment !== -1) {
-            const newSegmentEntry = segments.get(data.newSegment)!;
-            newSegmentEntry.centroid
-              .multiplyScalar(newSegmentEntry.numPoints)
-              .sub(new THREE.Vector2(x, y))
-              .divideScalar(newSegmentEntry.numPoints - 1);
-            newSegmentEntry.numPoints--;
-          }
-          return { segments };
-        });
+        this.updateStatistics(
+          new StatisticsUpdate(x, y, data.newSegment, data.oldSegment)
+        );
       });
       this.current = this.current.prev;
     }
@@ -102,32 +80,9 @@ export class ActionHistory {
       this.current.data!.paintedPoints.forEach((x, y, data) => {
         // Utilize the new segment data to redo the action.
         this.current.data!.drawingLayer.setSegment(x, y, data.newSegment);
-
-        this.setStatistics((statistics) => {
-          const segments = statistics.segments;
-
-          if (data.oldSegment !== -1) {
-            const oldSegmentEntry = segments.get(data.oldSegment)!;
-            oldSegmentEntry.centroid
-              .multiplyScalar(oldSegmentEntry.numPoints)
-              .sub(new THREE.Vector2(x, y))
-              .divideScalar(oldSegmentEntry.numPoints - 1);
-            oldSegmentEntry.numPoints--;
-          }
-          if (data.newSegment !== -1) {
-            const newSegmentEntry = segments.get(data.newSegment)!;
-            if (newSegmentEntry.numPoints > 0) {
-              newSegmentEntry.centroid
-                .multiplyScalar(newSegmentEntry.numPoints)
-                .add(new THREE.Vector2(x, y))
-                .divideScalar(newSegmentEntry.numPoints + 1);
-            } else {
-              newSegmentEntry.centroid.set(x, y);
-            }
-            newSegmentEntry.numPoints++;
-          }
-          return { segments };
-        });
+        this.updateStatistics(
+          new StatisticsUpdate(x, y, data.oldSegment, data.newSegment)
+        );
       });
     }
   }

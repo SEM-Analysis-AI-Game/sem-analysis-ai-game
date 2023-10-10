@@ -3,20 +3,24 @@
 import {
   Dispatch,
   PropsWithChildren,
-  SetStateAction,
   createContext,
   useContext,
   useEffect,
-  useState,
+  useReducer,
 } from "react";
-import { PainterStatistics } from "./statistics";
+import {
+  PainterStatistics,
+  StatisticsClear,
+  StatisticsUpdate,
+  statisticsReducer,
+} from "./statistics";
 import { useBackground } from "../background-loader";
 
 /**
  * Context for the current statistics.
  */
 export const PainterStatisticsContext = createContext<
-  [PainterStatistics, Dispatch<SetStateAction<PainterStatistics>>] | null
+  [PainterStatistics, Dispatch<StatisticsUpdate | StatisticsClear>] | null
 >(null);
 
 /**
@@ -24,7 +28,7 @@ export const PainterStatisticsContext = createContext<
  */
 export function useStatistics(): [
   PainterStatistics,
-  Dispatch<SetStateAction<PainterStatistics>>
+  Dispatch<StatisticsUpdate | StatisticsClear>
 ] {
   const statistics = useContext(PainterStatisticsContext);
 
@@ -38,20 +42,18 @@ export function useStatistics(): [
 }
 
 export function StatisticsProvider(props: PropsWithChildren): JSX.Element {
-  const statistics = useState({
+  const statisticsState = useReducer(statisticsReducer, {
     segments: new Map(),
   });
 
   const [background] = useBackground();
 
   useEffect(() => {
-    statistics[1]({
-      segments: new Map(),
-    });
+    statisticsState[1](new StatisticsClear());
   }, [background]);
 
   return (
-    <PainterStatisticsContext.Provider value={statistics}>
+    <PainterStatisticsContext.Provider value={statisticsState}>
       {props.children}
     </PainterStatisticsContext.Provider>
   );

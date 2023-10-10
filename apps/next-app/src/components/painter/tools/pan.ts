@@ -3,7 +3,7 @@ import { Dispatch, SetStateAction } from "react";
 import { Tool } from "./tool";
 import { DrawingLayer } from "../drawing-layer";
 import { ActionHistory } from "../action-history";
-import { PainterStatistics } from "../statistics";
+import { StatisticsUpdate } from "../statistics";
 
 export class PanTool extends Tool<"Pan"> {
   readonly name = "Pan";
@@ -27,8 +27,7 @@ export class PanTool extends Tool<"Pan"> {
     pan: THREE.Vector2,
     setZoom: Dispatch<SetStateAction<number>>,
     setPan: Dispatch<SetStateAction<THREE.Vector2>>,
-    statistics: PainterStatistics,
-    setStatistics: Dispatch<SetStateAction<PainterStatistics>>,
+    updateStatistics: Dispatch<StatisticsUpdate>,
     drawingLayer: DrawingLayer,
     history: ActionHistory,
     activeSegment: number
