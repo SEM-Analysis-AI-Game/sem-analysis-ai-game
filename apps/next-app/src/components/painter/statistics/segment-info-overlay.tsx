@@ -8,7 +8,8 @@ import { SegmentDisplay } from "./segment-display";
 
 export function SegmentInfoOverlay(props: {
   padding: THREE.Vector2;
-  size: THREE.Vector2;
+  canvasSize: THREE.Vector2;
+  backgroundResolution: THREE.Vector2;
 }): JSX.Element {
   const [statistics] = useStatistics();
 
@@ -19,23 +20,22 @@ export function SegmentInfoOverlay(props: {
   const centroidWidgets = useMemo(() => {
     const meansWithZoom: Map<number, THREE.Vector2> = new Map();
     for (let [segment, data] of statistics.segments) {
-      console.log(data);
       if (data.numPoints > 0) {
         const mean = data.centroid.clone();
-        const mouseWithZoom = mean
+        const meanWithZoom = mean
           .clone()
           .multiplyScalar(2)
-          .sub(props.size)
+          .sub(props.backgroundResolution)
           .multiplyScalar(Math.sqrt(zoom))
-          .add(props.size)
+          .add(props.backgroundResolution)
           .divideScalar(2);
         if (
-          mouseWithZoom.x >= 0 &&
-          mouseWithZoom.y >= 0 &&
-          mouseWithZoom.x <= props.size.x &&
-          mouseWithZoom.y <= props.size.y
+          meanWithZoom.x >= 0 &&
+          meanWithZoom.y >= 0 &&
+          meanWithZoom.x <= props.backgroundResolution.x &&
+          meanWithZoom.y <= props.backgroundResolution.y
         ) {
-          meansWithZoom.set(segment, mouseWithZoom);
+          meansWithZoom.set(segment, meanWithZoom);
         } else {
           meansWithZoom.set(segment, new THREE.Vector2(-1, -1));
         }
@@ -48,7 +48,16 @@ export function SegmentInfoOverlay(props: {
 
     for (let [segment, centroid] of meansWithZoom) {
       widgets.push(
-        <SegmentDisplay key={segment} segment={segment} position={centroid} />
+        <SegmentDisplay
+          key={segment}
+          segment={segment}
+          canvasSize={props.canvasSize}
+          position={centroid
+            .clone()
+            .multiply(
+              props.canvasSize.clone().divide(props.backgroundResolution)
+            )}
+        />
       );
     }
 
@@ -59,8 +68,8 @@ export function SegmentInfoOverlay(props: {
     <div
       className={`absolute ${cursorDown ? "pointer-events-none" : ""}`}
       style={{
-        width: `${props.size.x}px`,
-        height: `${props.size.y}px`,
+        width: `${props.canvasSize.x}px`,
+        height: `${props.canvasSize.y}px`,
       }}
     >
       {centroidWidgets}

@@ -2,8 +2,9 @@ import * as THREE from "three";
 import { Dispatch, SetStateAction } from "react";
 import { Tool, ToolNames } from "../tool";
 import { DrawingLayer } from "../../drawing-layer";
-import { ActionHistory, CanvasAction } from "../../action-history";
+import { ActionHistoryEvent, CanvasAction } from "../../action-history";
 import { StatisticsUpdate } from "../../statistics";
+import { PointContainer } from "../../point-container";
 
 /**
  * This is the alpha used to fill in points when drawing.
@@ -56,14 +57,17 @@ export abstract class DrawTool<Name extends ToolNames> extends Tool<Name> {
     setPan: Dispatch<SetStateAction<THREE.Vector2>>,
     updateStatistics: Dispatch<StatisticsUpdate>,
     drawingLayer: DrawingLayer,
-    history: ActionHistory,
-    activeSegment: number
+    updateHistory: Dispatch<ActionHistoryEvent>
   ): void {
     // don't draw if zooming
     if (cursorDown && !zooming) {
       // if the cursor has just been pressed, initialize the draw action
       if (!this.drawAction) {
-        this.drawAction = new CanvasAction(drawingLayer);
+        this.drawAction = {
+          paintedPoints: new PointContainer(),
+          drawingLayer,
+          effectedSegments: new Map(),
+        };
       }
       const drawAction = this.drawAction;
 
@@ -72,7 +76,7 @@ export abstract class DrawTool<Name extends ToolNames> extends Tool<Name> {
         const oldSegment = drawingLayer.segment(pos.x, pos.y);
 
         // the new segment to draw
-        const drawSegment = this.drawingSegment(activeSegment);
+        const drawSegment = this.drawingSegment(drawingLayer.activeSegment);
 
         // if we have already drawn over the point, we won't write it into
         // the action history again, because undoing resets back to the
@@ -144,7 +148,10 @@ export abstract class DrawTool<Name extends ToolNames> extends Tool<Name> {
         drawingLayer.recomputeSegments(this.drawAction, updateStatistics);
 
         // push onto undo/redo stack
-        history.push(this.drawAction);
+        updateHistory({
+          type: "push",
+          action: this.drawAction,
+        });
 
         // clear the draw action
         this.drawAction = null;

@@ -2,8 +2,8 @@ import * as THREE from "three";
 import { Dispatch, SetStateAction } from "react";
 import { Tool } from "./tool";
 import { DrawingLayer } from "../drawing-layer";
-import { ActionHistory } from "../action-history";
 import { StatisticsUpdate } from "../statistics";
+import { ActionHistoryEvent } from "../action-history";
 
 export class PanTool extends Tool<"Pan"> {
   readonly name = "Pan";
@@ -29,8 +29,7 @@ export class PanTool extends Tool<"Pan"> {
     setPan: Dispatch<SetStateAction<THREE.Vector2>>,
     updateStatistics: Dispatch<StatisticsUpdate>,
     drawingLayer: DrawingLayer,
-    history: ActionHistory,
-    activeSegment: number
+    updateHistory: Dispatch<ActionHistoryEvent>
   ): void {
     if (cursorDown) {
       if (this.lastCursorPos) {

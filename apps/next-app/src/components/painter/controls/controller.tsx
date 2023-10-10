@@ -1,7 +1,7 @@
 "use client";
 
 import * as THREE from "three";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { usePinch } from "@use-gesture/react";
 import { useCursorDown, usePan, useZoom } from "./provider";
@@ -36,7 +36,6 @@ export function PainterController(): null {
 
   const [shiftDown, setShiftDown] = useState(false);
   const [cursorDown, setCursorDown] = useCursorDown();
-  const [cursorPreviouslyDown, setCursorPreviouslyDown] = useState(false);
 
   const [tool] = useTool();
 
@@ -49,7 +48,7 @@ export function PainterController(): null {
 
   // these are passed to the tool to be modified.
   const drawingLayer = useDrawingLayer();
-  const history = useActionHistory();
+  const [, updateHistory] = useActionHistory();
 
   // this handles pinch + mouse wheel zooming
   usePinch(
@@ -87,27 +86,23 @@ export function PainterController(): null {
     }
   );
 
-  // this is used to track the current segment that we are drawing on.
-  // it is updated when the user clicks on the canvas.
-  const [activeSegment, setActiveSegment] = useState(0);
-
   // keybinds for undo/redo
   useEffect(() => {
     document.addEventListener("keydown", (e) => {
       if (e.ctrlKey) {
         if (e.code === "KeyZ") {
-          history.undo();
+          updateHistory({ type: "undo" });
         }
         if (e.code === "KeyY") {
-          history.redo();
+          updateHistory({ type: "redo" });
         }
       }
     });
-  }, [history]);
+  }, []);
 
   // clear the history when the background changes
   useEffect(() => {
-    history.clear();
+    updateHistory({ type: "clear" });
   }, [background]);
 
   // used for updating the statistics information after
@@ -139,12 +134,10 @@ export function PainterController(): null {
       .multiply(drawingLayer.pixelSize)
       .floor();
 
-    let currentSegment = activeSegment;
-
     // if the cursor was not previously down
-    if (!cursorPreviouslyDown && cursorDown) {
+    if (cursorDown && drawingLayer.activeSegment === -1) {
       // get the segment at the cursor position
-      const segment = drawingLayer.segment(cursor.x, cursor.y);
+      let segment = drawingLayer.segment(cursor.x, cursor.y);
 
       // if no segment is found at the cursor position, increment the
       // number of segments and use the new segment, otherwise use the found
@@ -152,13 +145,12 @@ export function PainterController(): null {
       if (segment === -1) {
         drawingLayer.incrementSegments();
       }
-      currentSegment = segment === -1 ? drawingLayer.getNumSegments() : segment;
-      setActiveSegment(currentSegment);
-      setCursorPreviouslyDown(true);
+      drawingLayer.activeSegment =
+        segment === -1 ? drawingLayer.getNumSegments() : segment;
     }
 
-    if (!cursorDown && cursorPreviouslyDown) {
-      setCursorPreviouslyDown(false);
+    if (!cursorDown) {
+      drawingLayer.activeSegment = -1;
     }
 
     // use the secondary pan tool if shift is held. we should
@@ -173,8 +165,7 @@ export function PainterController(): null {
       setPan,
       updateStatistics,
       drawingLayer,
-      history,
-      currentSegment
+      updateHistory
     );
   });
 

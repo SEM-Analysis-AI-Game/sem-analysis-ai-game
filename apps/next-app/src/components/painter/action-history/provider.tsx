@@ -1,18 +1,29 @@
 "use client";
 
-import { createContext, useContext, useMemo } from "react";
-import { ActionHistory } from "./history";
+import {
+  Dispatch,
+  createContext,
+  useContext,
+  useMemo,
+  useReducer,
+} from "react";
+import { ActionHistory, ActionHistoryEvent, historyReducer } from "./history";
 import { useStatistics } from "../statistics";
 
 /**
  * Context for the current action history.
  */
-export const ActionHistoryContext = createContext<ActionHistory | null>(null);
+export const ActionHistoryContext = createContext<
+  [ActionHistory, Dispatch<ActionHistoryEvent>] | null
+>(null);
 
 /**
  * Hook to get the current action history. Must be used within an ActionHistoryContext.
  */
-export function useActionHistory(): ActionHistory {
+export function useActionHistory(): [
+  ActionHistory,
+  Dispatch<ActionHistoryEvent>
+] {
   const history = useContext(ActionHistoryContext);
 
   if (!history) {
@@ -32,7 +43,15 @@ export function ActionHistoryProvider(props: {
 }): JSX.Element {
   const [, updateStatistics] = useStatistics();
 
-  const history = useMemo(() => new ActionHistory(updateStatistics), []);
+  const history = useReducer(
+    historyReducer,
+    { prev: null, next: null, data: null },
+    (head) => ({
+      head,
+      updateStatistics,
+      current: head,
+    })
+  );
 
   return (
     <ActionHistoryContext.Provider value={history}>

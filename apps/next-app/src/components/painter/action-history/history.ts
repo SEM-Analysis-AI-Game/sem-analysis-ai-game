@@ -3,97 +3,97 @@ import { CanvasAction } from "./action";
 import { StatisticsUpdate } from "../statistics";
 
 /**
- * This class represents a node in the action history linked list.
+ * Represents a node in the action history linked list.
  *
  * We use a doubly-linked list because we need to be able to insert and remove nodes
  * at the back of the list in constant time, and traverse the list in both directions.
  */
-abstract class HistoryNode<T> {
-  public next: HistoryNode<T> | null;
-  public prev: HistoryNode<T> | null;
+type Node<T> = {
+  next: Node<T> | null;
+  prev: Node<T> | null;
 
-  public readonly data: T | null;
+  readonly data: T | null;
+};
 
-  constructor(data: T | null) {
-    this.next = null;
-    this.prev = null;
-    this.data = data;
-  }
-}
+type Push = {
+  type: "push";
+  action: CanvasAction;
+};
 
-/**
- * This class represents a node in the action history linked list that contains data.
- */
-class DataNode<T> extends HistoryNode<T> {
-  constructor(data: T) {
-    super(data);
-  }
-}
+type Undo = {
+  type: "undo";
+};
 
-/**
- * This class represents the head node in the action history linked list, which contains no data.
- */
-class HeadNode<T> extends HistoryNode<T> {
-  constructor() {
-    super(null);
-  }
-}
+type Redo = {
+  type: "redo";
+};
+
+type Clear = {
+  type: "clear";
+};
+
+export type ActionHistoryEvent = Push | Undo | Redo | Clear;
 
 /**
  * This class represents the undo/redo history.
  */
-export class ActionHistory {
-  private readonly head: HeadNode<CanvasAction>;
-  private current: HistoryNode<CanvasAction>;
-  private readonly updateStatistics: Dispatch<StatisticsUpdate>;
+export type ActionHistory = {
+  readonly head: Node<CanvasAction>;
+  current: Node<CanvasAction>;
+  readonly updateStatistics: Dispatch<StatisticsUpdate>;
+};
 
-  constructor(updateStatistics: Dispatch<StatisticsUpdate>) {
-    this.head = new HeadNode();
-    this.current = this.head;
-    this.updateStatistics = updateStatistics;
+export function historyReducer(
+  state: ActionHistory,
+  event: ActionHistoryEvent
+): ActionHistory {
+  switch (event.type) {
+    case "push":
+      const node = { data: event.action, next: null, prev: state.current };
+      state.current.next = node;
+      return {
+        ...state,
+        current: node,
+      };
+    case "clear":
+      return {
+        ...state,
+        head: { data: null, next: null, prev: null },
+        current: { data: null, next: null, prev: null },
+      };
+    case "redo":
+      if (state.current.next) {
+        const current = state.current.next;
+        current.data!.paintedPoints.forEach((x, y, data) => {
+          current.data!.drawingLayer.setSegment(x, y, data.newSegment);
+          state.updateStatistics(
+            new StatisticsUpdate(x, y, data.oldSegment, data.newSegment)
+          );
+        });
+        return {
+          ...state,
+          current,
+        };
+      } else {
+        return state;
+      }
+    case "undo":
+      if (state.current.prev) {
+        state.current.data!.paintedPoints.forEach((x, y, data) => {
+          // Utilize the old segment data to undo the action.
+          // This is the segment that was painted over by the action.
+          state.current.data!.drawingLayer.setSegment(x, y, data.oldSegment);
+          state.updateStatistics(
+            new StatisticsUpdate(x, y, data.newSegment, data.oldSegment)
+          );
+        });
+        return {
+          ...state,
+          current: state.current.prev,
+        };
+      } else {
+        return state;
+      }
   }
-
-  /**
-   * Clear the history.
-   */
-  public clear(): void {
-    this.current = this.head;
-  }
-
-  public undo(): void {
-    if (this.current.prev) {
-      this.current.data!.paintedPoints.forEach((x, y, data) => {
-        // Utilize the old segment data to undo the action.
-        // This is the segment that was painted over by the action.
-        this.current.data!.drawingLayer.setSegment(x, y, data.oldSegment);
-        this.updateStatistics(
-          new StatisticsUpdate(x, y, data.newSegment, data.oldSegment)
-        );
-      });
-      this.current = this.current.prev;
-    }
-  }
-
-  public redo(): void {
-    if (this.current.next) {
-      this.current = this.current.next;
-      this.current.data!.paintedPoints.forEach((x, y, data) => {
-        // Utilize the new segment data to redo the action.
-        this.current.data!.drawingLayer.setSegment(x, y, data.newSegment);
-        this.updateStatistics(
-          new StatisticsUpdate(x, y, data.oldSegment, data.newSegment)
-        );
-      });
-    }
-  }
-
-  /**
-   * Push an action onto the history. This removes any actions that were undone.
-   */
-  public push(action: CanvasAction): void {
-    const node = new DataNode(action);
-    node.prev = this.current;
-    this.current.next = node;
-    this.current = node;
-  }
+  throw new Error("Invalid action history event");
 }

@@ -41,11 +41,17 @@ export class DrawingLayer {
     }
   >;
 
+  /**
+   * The segment currently being drawn
+   */
+  public activeSegment: number;
+
   constructor(pixelSize: THREE.Vector2) {
     this.pixelSize = pixelSize;
     this.segmentMap = new Map();
     this.segmentBuffer = new Int32Array(pixelSize.x * pixelSize.y).fill(-1);
     this.uniforms = new DrawingLayerUniforms(pixelSize);
+    this.activeSegment = -1;
   }
 
   /**
