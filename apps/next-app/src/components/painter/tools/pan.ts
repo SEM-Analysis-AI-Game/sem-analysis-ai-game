@@ -29,8 +29,7 @@ export class PanTool extends Tool<"Pan"> {
     setPan: Dispatch<SetStateAction<THREE.Vector2>>,
     updateStatistics: Dispatch<StatisticsUpdate>,
     drawingLayer: DrawingLayer,
-    history: ActionHistory,
-    activeSegment: number
+    history: ActionHistory
   ): void {
     if (cursorDown) {
       if (this.lastCursorPos) {

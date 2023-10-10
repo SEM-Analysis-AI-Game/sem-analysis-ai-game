@@ -36,7 +36,6 @@ export function PainterController(): null {
 
   const [shiftDown, setShiftDown] = useState(false);
   const [cursorDown, setCursorDown] = useCursorDown();
-  const [cursorPreviouslyDown, setCursorPreviouslyDown] = useState(false);
 
   const [tool] = useTool();
 
@@ -119,6 +118,7 @@ export function PainterController(): null {
     gl.domElement.addEventListener("pointerdown", (e) => {
       setCursorDown(true);
       setShiftDown(e.shiftKey);
+      drawingLayer.activeSegment = -1;
     });
     gl.domElement.addEventListener("pointerup", () => {
       setCursorDown(false);
@@ -139,12 +139,10 @@ export function PainterController(): null {
       .multiply(drawingLayer.pixelSize)
       .floor();
 
-    let currentSegment = activeSegment;
-
     // if the cursor was not previously down
-    if (!cursorPreviouslyDown && cursorDown) {
+    if (cursorDown && drawingLayer.activeSegment === -1) {
       // get the segment at the cursor position
-      const segment = drawingLayer.segment(cursor.x, cursor.y);
+      let segment = drawingLayer.segment(cursor.x, cursor.y);
 
       // if no segment is found at the cursor position, increment the
       // number of segments and use the new segment, otherwise use the found
@@ -152,13 +150,8 @@ export function PainterController(): null {
       if (segment === -1) {
         drawingLayer.incrementSegments();
       }
-      currentSegment = segment === -1 ? drawingLayer.getNumSegments() : segment;
-      setActiveSegment(currentSegment);
-      setCursorPreviouslyDown(true);
-    }
-
-    if (!cursorDown && cursorPreviouslyDown) {
-      setCursorPreviouslyDown(false);
+      drawingLayer.activeSegment =
+        segment === -1 ? drawingLayer.getNumSegments() : segment;
     }
 
     // use the secondary pan tool if shift is held. we should
@@ -173,8 +166,7 @@ export function PainterController(): null {
       setPan,
       updateStatistics,
       drawingLayer,
-      history,
-      currentSegment
+      history
     );
   });
 

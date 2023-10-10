@@ -1,4 +1,5 @@
-import { PropsWithChildren, useEffect, useState } from "react";
+import * as THREE from "three";
+import { PropsWithChildren, useState } from "react";
 import { useStatistics } from "./provider";
 
 const kFontScale = 0.25;
@@ -8,6 +9,7 @@ export function SegmentDisplay(
     key: number;
     segment: number;
     position: THREE.Vector2;
+    canvasSize: THREE.Vector2;
   }>
 ): JSX.Element {
   const [statistics] = useStatistics();
@@ -24,9 +26,11 @@ export function SegmentDisplay(
       <button onClick={(e) => console.log(e)}>
         <h1
           style={{
-            fontSize:
+            fontSize: Math.min(
               Math.sqrt(statistics.segments.get(props.segment)!.numPoints) *
-              kFontScale,
+                kFontScale,
+              8
+            ),
           }}
         >
           {props.segment}

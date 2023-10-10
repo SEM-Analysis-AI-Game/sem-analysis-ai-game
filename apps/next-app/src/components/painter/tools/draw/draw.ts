@@ -56,8 +56,7 @@ export abstract class DrawTool<Name extends ToolNames> extends Tool<Name> {
     setPan: Dispatch<SetStateAction<THREE.Vector2>>,
     updateStatistics: Dispatch<StatisticsUpdate>,
     drawingLayer: DrawingLayer,
-    history: ActionHistory,
-    activeSegment: number
+    history: ActionHistory
   ): void {
     // don't draw if zooming
     if (cursorDown && !zooming) {
@@ -72,7 +71,7 @@ export abstract class DrawTool<Name extends ToolNames> extends Tool<Name> {
         const oldSegment = drawingLayer.segment(pos.x, pos.y);
 
         // the new segment to draw
-        const drawSegment = this.drawingSegment(activeSegment);
+        const drawSegment = this.drawingSegment(drawingLayer.activeSegment);
 
         // if we have already drawn over the point, we won't write it into
         // the action history again, because undoing resets back to the

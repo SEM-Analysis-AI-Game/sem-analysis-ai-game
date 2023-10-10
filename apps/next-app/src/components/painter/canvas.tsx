@@ -22,8 +22,8 @@ export function PainterCanvas(): JSX.Element {
   }
 
   // Whenever the background changes we need to resize the canvas
-  const screenSize = useMemo(() => {
-    const backgroundResolution = new THREE.Vector2(
+  const [canvasSize, backgroundResolution] = useMemo(() => {
+    const resolution = new THREE.Vector2(
       background.image.width,
       background.image.height
     );
@@ -36,20 +36,17 @@ export function PainterCanvas(): JSX.Element {
       1.0
     );
 
-    const canvasSize = backgroundResolution
-      .clone()
-      .multiplyScalar(inverse)
-      .floor();
+    const canvasSize = resolution.clone().multiplyScalar(inverse).floor();
 
-    return canvasSize;
+    return [canvasSize, resolution];
   }, [background]);
 
   return (
     <div
       className="block m-auto overflow-hidden"
       style={{
-        width: screenSize.x,
-        height: screenSize.y,
+        width: canvasSize.x,
+        height: canvasSize.y,
       }}
     >
       <StatisticsProvider>
@@ -57,11 +54,12 @@ export function PainterCanvas(): JSX.Element {
           <PainterControls>
             <DrawingLayerProvider>
               <SegmentInfoOverlay
-                size={screenSize}
+                canvasSize={canvasSize}
+                backgroundResolution={backgroundResolution}
                 padding={
                   new THREE.Vector2(
-                    (window.innerWidth - screenSize.x) / 2,
-                    (window.innerHeight - screenSize.y) / 2
+                    (window.innerWidth - canvasSize.x) / 2,
+                    (window.innerHeight - canvasSize.y) / 2
                   )
                 }
               />
