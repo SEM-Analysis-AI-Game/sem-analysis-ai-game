@@ -1,7 +1,12 @@
 import * as THREE from "three";
 import { Dispatch } from "react";
 import { Tool, ToolNames } from "../tool";
-import { DrawingLayer } from "../../drawing-layer";
+import {
+  DrawingLayer,
+  getSegment,
+  recomputeSegments,
+  setSegment,
+} from "../../drawing-layer";
 import { ActionHistoryEvent, CanvasAction } from "../../action-history";
 import { PointContainer } from "../../point-container";
 import { Controls, ControlsEvent } from "../../controls";
@@ -70,7 +75,7 @@ export abstract class DrawTool<Name extends ToolNames> extends Tool<Name> {
 
       const fill = (pos: THREE.Vector2) => {
         // the segment we are drawing over
-        const oldSegment = drawingLayer.segment(pos.x, pos.y);
+        const oldSegment = getSegment(drawingLayer, pos);
 
         // the new segment to draw
         const drawSegment = this.drawingSegment(drawingLayer.activeSegment);
@@ -98,7 +103,7 @@ export abstract class DrawTool<Name extends ToolNames> extends Tool<Name> {
         // Updates the segment in the drawing layer. Passing drawAction
         // as the last argument will cause the updates boundaries to be
         // recorded in the action history.
-        drawingLayer.setSegment(pos.x, pos.y, drawSegment, drawAction);
+        setSegment(drawingLayer, pos, drawSegment, drawAction);
       };
 
       // paint the point at the cursor position
@@ -146,7 +151,7 @@ export abstract class DrawTool<Name extends ToolNames> extends Tool<Name> {
       this.lastCursorPos = null;
       if (this.drawAction) {
         // calculate any splitting of segments
-        drawingLayer.recomputeSegments(this.drawAction, updateStatistics);
+        recomputeSegments(drawingLayer, this.drawAction);
 
         // push onto undo/redo stack
         updateHistory({

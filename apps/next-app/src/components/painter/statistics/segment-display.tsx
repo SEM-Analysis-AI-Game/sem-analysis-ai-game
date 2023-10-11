@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { PropsWithChildren, useState } from "react";
 import { useStatistics } from "./provider";
+import { clamp } from "three/src/math/MathUtils.js";
 
 const kFontScale = 0.25;
 
@@ -26,10 +27,11 @@ export function SegmentDisplay(
       <button onClick={(e) => console.log(e)}>
         <h1
           style={{
-            fontSize: Math.max(
+            fontSize: clamp(
               Math.sqrt(statistics.segments.get(props.segment)!.numPoints) *
                 kFontScale,
-              12
+              12,
+              28
             ),
           }}
         >

@@ -34,7 +34,7 @@ export function PainterRenderer(): null {
   // This is used to update the background and drawing layer uniforms.
   const [controls] = useControls();
 
-  const drawingLayer = useDrawingLayer();
+  const [drawingLayer] = useDrawingLayer();
 
   // creates composers and uniforms on mount.
   const [backgroundComposer, drawingComposers, zoomUniform, panUniform] =
@@ -60,9 +60,9 @@ export function PainterRenderer(): null {
 
       // renders each section of the drawing layer.
       const drawingComps: EffectComposer[] = [];
-      for (let i = 0; i < drawingLayer.numSections().y + 1; i++) {
-        for (let j = 0; j < drawingLayer.numSections().x + 1; j++) {
-          const sectionSize = drawingLayer.sectionSize(j, i);
+      for (let i = 0; i < drawingLayer.uniforms.numSections.y + 1; i++) {
+        for (let j = 0; j < drawingLayer.uniforms.numSections.x + 1; j++) {
+          const sectionSize = drawingLayer.uniforms.sectionSize(j, i);
           if (sectionSize.x > 0 && sectionSize.y > 0) {
             const drawing = new THREE.WebGLRenderTarget(
               sectionSize.x,
@@ -88,7 +88,7 @@ export function PainterRenderer(): null {
                   vertexShader,
                   fragmentShader: drawingShader,
                   uniforms: {
-                    inputDiffuse: drawingLayer.uniform(j, i),
+                    inputDiffuse: drawingLayer.uniforms.uniform(j, i),
                     pan,
                     zoom,
                   },
@@ -104,7 +104,7 @@ export function PainterRenderer(): null {
         }
       }
       return [bgComposer, drawingComps, zoom, pan];
-    }, [background]);
+    }, [drawingLayer]);
 
   // update the uniforms when the pan or zoom changes.
   useEffect(() => {
@@ -119,13 +119,15 @@ export function PainterRenderer(): null {
 
     backgroundComposer.render();
 
-    for (let i = 0; i < drawingLayer.numSections().y + 1; i++) {
-      for (let j = 0; j < drawingLayer.numSections().x + 1; j++) {
+    for (let i = 0; i < drawingLayer.uniforms.numSections.y + 1; i++) {
+      for (let j = 0; j < drawingLayer.uniforms.numSections.x + 1; j++) {
         if (
-          drawingLayer.sectionSize(j, i).x !== 0 &&
-          drawingLayer.sectionSize(j, i).y !== 0
+          drawingLayer.uniforms.sectionSize(j, i).x !== 0 &&
+          drawingLayer.uniforms.sectionSize(j, i).y !== 0
         ) {
-          drawingComposers[i * (drawingLayer.numSections().x + 1) + j].render();
+          drawingComposers[
+            i * (drawingLayer.uniforms.numSections.x + 1) + j
+          ].render();
         }
       }
     }

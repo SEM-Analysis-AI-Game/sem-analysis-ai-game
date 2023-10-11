@@ -4,7 +4,11 @@ import { useEffect, useMemo } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { usePinch } from "@use-gesture/react";
 import { PanTool, useTool } from "../tools";
-import { useDrawingLayer } from "../drawing-layer";
+import {
+  getSegment,
+  incrementSegments,
+  useDrawingLayer,
+} from "../drawing-layer";
 import { useActionHistory } from "../action-history";
 import { useBackground } from "../background-loader";
 import { useStatistics } from "../statistics";
@@ -32,7 +36,7 @@ export function PainterController(): null {
   }, []);
 
   const [tool] = useTool();
-  const drawingLayer = useDrawingLayer();
+  const [drawingLayer] = useDrawingLayer();
   const [, updateHistory] = useActionHistory();
   const [controls, updateControls] = useControls();
 
@@ -120,16 +124,17 @@ export function PainterController(): null {
     // if the cursor was not previously down
     if (controls.cursorDown && drawingLayer.activeSegment === -1) {
       // get the segment at the cursor position
-      let segment = drawingLayer.segment(cursor.x, cursor.y);
+      let segment = getSegment(drawingLayer, cursor);
 
       // if no segment is found at the cursor position, increment the
       // number of segments and use the new segment, otherwise use the found
       // segment.
       if (segment === -1) {
-        drawingLayer.incrementSegments();
+        incrementSegments(drawingLayer);
+        drawingLayer.activeSegment = drawingLayer.segmentMap.size;
+      } else {
+        drawingLayer.activeSegment = segment;
       }
-      drawingLayer.activeSegment =
-        segment === -1 ? drawingLayer.getNumSegments() : segment;
     }
 
     if (!controls.cursorDown) {

@@ -1,19 +1,34 @@
 "use client";
 
 import * as THREE from "three";
-import { PropsWithChildren, createContext, useContext, useMemo } from "react";
-import { DrawingLayer } from "./drawing-layer";
+import {
+  Dispatch,
+  PropsWithChildren,
+  createContext,
+  useContext,
+  useEffect,
+  useReducer,
+} from "react";
+import {
+  DrawingLayer,
+  DrawingLayerEvent,
+  drawingLayerReducer,
+  initialState,
+} from "./drawing-layer";
 import { useBackground } from "../background-loader";
+import { useStatistics } from "../statistics";
 
 /**
  * Context for the current drawing layer.
  */
-export const DrawingLayerContext = createContext<DrawingLayer | null>(null);
+export const DrawingLayerContext = createContext<
+  [DrawingLayer, Dispatch<DrawingLayerEvent>] | null
+>(null);
 
 /**
  * Get the current drawing layer. Must be used within a DrawingLayerContext.
  */
-export function useDrawingLayer(): DrawingLayer {
+export function useDrawingLayer(): [DrawingLayer, Dispatch<DrawingLayerEvent>] {
   const drawingLayer = useContext(DrawingLayerContext);
 
   if (!drawingLayer) {
@@ -25,6 +40,9 @@ export function useDrawingLayer(): DrawingLayer {
   return drawingLayer;
 }
 
+/**
+ * Provides a drawing layer context.
+ */
 export function DrawingLayerProvider(props: PropsWithChildren): JSX.Element {
   const [background] = useBackground();
 
@@ -32,10 +50,22 @@ export function DrawingLayerProvider(props: PropsWithChildren): JSX.Element {
     throw new Error("No background found");
   }
 
-  const drawingLayer = useMemo(() => {
-    return new DrawingLayer(
-      new THREE.Vector2(background.image.width, background.image.height)
-    );
+  const [, updateStatistics] = useStatistics();
+
+  const drawingLayer = useReducer(
+    drawingLayerReducer,
+    new THREE.Vector2(background.image.width, background.image.height),
+    (pixelSize) => initialState(pixelSize, updateStatistics)
+  );
+
+  useEffect(() => {
+    drawingLayer[1]({
+      type: "reset",
+      pixelSize: new THREE.Vector2(
+        background.image.width,
+        background.image.height
+      ),
+    });
   }, [background]);
 
   return (

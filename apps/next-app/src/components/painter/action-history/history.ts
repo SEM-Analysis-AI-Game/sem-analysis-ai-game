@@ -1,6 +1,8 @@
+import * as THREE from "three";
 import { Dispatch } from "react";
 import { CanvasAction } from "./action";
 import { StatisticsEvent } from "../statistics";
+import { setSegment } from "../drawing-layer";
 
 /**
  * Represents a node in the action history linked list.
@@ -65,7 +67,11 @@ export function historyReducer(
       if (state.current.next) {
         const current = state.current.next;
         current.data!.paintedPoints.forEach((x, y, data) => {
-          current.data!.drawingLayer.setSegment(x, y, data.newSegment);
+          setSegment(
+            current.data!.drawingLayer,
+            new THREE.Vector2(x, y),
+            data.newSegment
+          );
           state.updateStatistics({
             type: "update",
             x,
@@ -86,7 +92,11 @@ export function historyReducer(
         state.current.data!.paintedPoints.forEach((x, y, data) => {
           // Utilize the old segment data to undo the action.
           // This is the segment that was painted over by the action.
-          state.current.data!.drawingLayer.setSegment(x, y, data.oldSegment);
+          setSegment(
+            state.current.data!.drawingLayer,
+            new THREE.Vector2(x, y),
+            data.oldSegment
+          );
           state.updateStatistics({
             type: "update",
             x,
