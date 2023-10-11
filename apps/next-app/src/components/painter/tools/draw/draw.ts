@@ -9,14 +9,12 @@ import {
 import { ActionHistoryEvent, CanvasAction } from "../../action-history";
 import { hasPoint, setPoint } from "../../point-container";
 import { Controls } from "../../controls";
-import { StatisticsEvent } from "../../statistics";
 
 function handleFrame(
   state: DrawTool<string>,
   cursorPos: THREE.Vector2,
   controls: Controls,
   drawingLayer: DrawingLayer,
-  updateStatistics: Dispatch<StatisticsEvent>,
   updateHistory: Dispatch<ActionHistoryEvent>
 ): void {
   // don't draw if zooming
@@ -28,7 +26,6 @@ function handleFrame(
           size: 0,
           points: new Map(),
         },
-        drawingLayer,
         effectedSegments: new Map(),
       };
     }
@@ -51,14 +48,6 @@ function handleFrame(
           oldSegment: oldSegment,
         });
       }
-
-      // update the statistics for the old segment and the new segment
-      updateStatistics({
-        type: "update",
-        newSegment: drawSegment,
-        pos,
-        oldSegment,
-      });
 
       // Updates the segment in the drawing layer. Passing drawAction
       // as the last argument will cause the updates boundaries to be

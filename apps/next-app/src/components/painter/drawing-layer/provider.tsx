@@ -44,12 +44,14 @@ export function useDrawingLayer(): [DrawingLayer, Dispatch<DrawingLayerEvent>] {
  * Provides a drawing layer context.
  */
 export function DrawingLayerProvider(props: PropsWithChildren): JSX.Element {
+  // the drawing layer needs to know the background size
   const [background] = useBackground();
 
   if (!background) {
     throw new Error("No background found");
   }
 
+  // the drawing layer needs to update the statistics
   const [, updateStatistics] = useStatistics();
 
   const drawingLayer = useReducer(
@@ -58,6 +60,7 @@ export function DrawingLayerProvider(props: PropsWithChildren): JSX.Element {
     (pixelSize) => initialState(pixelSize, updateStatistics)
   );
 
+  // reset the drawing layer when the background changes
   useEffect(() => {
     drawingLayer[1]({
       type: "reset",

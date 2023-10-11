@@ -1,8 +1,6 @@
 import * as THREE from "three";
-import { Dispatch } from "react";
 import { CanvasAction } from "./action";
-import { StatisticsEvent } from "../statistics";
-import { setSegment } from "../drawing-layer";
+import { DrawingLayer, setSegment } from "../drawing-layer";
 import { forEachPoint } from "../point-container";
 
 /**
@@ -42,8 +40,8 @@ export type ActionHistoryEvent = Push | Undo | Redo | Clear;
  */
 export type ActionHistory = {
   readonly head: Node<CanvasAction>;
+  readonly drawingLayer: DrawingLayer;
   current: Node<CanvasAction>;
-  readonly updateStatistics: Dispatch<StatisticsEvent>;
 };
 
 export function historyReducer(
@@ -68,14 +66,11 @@ export function historyReducer(
       if (state.current.next) {
         const current = state.current.next;
         forEachPoint(current.data!.paintedPoints, (x, y, data) => {
-          const pos = new THREE.Vector2(x, y);
-          setSegment(current.data!.drawingLayer, pos, data.newSegment);
-          state.updateStatistics({
-            pos,
-            type: "update",
-            oldSegment: data.oldSegment,
-            newSegment: data.newSegment,
-          });
+          setSegment(
+            state.drawingLayer,
+            new THREE.Vector2(x, y),
+            data.newSegment
+          );
         });
         return {
           ...state,
@@ -87,14 +82,11 @@ export function historyReducer(
     case "undo":
       if (state.current.prev) {
         forEachPoint(state.current.data!.paintedPoints, (x, y, data) => {
-          const pos = new THREE.Vector2(x, y);
-          setSegment(state.current.data!.drawingLayer, pos, data.oldSegment);
-          state.updateStatistics({
-            type: "update",
-            oldSegment: data.newSegment,
-            newSegment: data.oldSegment,
-            pos,
-          });
+          setSegment(
+            state.drawingLayer,
+            new THREE.Vector2(x, y),
+            data.oldSegment
+          );
         });
         return {
           ...state,

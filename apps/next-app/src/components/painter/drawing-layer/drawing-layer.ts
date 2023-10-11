@@ -52,14 +52,14 @@ export type DrawingLayer = {
   >;
 
   /**
-   * The segment currently being drawn
-   */
-  activeSegment: number;
-
-  /**
    * Dispatches update events to the statistics reducer.
    */
   readonly updateStatistics: Dispatch<StatisticsEvent>;
+
+  /**
+   * The segment currently being drawn
+   */
+  activeSegment: number;
 };
 
 /**
@@ -250,6 +250,13 @@ export function setSegment(
   if (oldSegment == segment) {
     return;
   }
+
+  state.updateStatistics({
+    type: "update",
+    newSegment: segment,
+    oldSegment,
+    pos,
+  });
 
   // update the segment buffer (this is a flattened 2D array row-major)
   state.segmentBuffer[pos.y * state.pixelSize.x + pos.x] = segment;

@@ -1,4 +1,3 @@
-import { DrawingLayer } from "../drawing-layer";
 import { PointContainer } from "../point-container";
 
 /**
@@ -12,11 +11,6 @@ export type CanvasAction = {
     oldSegment: number;
     newSegment: number;
   }>;
-
-  /**
-   * The drawing layer that this action was applied to.
-   */
-  readonly drawingLayer: DrawingLayer;
 
   /**
    * The segments that were effected by this action. This is not used for

@@ -5,10 +5,10 @@ import { Canvas } from "@react-three/fiber";
 import { useMemo } from "react";
 import { PainterRenderer } from "./renderer";
 import { useBackground } from "./background-loader";
-import { DrawingLayerProvider } from "./drawing-layer";
 import { PainterController, PainterControls } from "./controls";
 import { SegmentInfoOverlay, StatisticsProvider } from "./statistics";
 import { ActionHistoryProvider } from "./action-history";
+import { DrawingLayerProvider } from "./drawing-layer";
 
 /**
  * Responsible for sizing the canvas and initializing the controls and
@@ -50,9 +50,9 @@ export function PainterCanvas(): JSX.Element {
       }}
     >
       <StatisticsProvider>
-        <ActionHistoryProvider>
-          <PainterControls>
-            <DrawingLayerProvider>
+        <DrawingLayerProvider>
+          <ActionHistoryProvider>
+            <PainterControls>
               <SegmentInfoOverlay
                 canvasSize={canvasSize}
                 backgroundResolution={backgroundResolution}
@@ -67,9 +67,9 @@ export function PainterCanvas(): JSX.Element {
                 <PainterController />
                 <PainterRenderer />
               </Canvas>
-            </DrawingLayerProvider>
-          </PainterControls>
-        </ActionHistoryProvider>
+            </PainterControls>
+          </ActionHistoryProvider>
+        </DrawingLayerProvider>
       </StatisticsProvider>
     </div>
   );

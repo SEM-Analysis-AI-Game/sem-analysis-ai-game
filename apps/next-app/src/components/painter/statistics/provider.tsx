@@ -47,6 +47,7 @@ export function StatisticsProvider(props: PropsWithChildren): JSX.Element {
 
   const [background] = useBackground();
 
+  // clear the statistics when the background changes
   useEffect(() => {
     statisticsState[1]({ type: "clear" });
   }, [background]);

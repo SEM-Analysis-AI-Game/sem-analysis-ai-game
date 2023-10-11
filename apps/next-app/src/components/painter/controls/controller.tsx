@@ -11,7 +11,6 @@ import {
 } from "../drawing-layer";
 import { useActionHistory } from "../action-history";
 import { useBackground } from "../background-loader";
-import { useStatistics } from "../statistics";
 import { useControls } from "./provider";
 
 /**
@@ -81,10 +80,6 @@ export function PainterController(): null {
     updateHistory({ type: "clear" });
   }, [background]);
 
-  // used for updating the statistics information after
-  // each draw action.
-  const [, updateStatistics] = useStatistics();
-
   // handle cursor up/down event and cursor leave canvas event.
   useEffect(() => {
     gl.domElement.addEventListener("pointerdown", (e) => {
@@ -152,14 +147,7 @@ export function PainterController(): null {
         updateControls
       );
     } else {
-      tool.handleFrame(
-        tool,
-        cursor,
-        controls,
-        drawingLayer,
-        updateStatistics,
-        updateHistory
-      );
+      tool.handleFrame(tool, cursor, controls, drawingLayer, updateHistory);
     }
   });
 

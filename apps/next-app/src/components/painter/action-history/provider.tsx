@@ -2,7 +2,7 @@
 
 import { Dispatch, createContext, useContext, useReducer } from "react";
 import { ActionHistory, ActionHistoryEvent, historyReducer } from "./history";
-import { useStatistics } from "../statistics";
+import { useDrawingLayer } from "../drawing-layer";
 
 /**
  * Context for the current action history.
@@ -35,14 +35,15 @@ export function useActionHistory(): [
 export function ActionHistoryProvider(props: {
   children: JSX.Element;
 }): JSX.Element {
-  const [, updateStatistics] = useStatistics();
+  // the action history needs to be able to update the drawing layer
+  const [drawingLayer] = useDrawingLayer();
 
   const history = useReducer(
     historyReducer,
     { prev: null, next: null, data: null },
     (head) => ({
+      drawingLayer,
       head,
-      updateStatistics,
       current: head,
     })
   );
