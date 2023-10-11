@@ -94,10 +94,9 @@ export abstract class DrawTool<Name extends ToolNames> extends Tool<Name> {
         // update the statistics for the old segment and the new segment
         updateStatistics({
           type: "update",
-          x: pos.x,
-          y: pos.y,
-          oldSegment,
           newSegment: drawSegment,
+          pos,
+          oldSegment,
         });
 
         // Updates the segment in the drawing layer. Passing drawAction

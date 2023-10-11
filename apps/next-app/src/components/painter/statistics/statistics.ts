@@ -15,8 +15,7 @@ export type StatisticsEvent = Update | Clear;
 
 type Update = {
   type: "update";
-  x: number;
-  y: number;
+  pos: THREE.Vector2;
   oldSegment: number;
   newSegment: number;
 };
@@ -49,10 +48,10 @@ export function statisticsReducer(
         if (newSegmentEntry.numPoints > 0) {
           newSegmentEntry.centroid
             .multiplyScalar(newSegmentEntry.numPoints)
-            .add(new THREE.Vector2(event.x, event.y))
+            .add(event.pos)
             .divideScalar(newSegmentEntry.numPoints + 1);
         } else {
-          newSegmentEntry.centroid.set(event.x, event.y);
+          newSegmentEntry.centroid = event.pos.clone();
         }
         newSegmentEntry.numPoints++;
       }
@@ -69,7 +68,7 @@ export function statisticsReducer(
         }
         oldSegmentEntry.centroid
           .multiplyScalar(oldSegmentEntry.numPoints)
-          .sub(new THREE.Vector2(event.x, event.y))
+          .sub(event.pos)
           .divideScalar(oldSegmentEntry.numPoints - 1);
         oldSegmentEntry.numPoints--;
       }

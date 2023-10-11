@@ -37,7 +37,7 @@ type Clear = {
 export type ActionHistoryEvent = Push | Undo | Redo | Clear;
 
 /**
- * This class represents the undo/redo history.
+ * This represents the undo/redo history.
  */
 export type ActionHistory = {
   readonly head: Node<CanvasAction>;
@@ -67,15 +67,11 @@ export function historyReducer(
       if (state.current.next) {
         const current = state.current.next;
         current.data!.paintedPoints.forEach((x, y, data) => {
-          setSegment(
-            current.data!.drawingLayer,
-            new THREE.Vector2(x, y),
-            data.newSegment
-          );
+          const pos = new THREE.Vector2(x, y);
+          setSegment(current.data!.drawingLayer, pos, data.newSegment);
           state.updateStatistics({
+            pos,
             type: "update",
-            x,
-            y,
             oldSegment: data.oldSegment,
             newSegment: data.newSegment,
           });
@@ -90,19 +86,13 @@ export function historyReducer(
     case "undo":
       if (state.current.prev) {
         state.current.data!.paintedPoints.forEach((x, y, data) => {
-          // Utilize the old segment data to undo the action.
-          // This is the segment that was painted over by the action.
-          setSegment(
-            state.current.data!.drawingLayer,
-            new THREE.Vector2(x, y),
-            data.oldSegment
-          );
+          const pos = new THREE.Vector2(x, y);
+          setSegment(state.current.data!.drawingLayer, pos, data.oldSegment);
           state.updateStatistics({
             type: "update",
-            x,
-            y,
             oldSegment: data.newSegment,
             newSegment: data.oldSegment,
+            pos,
           });
         });
         return {

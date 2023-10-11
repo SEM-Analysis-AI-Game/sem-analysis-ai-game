@@ -202,8 +202,7 @@ export function recomputeSegments(
             state.updateStatistics({
               type: "update",
               oldSegment: segment[0],
-              x,
-              y,
+              pos: new THREE.Vector2(x, y),
               newSegment,
             });
 
