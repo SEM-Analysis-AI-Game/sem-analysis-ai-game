@@ -4,99 +4,119 @@
  *
  * Uses nested maps to store the points.
  */
-export class PointContainer<D = null> {
-  private readonly points: Map<number, Map<number, D>>;
-  private currentSize: number;
+export type PointContainer<D = null> = {
+  readonly points: Map<number, Map<number, D>>;
+  size: number;
+};
 
-  constructor() {
-    this.points = new Map();
-    this.currentSize = 0;
-  }
-
-  public size(): number {
-    return this.currentSize;
-  }
-
-  public map<T>(
-    callback: (x: number, y: number, data: D) => T
-  ): PointContainer<T> {
-    const result = new PointContainer<T>();
-    this.points.forEach((yMap, x) => {
-      yMap.forEach((data, y) => {
-        result.setPoint(x, y, callback(x, y, data));
-      });
+export function mapPoints<T, D>(
+  container: PointContainer<D>,
+  callback: (x: number, y: number, data: D) => T
+): PointContainer<T> {
+  const result = {
+    points: new Map<number, Map<number, T>>(),
+    size: 0,
+  };
+  container.points.forEach((yMap, x) => {
+    yMap.forEach((data, y) => {
+      setPoint(result, x, y, callback(x, y, data));
     });
-    return result;
-  }
+  });
+  return result;
+}
 
-  public filter(
-    callback: (x: number, y: number, data: D) => boolean
-  ): PointContainer<D> {
-    const result = new PointContainer<D>();
-    this.points.forEach((yMap, x) => {
-      yMap.forEach((data, y) => {
-        if (callback(x, y, data)) {
-          result.setPoint(x, y, data);
-        }
-      });
+export function filterPoints<D>(
+  container: PointContainer<D>,
+  callback: (x: number, y: number, data: D) => boolean
+): PointContainer<D> {
+  const result = {
+    points: new Map<number, Map<number, D>>(),
+    size: 0,
+  };
+  container.points.forEach((yMap, x) => {
+    yMap.forEach((data, y) => {
+      if (callback(x, y, data)) {
+        setPoint(result, x, y, data);
+      }
     });
-    return result;
-  }
+  });
+  return result;
+}
 
-  public firstWhere(
-    callback: (x: number, y: number, data: D) => boolean
-  ): [number, number, D] | undefined {
-    for (let x of this.points) {
-      for (let y of x[1]) {
-        if (callback(x[0], y[0], y[1])) {
-          return [x[0], y[0], y[1]];
-        }
+export function firstPointWhere<D>(
+  container: PointContainer<D>,
+  callback: (x: number, y: number, data: D) => boolean
+): [number, number, D] | undefined {
+  for (let x of container.points) {
+    for (let y of x[1]) {
+      if (callback(x[0], y[0], y[1])) {
+        return [x[0], y[0], y[1]];
       }
     }
+  }
+  return undefined;
+}
+
+export function setPoint<D>(
+  container: PointContainer<D>,
+  x: number,
+  y: number,
+  data: D
+): void {
+  if (!container.points.has(x)) {
+    container.points.set(x, new Map());
+  }
+  const xMap = container.points.get(x)!;
+  if (!xMap.has(y)) {
+    container.size++;
+  }
+  xMap.set(y, data);
+}
+
+export function getPoint<D>(
+  container: PointContainer<D>,
+  x: number,
+  y: number
+): D | undefined {
+  if (!container.points.has(x)) {
     return undefined;
   }
+  return container.points.get(x)!.get(y);
+}
 
-  public setPoint(x: number, y: number, data: D): void {
-    if (!this.points.has(x)) {
-      this.points.set(x, new Map());
-    }
-    const xMap = this.points.get(x)!;
-    if (!xMap.has(y)) {
-      this.currentSize++;
-    }
-    xMap.set(y, data);
+export function hasPoint(
+  container: PointContainer<any>,
+  x: number,
+  y: number
+): boolean {
+  if (!container.points.has(x)) {
+    return false;
   }
+  return container.points.get(x)!.has(y);
+}
 
-  public getPoint(x: number, y: number): D | undefined {
-    if (!this.points.has(x)) {
-      return undefined;
-    }
-    return this.points.get(x)!.get(y);
+export function deletePoint(
+  container: PointContainer<any>,
+  x: number,
+  y: number
+): void {
+  if (!container.points.has(x)) {
+    return;
   }
-
-  public hasPoint(x: number, y: number): boolean {
-    if (!this.points.has(x)) {
-      return false;
-    }
-    return this.points.get(x)!.has(y);
+  const xMap = container.points.get(x)!;
+  if (xMap.has(y)) {
+    xMap.delete(y);
+    container.size--;
   }
+}
 
-  public deletePoint(x: number, y: number): void {
-    if (!this.points.has(x)) {
-      return;
-    }
-    const xMap = this.points.get(x)!;
-    if (xMap.has(y)) {
-      xMap.delete(y);
-      this.currentSize--;
-    }
-  }
-
-  public forEach(callback: (x: number, y: number, data: D) => void): void {
-    for (let x of this.points) {
-      for (let y of x[1]) {
-        callback(x[0], y[0], y[1]);
-      }
+export function forEachPoint<D>(
+  container: PointContainer<D>,
+  callback: (x: number, y: number, data: D) => void
+): void {
+  for (let x of container.points) {
+    for (let y of x[1]) {
+      callback(x[0], y[0], y[1]);
     }
   }
 }

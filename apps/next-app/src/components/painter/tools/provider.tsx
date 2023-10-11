@@ -9,7 +9,7 @@ import {
   useState,
 } from "react";
 import { Tool } from "./tool";
-import { CircleBrush } from "./draw";
+import { circleBrush } from "./draw";
 
 /**
  * Context for the current tool.
@@ -33,7 +33,7 @@ export function useTool(): [Tool, Dispatch<SetStateAction<Tool>>] {
 
 export const kInitialToolSize = 100;
 
-const kInitialTool = new CircleBrush(kInitialToolSize);
+const kInitialTool = circleBrush(kInitialToolSize);
 
 /**
  * Provider for the current tool.

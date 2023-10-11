@@ -1,12 +1,14 @@
-import { ToolNames } from "../../tool";
-import { DrawTool } from "../draw";
+import { DrawTool, drawTool } from "../draw";
 
-export abstract class Brush<Name extends ToolNames> extends DrawTool<Name> {
-  constructor(size: number) {
-    super(size);
-  }
-
-  protected drawingSegment(activeSegment: number): number {
-    return activeSegment;
-  }
+export function brushTool<ToolName extends string>(
+  name: ToolName,
+  size: number,
+  paint: (
+    fill: (pos: THREE.Vector2) => void,
+    size: number,
+    pos: THREE.Vector2,
+    resolution: THREE.Vector2
+  ) => void
+): DrawTool<ToolName> {
+  return drawTool(name, size, paint, (activeSegment) => activeSegment);
 }

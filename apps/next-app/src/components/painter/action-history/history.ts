@@ -3,6 +3,7 @@ import { Dispatch } from "react";
 import { CanvasAction } from "./action";
 import { StatisticsEvent } from "../statistics";
 import { setSegment } from "../drawing-layer";
+import { forEachPoint } from "../point-container";
 
 /**
  * Represents a node in the action history linked list.
@@ -66,7 +67,7 @@ export function historyReducer(
     case "redo":
       if (state.current.next) {
         const current = state.current.next;
-        current.data!.paintedPoints.forEach((x, y, data) => {
+        forEachPoint(current.data!.paintedPoints, (x, y, data) => {
           const pos = new THREE.Vector2(x, y);
           setSegment(current.data!.drawingLayer, pos, data.newSegment);
           state.updateStatistics({
@@ -85,7 +86,7 @@ export function historyReducer(
       }
     case "undo":
       if (state.current.prev) {
-        state.current.data!.paintedPoints.forEach((x, y, data) => {
+        forEachPoint(state.current.data!.paintedPoints, (x, y, data) => {
           const pos = new THREE.Vector2(x, y);
           setSegment(state.current.data!.drawingLayer, pos, data.oldSegment);
           state.updateStatistics({

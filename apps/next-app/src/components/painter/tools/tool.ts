@@ -1,34 +1,36 @@
-import * as THREE from "three";
-import { Dispatch } from "react";
-import { DrawingLayer } from "../drawing-layer";
-import { StatisticsEvent } from "../statistics";
-import { ActionHistoryEvent } from "../action-history";
-import { Controls, ControlsEvent } from "../controls";
+import {
+  CircleBrush,
+  CircleEraser,
+  PanTool,
+  SquareBrush,
+  SquareEraser,
+  circleBrush,
+  circleEraser,
+  panTool,
+  squareBrush,
+  squareEraser,
+} from "../tools";
+
+type Tools =
+  | [CircleEraser, typeof circleEraser]
+  | [SquareEraser, typeof squareEraser]
+  | [CircleBrush, typeof circleBrush]
+  | [SquareBrush, typeof squareBrush]
+  | [PanTool, typeof panTool];
+
+export type Tool = Tools[0];
+
+export type ToolName = Tool["name"];
 
 /**
- * The names of the tools. These are shown on the toolbar.
+ * The factory for the tools. This is used to create tools from their names.
  */
-export type ToolNames =
-  | "Circle Eraser"
-  | "Square Eraser"
-  | "Circle Brush"
-  | "Square Brush"
-  | "Pan";
-
-export abstract class Tool<T extends ToolNames = ToolNames> {
-  public abstract readonly name: T;
-  public readonly size: number;
-
-  public abstract frameCallback(
-    cursorPos: THREE.Vector2,
-    controls: Controls,
-    updateControls: Dispatch<ControlsEvent>,
-    updateStatistics: Dispatch<StatisticsEvent>,
-    drawingLayer: DrawingLayer,
-    updateHistory: Dispatch<ActionHistoryEvent>
-  ): void;
-
-  constructor(size: number) {
-    this.size = size;
-  }
-}
+export const kToolFactory: {
+  [T in Tools as T[0]["name"]]: T[1];
+} = {
+  "Circle Eraser": circleEraser,
+  "Square Eraser": squareEraser,
+  "Circle Brush": circleBrush,
+  "Square Brush": squareBrush,
+  Pan: panTool,
+};

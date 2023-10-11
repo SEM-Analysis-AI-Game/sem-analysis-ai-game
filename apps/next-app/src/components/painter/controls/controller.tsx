@@ -3,7 +3,7 @@
 import { useEffect, useMemo } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { usePinch } from "@use-gesture/react";
-import { PanTool, useTool } from "../tools";
+import { panTool, useTool } from "../tools";
 import {
   getSegment,
   incrementSegments,
@@ -31,8 +31,8 @@ export function PainterController(): null {
   // this is a secondary tool for panning that can be
   // used by holding shift, and maybe eventually we can
   // use it for two-finger drag on mobile too.
-  const panTool = useMemo(() => {
-    return new PanTool(0);
+  const secondaryTool = useMemo(() => {
+    return panTool(0);
   }, []);
 
   const [tool] = useTool();
@@ -143,14 +143,24 @@ export function PainterController(): null {
 
     // use the secondary pan tool if shift is held. we should
     // try to also implement two-finger drag here on mobile.
-    (controls.shiftDown ? panTool : tool).frameCallback(
-      cursor,
-      controls,
-      updateControls,
-      updateStatistics,
-      drawingLayer,
-      updateHistory
-    );
+    if (controls.shiftDown || tool.name === "Pan") {
+      secondaryTool.handleFrame(
+        secondaryTool,
+        cursor,
+        controls,
+        drawingLayer,
+        updateControls
+      );
+    } else {
+      tool.handleFrame(
+        tool,
+        cursor,
+        controls,
+        drawingLayer,
+        updateStatistics,
+        updateHistory
+      );
+    }
   });
 
   return null;

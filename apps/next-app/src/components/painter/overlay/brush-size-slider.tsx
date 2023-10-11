@@ -1,7 +1,6 @@
 "use client";
 
-import { kInitialToolSize, useTool } from "../tools";
-import { kToolFactory } from "./tool-factory";
+import { kInitialToolSize, kToolFactory, useTool } from "../tools";
 
 /**
  * A slider to control the size of the current tool.
@@ -18,7 +17,7 @@ export function BrushSizeSlider(): JSX.Element {
       defaultValue={kInitialToolSize}
       onChange={(e) => {
         setTool(
-          new kToolFactory[tool.name](Number.parseInt(e.currentTarget.value))
+          kToolFactory[tool.name](Number.parseInt(e.currentTarget.value))
         );
       }}
     />

@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { PointContainer } from "../point-container";
+import { PointContainer, hasPoint, setPoint } from "../point-container";
 
 type BFTNode = {
   data: THREE.Vector2;
@@ -11,7 +11,10 @@ export function breadthFirstTraversal(
   test: (pos: THREE.Vector2, exitLoop: () => void) => boolean,
   neighbors: [number, number][]
 ): PointContainer {
-  const visited = new PointContainer();
+  const visited: PointContainer = {
+    size: 0,
+    points: new Map(),
+  };
   let queue: BFTNode | null = {
     data: start,
     next: null,
@@ -24,8 +27,8 @@ export function breadthFirstTraversal(
       breakLoop = true;
     };
     if (test(current, exitLoop)) {
-      if (!visited.hasPoint(current.x, current.y)) {
-        visited.setPoint(current.x, current.y, null);
+      if (!hasPoint(visited, current.x, current.y)) {
+        setPoint(visited, current.x, current.y, null);
         for (let neighbor of neighbors) {
           const neighborPos = new THREE.Vector2(
             current.x + neighbor[0],

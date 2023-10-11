@@ -1,30 +1,38 @@
+import * as THREE from "three";
 import { createCirclePoints, drawMemoizedCircle } from "../../utils";
-import { Eraser } from "./eraser";
+import { eraserTool } from "./eraser";
+import { DrawTool } from "../draw";
 
-export class CircleEraser extends Eraser<"Circle Eraser"> {
-  readonly name = "Circle Eraser";
+function paint(
+  memoizedPoints: THREE.Vector2[],
+  fill: (pos: THREE.Vector2) => void,
+  pos: THREE.Vector2,
+  resolution: THREE.Vector2,
+  diameter: number
+): void {
+  return drawMemoizedCircle({
+    fill,
+    resolution,
+    pos,
+    diameter,
+    offsets: memoizedPoints,
+  });
+}
 
+export type CircleEraser = DrawTool<"Circle Eraser"> & {
   /**
    * The points of the circle are memoized so that we don't have to
    * recalculate them every time we draw.
    */
-  private readonly memoizedPoints: THREE.Vector2[];
+  readonly memoizedPoints: THREE.Vector2[];
+};
 
-  constructor(diameter: number) {
-    super(diameter);
-    this.memoizedPoints = createCirclePoints(diameter);
-  }
-
-  protected paint(params: {
-    fill: (pos: THREE.Vector2) => void;
-    size: number;
-    pos: THREE.Vector2;
-    resolution: THREE.Vector2;
-  }): void {
-    return drawMemoizedCircle({
-      ...params,
-      diameter: this.size,
-      offsets: this.memoizedPoints,
-    });
-  }
+export function circleEraser(diameter: number): CircleEraser {
+  const memoizedPoints = createCirclePoints(diameter);
+  return {
+    ...eraserTool("Circle Eraser", diameter, (fill, size, pos, resolution) =>
+      paint(memoizedPoints, fill, pos, resolution, size)
+    ),
+    memoizedPoints,
+  };
 }

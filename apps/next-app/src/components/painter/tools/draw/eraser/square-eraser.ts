@@ -1,23 +1,26 @@
-import { Vector2 } from "three";
-import { Eraser } from "./eraser";
+import * as THREE from "three";
 import { drawSquare } from "../../utils";
+import { eraserTool } from "./eraser";
+import { DrawTool } from "../draw";
 
-export class SquareEraser extends Eraser<"Square Eraser"> {
-  readonly name = "Square Eraser";
+function paint(
+  fill: (pos: THREE.Vector2) => void,
+  pos: THREE.Vector2,
+  resolution: THREE.Vector2,
+  length: number
+): void {
+  return drawSquare({
+    fill,
+    resolution,
+    pos,
+    length,
+  });
+}
 
-  constructor(diameter: number) {
-    super(diameter);
-  }
+export type SquareEraser = DrawTool<"Square Eraser">;
 
-  protected paint(params: {
-    fill: (pos: Vector2) => void;
-    size: number;
-    pos: Vector2;
-    resolution: Vector2;
-  }): void {
-    return drawSquare({
-      ...params,
-      length: this.size,
-    });
-  }
+export function squareEraser(length: number): SquareEraser {
+  return eraserTool("Square Eraser", length, (fill, size, pos, resolution) =>
+    paint(fill, pos, resolution, size)
+  );
 }

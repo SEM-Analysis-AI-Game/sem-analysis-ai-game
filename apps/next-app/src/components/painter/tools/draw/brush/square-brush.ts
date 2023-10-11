@@ -1,23 +1,26 @@
 import * as THREE from "three";
-import { Brush } from "./brush";
 import { drawSquare } from "../../utils";
+import { brushTool } from "./brush";
+import { DrawTool } from "../draw";
 
-export class SquareBrush extends Brush<"Square Brush"> {
-  readonly name = "Square Brush";
+function paint(
+  fill: (pos: THREE.Vector2) => void,
+  pos: THREE.Vector2,
+  resolution: THREE.Vector2,
+  length: number
+): void {
+  return drawSquare({
+    fill,
+    resolution,
+    pos,
+    length,
+  });
+}
 
-  constructor(diameter: number) {
-    super(diameter);
-  }
+export type SquareBrush = DrawTool<"Square Brush">;
 
-  protected paint(params: {
-    fill: (pos: THREE.Vector2) => void;
-    size: number;
-    pos: THREE.Vector2;
-    resolution: THREE.Vector2;
-  }): void {
-    return drawSquare({
-      ...params,
-      length: this.size,
-    });
-  }
+export function squareBrush(length: number): SquareBrush {
+  return brushTool("Square Brush", length, (fill, size, pos, resolution) =>
+    paint(fill, pos, resolution, size)
+  );
 }

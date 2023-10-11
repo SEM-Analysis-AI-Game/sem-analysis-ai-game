@@ -1,6 +1,5 @@
 import * as THREE from "three";
 import { Dispatch } from "react";
-import { Tool, ToolNames } from "../tool";
 import {
   DrawingLayer,
   getSegment,
@@ -8,9 +7,118 @@ import {
   setSegment,
 } from "../../drawing-layer";
 import { ActionHistoryEvent, CanvasAction } from "../../action-history";
-import { PointContainer } from "../../point-container";
-import { Controls, ControlsEvent } from "../../controls";
+import { hasPoint, setPoint } from "../../point-container";
+import { Controls } from "../../controls";
 import { StatisticsEvent } from "../../statistics";
+
+function handleFrame(
+  state: DrawTool<string>,
+  cursorPos: THREE.Vector2,
+  controls: Controls,
+  drawingLayer: DrawingLayer,
+  updateStatistics: Dispatch<StatisticsEvent>,
+  updateHistory: Dispatch<ActionHistoryEvent>
+): void {
+  // don't draw if zooming
+  if (controls.cursorDown && !controls.zooming) {
+    // if the cursor has just been pressed, initialize the draw action
+    if (!state.drawAction) {
+      state.drawAction = {
+        paintedPoints: {
+          size: 0,
+          points: new Map(),
+        },
+        drawingLayer,
+        effectedSegments: new Map(),
+      };
+    }
+    const drawAction = state.drawAction;
+
+    const fill = (pos: THREE.Vector2) => {
+      // the segment we are drawing over
+      const oldSegment = getSegment(drawingLayer, pos);
+
+      // the new segment to draw
+      const drawSegment = state.drawingSegment(drawingLayer.activeSegment);
+
+      // if we have already drawn over the point, we won't write it into
+      // the action history again, because undoing resets back to the
+      // state before drawing any points, so only the first point we
+      // draw over needs to be recorded.
+      if (!hasPoint(drawAction.paintedPoints, pos.x, pos.y)) {
+        setPoint(drawAction.paintedPoints, pos.x, pos.y, {
+          newSegment: drawSegment,
+          oldSegment: oldSegment,
+        });
+      }
+
+      // update the statistics for the old segment and the new segment
+      updateStatistics({
+        type: "update",
+        newSegment: drawSegment,
+        pos,
+        oldSegment,
+      });
+
+      // Updates the segment in the drawing layer. Passing drawAction
+      // as the last argument will cause the updates boundaries to be
+      // recorded in the action history.
+      setSegment(drawingLayer, pos, drawSegment, drawAction);
+    };
+
+    // paint the point at the cursor position
+    state.paint(fill, state.size, cursorPos, drawingLayer.pixelSize);
+
+    // if the cursor was already down on the last frame as well,
+    // interpolate between the last cursor position and the current
+    // cursor position and paint all the points in between.
+    if (state.lastCursorPos) {
+      // current point in the interpolation
+      const current = cursorPos.clone();
+
+      // step vector for the interpolation. This is length of the brush
+      // divided by 2. This ensures that the interpolation will always
+      // cover the entire brush.
+      const step = state.lastCursorPos
+        .clone()
+        .sub(cursorPos)
+        .normalize()
+        .multiplyScalar(state.size / 2);
+
+      // the dot product is positive when the interpolation is not complete.
+      while (step.dot(state.lastCursorPos.clone().sub(current)) > 0) {
+        state.paint(
+          fill,
+          state.size,
+          current.clone().floor(),
+          drawingLayer.pixelSize
+        );
+        current.add(step);
+      }
+    }
+
+    // record the last cursor position so we can interpolate on the next frame
+    // as well.
+    state.lastCursorPos = cursorPos.clone();
+  } else {
+    // clearing the last cursor position will cause the next cursor press
+    // to initialize a new draw action.
+    state.lastCursorPos = null;
+    if (state.drawAction) {
+      // calculate any splitting of segments
+      recomputeSegments(drawingLayer, state.drawAction);
+
+      // push onto undo/redo stack
+      updateHistory({
+        type: "push",
+        action: state.drawAction,
+      });
+
+      // clear the draw action
+      state.drawAction = null;
+    }
+  }
+}
 
 /**
  * This is the alpha used to fill in points when drawing.
@@ -20,147 +128,57 @@ export const kDrawAlpha = 0.5;
 /**
  * Tool for drawing strokes with the cursor.
  */
-export abstract class DrawTool<Name extends ToolNames> extends Tool<Name> {
-  /**
-   * The cursor position on the last frame.
-   */
-  private lastCursorPos: THREE.Vector2 | null;
-
-  /**
-   * The action that is being drawn, or null if the cursor is not down.
-   */
-  private drawAction: CanvasAction | null;
-
-  constructor(size: number) {
-    super(size);
-    this.lastCursorPos = null;
-    this.drawAction = null;
-  }
+export type DrawTool<ToolName extends string> = {
+  readonly name: ToolName;
+  readonly size: number;
 
   /**
    * Function for applying the brush to the drawing layer.
    */
-  protected abstract paint(params: {
-    fill: (pos: THREE.Vector2) => void;
-    size: number;
-    pos: THREE.Vector2;
-    resolution: THREE.Vector2;
-  }): void;
+  readonly paint: (
+    fill: (pos: THREE.Vector2) => void,
+    size: number,
+    pos: THREE.Vector2,
+    resolution: THREE.Vector2
+  ) => void;
+
+  readonly handleFrame: typeof handleFrame;
 
   /**
    * The segment that is being drawn. Tools can override this for
    * finer control over the drawing.
    */
-  protected abstract drawingSegment(activeSegment: number): number;
+  readonly drawingSegment: (activeSegment: number) => number;
 
-  public frameCallback(
-    cursorPos: THREE.Vector2,
-    controls: Controls,
-    updateControls: Dispatch<ControlsEvent>,
-    updateStatistics: Dispatch<StatisticsEvent>,
-    drawingLayer: DrawingLayer,
-    updateHistory: Dispatch<ActionHistoryEvent>
-  ): void {
-    // don't draw if zooming
-    if (controls.cursorDown && !controls.zooming) {
-      // if the cursor has just been pressed, initialize the draw action
-      if (!this.drawAction) {
-        this.drawAction = {
-          paintedPoints: new PointContainer(),
-          drawingLayer,
-          effectedSegments: new Map(),
-        };
-      }
-      const drawAction = this.drawAction;
+  /**
+   * The cursor position on the last frame.
+   */
+  lastCursorPos: THREE.Vector2 | null;
 
-      const fill = (pos: THREE.Vector2) => {
-        // the segment we are drawing over
-        const oldSegment = getSegment(drawingLayer, pos);
+  /**
+   * The action that is being drawn, or null if the cursor is not down.
+   */
+  drawAction: CanvasAction | null;
+};
 
-        // the new segment to draw
-        const drawSegment = this.drawingSegment(drawingLayer.activeSegment);
-
-        // if we have already drawn over the point, we won't write it into
-        // the action history again, because undoing resets back to the
-        // state before drawing any points, so only the first point we
-        // draw over needs to be recorded.
-        if (!drawAction.paintedPoints.hasPoint(pos.x, pos.y)) {
-          drawAction.paintedPoints.setPoint(pos.x, pos.y, {
-            newSegment: drawSegment,
-            oldSegment: oldSegment,
-          });
-        }
-
-        // update the statistics for the old segment and the new segment
-        updateStatistics({
-          type: "update",
-          newSegment: drawSegment,
-          pos,
-          oldSegment,
-        });
-
-        // Updates the segment in the drawing layer. Passing drawAction
-        // as the last argument will cause the updates boundaries to be
-        // recorded in the action history.
-        setSegment(drawingLayer, pos, drawSegment, drawAction);
-      };
-
-      // paint the point at the cursor position
-      this.paint({
-        fill,
-        size: this.size,
-        pos: cursorPos,
-        resolution: drawingLayer.pixelSize,
-      });
-
-      // if the cursor was already down on the last frame as well,
-      // interpolate between the last cursor position and the current
-      // cursor position and paint all the points in between.
-      if (this.lastCursorPos) {
-        // current point in the interpolation
-        const current = cursorPos.clone();
-
-        // step vector for the interpolation. This is length of the brush
-        // divided by 2. This ensures that the interpolation will always
-        // cover the entire brush.
-        const step = this.lastCursorPos
-          .clone()
-          .sub(cursorPos)
-          .normalize()
-          .multiplyScalar(this.size / 2);
-
-        // the dot product is positive when the interpolation is not complete.
-        while (step.dot(this.lastCursorPos.clone().sub(current)) > 0) {
-          this.paint({
-            fill,
-            size: this.size,
-            pos: current.clone().floor(),
-            resolution: drawingLayer.pixelSize,
-          });
-          current.add(step);
-        }
-      }
-
-      // record the last cursor position so we can interpolate on the next frame
-      // as well.
-      this.lastCursorPos = cursorPos.clone();
-    } else {
-      // clearing the last cursor position will cause the next cursor press
-      // to initialize a new draw action.
-      this.lastCursorPos = null;
-      if (this.drawAction) {
-        // calculate any splitting of segments
-        recomputeSegments(drawingLayer, this.drawAction);
-
-        // push onto undo/redo stack
-        updateHistory({
-          type: "push",
-          action: this.drawAction,
-        });
-
-        // clear the draw action
-        this.drawAction = null;
-      }
-    }
-  }
+export function drawTool<ToolName extends string>(
+  name: ToolName,
+  size: number,
+  paint: (
+    fill: (pos: THREE.Vector2) => void,
+    size: number,
+    pos: THREE.Vector2,
+    resolution: THREE.Vector2
+  ) => void,
+  drawingSegment: (activeSegment: number) => number
+): DrawTool<ToolName> {
+  return {
+    name,
+    size,
+    paint,
+    handleFrame,
+    drawingSegment,
+    lastCursorPos: null,
+    drawAction: null,
+  };
 }

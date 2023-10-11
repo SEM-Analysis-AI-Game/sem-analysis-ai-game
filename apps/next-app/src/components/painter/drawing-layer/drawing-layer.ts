@@ -1,6 +1,14 @@
 import * as THREE from "three";
 import { CanvasAction } from "../action-history";
-import { PointContainer } from "../point-container";
+import {
+  PointContainer,
+  deletePoint,
+  firstPointWhere,
+  forEachPoint,
+  getPoint,
+  hasPoint,
+  setPoint,
+} from "../point-container";
 import { breadthFirstTraversal } from "./bft";
 import { DrawingLayerUniforms } from "./uniforms";
 import { kDrawAlpha } from "../tools";
@@ -51,7 +59,7 @@ export type DrawingLayer = {
   /**
    * Dispatches update events to the statistics reducer.
    */
-  updateStatistics: Dispatch<StatisticsEvent>;
+  readonly updateStatistics: Dispatch<StatisticsEvent>;
 };
 
 /**
@@ -65,7 +73,10 @@ export function incrementSegments(drawingLayer: DrawingLayer): void {
   );
   drawingLayer.segmentMap.set(drawingLayer.segmentMap.size + 1, {
     color: randomColor,
-    points: new PointContainer(),
+    points: {
+      size: 0,
+      points: new Map(),
+    },
   });
 }
 
@@ -122,20 +133,16 @@ export function recomputeSegments(
 
     // we will be removing points from the boundary container
     // and iterating until it is empty.
-    while (boundary.size() > 0) {
+    while (boundary.size > 0) {
       // find a random point in the boundary container
-      let bfsStart = boundary.firstWhere(() => true)!;
-
-      // get the total number of points remaining in the boundary
-      // container
-      let totalPoints = boundary.size();
+      let bfsStart = firstPointWhere(boundary, () => true)!;
 
       // traverse the contiguous boundary points breadth-first
       // starting at the random point until we cannot traverse any further.
       const visited = breadthFirstTraversal(
         new THREE.Vector2(bfsStart[0], bfsStart[1]),
         (pos) =>
-          boundary.hasPoint(pos.x, pos.y) &&
+          hasPoint(boundary, pos.x, pos.y) &&
           pos.x >= 0 &&
           pos.y >= 0 &&
           pos.x < state.pixelSize.x &&
@@ -149,7 +156,7 @@ export function recomputeSegments(
       // if we didn't visit all of the points in the boundary
       // container, that implies that there were more than one
       // new contiguous boundaries drawn on the effected segment.
-      if (visited.size() < totalPoints) {
+      if (visited.size < boundary.size) {
         // we will create a new segment and flood fill the effected
         // segment breadth-first starting from our initial random
         // point.
@@ -169,11 +176,11 @@ export function recomputeSegments(
               // them from the boundary container. This prevents further
               // calculation against any disconnected boundary points
               // that also form a boundary for the new segment we are drawing.
-              boundary.deletePoint(pos.x, pos.y);
+              deletePoint(boundary, pos.x, pos.y);
 
               // if we have removed all of the boundary points, we can exit
               // early.
-              if (boundary.size() === 0) {
+              if (boundary.size === 0) {
                 exitLoop();
               }
               return true;
@@ -186,13 +193,13 @@ export function recomputeSegments(
         // if we exited the loop early then we have finished splitting the
         // segment and thus we can continue to the next effected segment.
         // otherwise, we need to now fill all of the visited pixels.
-        if (boundary.size() > 0) {
-          fillVisited.forEach((x, y) => {
+        if (boundary.size > 0) {
+          forEachPoint(fillVisited, (x, y) => {
             // for each point we flood filled, we will update the
             // action history for undo/redo if we have not already
             // painted it previously during this action
-            if (!action.paintedPoints.hasPoint(x, y)) {
-              action.paintedPoints.setPoint(x, y, {
+            if (!hasPoint(action.paintedPoints, x, y)) {
+              setPoint(action.paintedPoints, x, y, {
                 newSegment: newSegment,
                 oldSegment: segment[0],
               });
@@ -211,8 +218,8 @@ export function recomputeSegments(
           });
         }
       } else {
-        visited.forEach((x, y) => {
-          boundary.deletePoint(x, y);
+        forEachPoint(visited, (x, y) => {
+          deletePoint(boundary, x, y);
         });
       }
     }
@@ -266,7 +273,7 @@ export function setSegment(
   // effectedSegments map.
   if (oldSegment !== -1 && segment !== oldSegment) {
     const oldSegmentEntry = state.segmentMap.get(oldSegment)!;
-    const point = oldSegmentEntry.points.getPoint(pos.x, pos.y)!;
+    const point = getPoint(oldSegmentEntry.points, pos.x, pos.y)!;
     // if this point used to be a boundary point, we need to remove it
     // from the effectedSegments map in case we previously added it.
     // the effectedSegments map is meant to represent just the new
@@ -275,12 +282,12 @@ export function setSegment(
       let effectedSegment = action.effectedSegments.get(oldSegment);
       // create the data for this segment if it wasn't already created
       if (effectedSegment) {
-        effectedSegment.newBoundaryPoints.deletePoint(pos.x, pos.y);
+        deletePoint(effectedSegment.newBoundaryPoints, pos.x, pos.y);
       }
     }
 
     // remove the point from the old segment's point container
-    oldSegmentEntry.points.deletePoint(pos.x, pos.y);
+    deletePoint(oldSegmentEntry.points, pos.x, pos.y);
 
     // each neighboring point (adjacent point of the old segment) is now
     // a boundary point, so we need to update the shader uniforms to highlight
@@ -289,7 +296,8 @@ export function setSegment(
     for (let neighbor of adjacent.filter(
       (neighbor) => getSegment(state, neighbor) === oldSegment
     )) {
-      const neighborEntry = oldSegmentEntry.points.getPoint(
+      const neighborEntry = getPoint(
+        oldSegmentEntry.points,
         neighbor.x,
         neighbor.y
       )!;
@@ -310,11 +318,15 @@ export function setSegment(
           // create the data for this segment if it wasn't already created
           if (!effectedSegment) {
             effectedSegment = {
-              newBoundaryPoints: new PointContainer(),
+              newBoundaryPoints: {
+                size: 0,
+                points: new Map(),
+              },
             };
             action.effectedSegments.set(oldSegment, effectedSegment);
           }
-          effectedSegment.newBoundaryPoints.setPoint(
+          setPoint(
+            effectedSegment.newBoundaryPoints,
             neighbor.x,
             neighbor.y,
             null
@@ -323,7 +335,7 @@ export function setSegment(
       }
       // update the point container to reflect that this pixel now has 1 less
       // neighbor.
-      oldSegmentEntry.points.setPoint(neighbor.x, neighbor.y, {
+      setPoint(oldSegmentEntry.points, neighbor.x, neighbor.y, {
         numNeighbors: neighborEntry ? neighborEntry.numNeighbors - 1 : 0,
       });
     }
@@ -343,7 +355,7 @@ export function setSegment(
 
     // update this pixel's point container entry to reflect that it has
     // the number of neighbors found above.
-    segmentEntry.points.setPoint(pos.x, pos.y, {
+    setPoint(segmentEntry.points, pos.x, pos.y, {
       numNeighbors: inSegmentNeighbors.length,
     });
 
@@ -359,8 +371,8 @@ export function setSegment(
     // update each neighbor
     for (let neighbor of inSegmentNeighbors) {
       const newNumNeighbors =
-        segmentEntry.points.getPoint(neighbor.x, neighbor.y)!.numNeighbors + 1;
-      segmentEntry.points.setPoint(neighbor.x, neighbor.y, {
+        getPoint(segmentEntry.points, neighbor.x, neighbor.y)!.numNeighbors + 1;
+      setPoint(segmentEntry.points, neighbor.x, neighbor.y, {
         numNeighbors: newNumNeighbors,
       });
       // if this point used to be a boundary point, and it now has 4 neighbors,

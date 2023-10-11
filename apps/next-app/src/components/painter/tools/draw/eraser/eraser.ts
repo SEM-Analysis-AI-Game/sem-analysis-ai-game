@@ -1,15 +1,14 @@
-import { ToolNames } from "../../tool";
-import { DrawTool } from "../draw";
+import { DrawTool, drawTool } from "../draw";
 
-export abstract class Eraser<Name extends ToolNames> extends DrawTool<Name> {
-  constructor(size: number) {
-    super(size);
-  }
-
-  /**
-   * By returning -1, we are removing pixels from segments.
-   */
-  protected drawingSegment(): number {
-    return -1;
-  }
+export function eraserTool<ToolName extends string>(
+  name: ToolName,
+  size: number,
+  paint: (
+    fill: (pos: THREE.Vector2) => void,
+    size: number,
+    pos: THREE.Vector2,
+    resolution: THREE.Vector2
+  ) => void
+): DrawTool<ToolName> {
+  return drawTool(name, size, paint, () => -1);
 }
