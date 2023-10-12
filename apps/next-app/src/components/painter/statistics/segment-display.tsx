@@ -19,10 +19,12 @@ export function SegmentDisplay(
 
   return (
     <div
-      className={`absolute z-10 -translate-x-1/2 translate-y-1/2 text-center rounded-full ${
-        props.position.x === -1 && props.position.y === -1 ? "hidden" : ""
-      }`}
-      style={{ left: `${props.position.x}px`, bottom: `${props.position.y}px` }}
+      className="absolute z-10 -translate-x-1/2 translate-y-1/2 text-center rounded-full"
+      style={{
+        left: `${props.position.x}px`,
+        bottom: `${props.position.y}px`,
+        scale: props.position.x < 0 && props.position.y < 0 ? 0 : 1,
+      }}
     >
       <button onClick={(e) => console.log(e)}>
         <h1

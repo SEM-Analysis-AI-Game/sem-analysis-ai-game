@@ -3,7 +3,6 @@
 import { PropsWithChildren } from "react";
 import { useTool } from "../tools/provider";
 import { ToolName, kToolFactory } from "../tools";
-import { kInitialToolSize } from "./brush-size-slider";
 
 /**
  * Client-side interactive tool selection menu
@@ -17,13 +16,11 @@ export function ToolbarButton(
     <button
       className="text-[#333] bg-slate-100 rounded pl-2 pr-2 mt-1 mb-1 border-black border-2"
       key={props.toolName}
-      onClick={() =>
-        setTool(
-          tool
-            ? kToolFactory[props.toolName](tool.size)
-            : kToolFactory[props.toolName](kInitialToolSize)
-        )
-      }
+      onClick={() => {
+        if (tool) {
+          setTool(kToolFactory[props.toolName](tool.size));
+        }
+      }}
     >
       {props.children}
     </button>

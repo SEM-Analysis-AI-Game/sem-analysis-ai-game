@@ -6,6 +6,13 @@ type BFTNode = {
   next: BFTNode | null;
 };
 
+/**
+ * Traverses breadth first, only visiting points that pass the test.
+ * The test has an exit loop callback that can be called to break out
+ * of the traversal early.
+ *
+ * Returns the visited points.
+ */
 export function breadthFirstTraversal(
   start: THREE.Vector2,
   test: (pos: THREE.Vector2, exitLoop: () => void) => boolean,

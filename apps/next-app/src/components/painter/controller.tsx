@@ -3,7 +3,7 @@
 import { useEffect, useMemo } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { usePinch } from "@use-gesture/react";
-import { panTool, useTool } from "./tools";
+import { circleBrush, panTool, useTool } from "./tools";
 import {
   getSegment,
   incrementSegments,
@@ -12,6 +12,7 @@ import {
 import { useActionHistory } from "./action-history";
 import { useControls } from "./controls";
 import { useRendererState } from "./renderer-state";
+import { kInitialToolSize } from "./overlay/brush-size-slider";
 
 /**
  * Listens for input events and updates pan, zoom, and the
@@ -20,15 +21,16 @@ import { useRendererState } from "./renderer-state";
 export function PainterController(): null {
   // these are provided by the canvas
   const { mouse, gl } = useThree();
+  const [tool, setTool] = useTool();
 
   // this is a secondary tool for panning that can be
   // used by holding shift, and maybe eventually we can
   // use it for two-finger drag on mobile too.
   const secondaryTool = useMemo(() => {
+    setTool(circleBrush(kInitialToolSize));
     return panTool(0);
   }, []);
 
-  const [tool] = useTool();
   const [drawingLayer] = useDrawingLayer();
   const [, updateHistory] = useActionHistory();
   const [controls, updateControls] = useControls();

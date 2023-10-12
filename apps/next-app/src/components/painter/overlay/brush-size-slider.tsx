@@ -1,6 +1,6 @@
 "use client";
 
-import { circleBrush, kToolFactory, useTool } from "../tools";
+import { kToolFactory, useTool } from "../tools";
 
 export const kInitialToolSize = 100;
 
@@ -18,8 +18,11 @@ export function BrushSizeSlider(): JSX.Element {
       max={300}
       defaultValue={kInitialToolSize}
       onChange={(e) => {
-        const size = Number.parseInt(e.currentTarget.value);
-        setTool(tool ? kToolFactory[tool.name](size) : circleBrush(size));
+        if (tool) {
+          setTool(
+            kToolFactory[tool.name](Number.parseInt(e.currentTarget.value))
+          );
+        }
       }}
     />
   );

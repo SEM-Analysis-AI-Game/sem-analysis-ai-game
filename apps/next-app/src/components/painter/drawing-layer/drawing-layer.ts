@@ -23,19 +23,24 @@ const kBorderAlphaBoost = 0.5;
 const kDrawAlpha = 0.5;
 
 /**
- * The drawing layer is responsible for updating shader uniforms and
- * tracking drawn segments. Segments are given 1-based indexes.
+ * The drawing layer is responsible for updating the renderer state
+ * and tracking drawn segments. Segments are given 1-based indexes.
  */
 export type DrawingLayer = {
   /**
-   * the drawing layer can directly write to the renderer state.
+   * The drawing layer can directly write to the renderer state. The renderer
+   * state is mutable because it is not used for React state, but rather for
+   * WebGL state. The frame loop references this state by memory address so
+   * it is important that it is not copied, but rather mutated.
    */
   readonly rendererState: RendererState;
 
   /**
-   * the segment buffer stores the segment ID (1-indexed) for each
+   * The segment buffer stores the segment ID (1-indexed) for each
    * pixel as a flattened 2D array (row-major). A -1 indicates that no
-   * segment has been drawn at that pixel.
+   * segment has been drawn at that pixel. This is used for fast lookups
+   * of the segment for a given pixel. This is mutable because it is
+   * potentially updated on every frame.
    */
   readonly segmentBuffer: Int32Array;
 
@@ -43,7 +48,8 @@ export type DrawingLayer = {
    * the segment map stores the color and points for each segment
    * the number of neighbors (adjacent pixels of the same segment)
    * each point has is stored in the point container. If a point
-   * has < 4 neighbors, it is on the boundary of the segment.
+   * has < 4 neighbors, it is on the boundary of the segment. This
+   * is updated on every frame potentially so it is mutable.
    */
   readonly segmentMap: Map<
     number,
@@ -107,11 +113,25 @@ export function getSegment(
   ];
 }
 
+/**
+ * Used for finding adjacent pixels.
+ */
 const kAdjacency = [
   [-1, 0],
   [1, 0],
   [0, -1],
   [0, 1],
+] as [number, number][];
+
+/**
+ * Used for finding diagonal + adjacent pixels.
+ */
+const kDiagonalAdjacency = [
+  ...kAdjacency,
+  [-1, -1],
+  [1, -1],
+  [-1, 1],
+  [1, 1],
 ] as [number, number][];
 
 /**
@@ -149,7 +169,7 @@ export function recomputeSegments(
         // for this breadth-first traversal we can walk diagonally because
         // border pixels diagonal to eachother are still considered
         // contiguous
-        [...kAdjacency, [-1, -1], [1, -1], [-1, 1], [1, 1]]
+        kDiagonalAdjacency
       );
 
       // if we didn't visit all of the points in the boundary
@@ -212,7 +232,7 @@ export function recomputeSegments(
             setSegment(state, pos, newSegment, null);
           });
 
-          // update the flood-filled pixels in the drawing layer
+          // update the statistics
           state.updateStatistics({
             type: "update",
             pos: sum,
@@ -223,6 +243,8 @@ export function recomputeSegments(
         }
       } else {
         forEachPoint(visited, (x, y) => {
+          // remove the visited points from the boundary so
+          // we dont revisit them.
           deletePoint(boundary, x, y);
         });
       }
@@ -399,6 +421,9 @@ export function setSegment(
   }
 }
 
+/**
+ * Resets the drawing layer with a new renderer state reference.
+ */
 type Reset = {
   type: "reset";
   rendererState: RendererState;
@@ -406,6 +431,10 @@ type Reset = {
 
 export type DrawingLayerEvent = Reset;
 
+/**
+ * The drawing layer reducer is responsible for resetting the drawing
+ * layer state.
+ */
 export function drawingLayerReducer(
   state: DrawingLayer,
   event: DrawingLayerEvent

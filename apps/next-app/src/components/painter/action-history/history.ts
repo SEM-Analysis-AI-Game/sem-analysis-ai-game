@@ -126,18 +126,9 @@ export function historyReducer(
         const current = state.current.next;
         const statistics = new StatisticsMap();
         forEachPoint(current.data!.paintedPoints, (x, y, data) => {
-          updateStatistics(
-            statistics,
-            data.newSegment,
-            data.oldSegment,
-            new THREE.Vector2(x, y)
-          );
-          setSegment(
-            state.drawingLayer,
-            new THREE.Vector2(x, y),
-            data.newSegment,
-            null
-          );
+          const pos = new THREE.Vector2(x, y);
+          updateStatistics(statistics, data.newSegment, data.oldSegment, pos);
+          setSegment(state.drawingLayer, pos, data.newSegment, null);
         });
 
         // batch update the statistics
@@ -162,18 +153,9 @@ export function historyReducer(
       if (state.current.prev) {
         const statistics = new StatisticsMap();
         forEachPoint(state.current.data!.paintedPoints, (x, y, data) => {
-          updateStatistics(
-            statistics,
-            data.oldSegment,
-            data.newSegment,
-            new THREE.Vector2(x, y)
-          );
-          setSegment(
-            state.drawingLayer,
-            new THREE.Vector2(x, y),
-            data.oldSegment,
-            null
-          );
+          const pos = new THREE.Vector2(x, y);
+          updateStatistics(statistics, data.oldSegment, data.newSegment, pos);
+          setSegment(state.drawingLayer, pos, data.oldSegment, null);
         });
 
         // batch update the statistics

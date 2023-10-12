@@ -50,7 +50,7 @@ export function ActionHistoryProvider(props: {
     current: { prev: null, next: null, data: null },
   });
 
-  // clear the history when the background changes
+  // clear the history when the drawing layer changes
   useEffect(() => {
     history[1]({ type: "reset", drawingLayer });
   }, [drawingLayer]);
