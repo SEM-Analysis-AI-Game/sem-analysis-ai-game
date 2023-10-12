@@ -3,6 +3,7 @@ import { Dispatch } from "react";
 import {
   DrawingLayer,
   getSegment,
+  incrementSegments,
   recomputeSegments,
   setSegment,
 } from "../../drawing-layer";
@@ -33,6 +34,11 @@ export type ActionState = {
    * The history action for undo/redo.
    */
   historyAction: HistoryAction;
+
+  /**
+   * The segment that is currently being drawn.
+   */
+  activeSegment: number;
 };
 
 /**
@@ -92,13 +98,23 @@ function handleFrame(
   cursorPos: THREE.Vector2,
   controls: Controls,
   drawingLayer: DrawingLayer,
-  activeSegment: number,
   updateHistory: Dispatch<ActionHistoryEvent>
 ): void {
   // don't draw if zooming
   if (controls.cursorDown && !controls.zooming) {
     // if the cursor has just been pressed, initialize the draw action
     if (!state.actionState) {
+      // get the segment at the cursor position
+      let segment = getSegment(drawingLayer, cursorPos);
+
+      // if no segment is found at the cursor position, increment the
+      // number of segments and use the new segment, otherwise use the found
+      // segment.
+      if (segment === -1) {
+        incrementSegments(drawingLayer);
+        segment = drawingLayer.segmentMap.size;
+      }
+
       state.actionState = {
         historyAction: {
           paintedPoints: {
@@ -106,6 +122,7 @@ function handleFrame(
             points: new Map(),
           },
         },
+        activeSegment: segment,
         effectedSegments: new Map(),
         lastCursorPos: cursorPos.clone(),
       };
@@ -119,7 +136,7 @@ function handleFrame(
       { numPoints: number; sum: THREE.Vector2 }
     >();
     // the new segment to draw
-    const drawSegment = state.drawingSegment(activeSegment);
+    const drawSegment = state.drawingSegment(state.actionState.activeSegment);
 
     const fill = (pos: THREE.Vector2) => {
       // the segment we are drawing over

@@ -33,6 +33,8 @@ export function RendererStateProvider(props: PropsWithChildren): JSX.Element {
   // the drawing layer needs to know the background size
   const [background] = useBackground();
 
+  // the renderer state is a memoized object that is mutated by children. Mutations
+  // are not tracked by React, but instead they are tracked by WebGL via shader uniforms.
   const rendererState = useMemo(() => {
     const pixelSize = new THREE.Vector2(
       background.image.width,

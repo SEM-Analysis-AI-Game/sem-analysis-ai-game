@@ -4,11 +4,7 @@ import { useEffect, useMemo } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { usePinch } from "@use-gesture/react";
 import { circleBrush, panTool, useTool } from "./tools";
-import {
-  getSegment,
-  incrementSegments,
-  useDrawingLayer,
-} from "./drawing-layer";
+import { useDrawingLayer } from "./drawing-layer";
 import { useActionHistory } from "./action-history";
 import { useControls } from "./controls";
 import { useRendererState } from "./renderer-state";
@@ -107,24 +103,6 @@ export function PainterController(): null {
         .multiply(rendererState.pixelSize)
         .floor();
 
-      // if the cursor was not previously down
-      if (controls.cursorDown && rendererState.activeSegment === -1) {
-        // get the segment at the cursor position
-        let segment = getSegment(drawingLayer, cursor);
-
-        // if no segment is found at the cursor position, increment the
-        // number of segments and use the new segment, otherwise use the found
-        // segment.
-        if (segment === -1) {
-          incrementSegments(drawingLayer);
-          rendererState.activeSegment = drawingLayer.segmentMap.size;
-        } else {
-          rendererState.activeSegment = segment;
-        }
-      } else if (!controls.cursorDown) {
-        rendererState.activeSegment = -1;
-      }
-
       // use the secondary pan tool if shift is held. we should
       // try to also implement two-finger drag here on mobile.
       if (controls.shiftDown || tool.name === "Pan") {
@@ -136,14 +114,7 @@ export function PainterController(): null {
           updateControls
         );
       } else {
-        tool.handleFrame(
-          tool,
-          cursor,
-          controls,
-          drawingLayer,
-          rendererState.activeSegment,
-          updateHistory
-        );
+        tool.handleFrame(tool, cursor, controls, drawingLayer, updateHistory);
       }
     }
   });

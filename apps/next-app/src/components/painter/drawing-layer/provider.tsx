@@ -55,7 +55,7 @@ export function DrawingLayerProvider(props: PropsWithChildren): JSX.Element {
     initialState(rendererState, updateStatistics)
   );
 
-  // reset the drawing layer when the background changes
+  // reset the drawing layer when the renderer state resets
   useEffect(() => {
     drawingLayer[1]({
       type: "reset",

@@ -12,6 +12,10 @@ import { kSubdivisionSize } from "../renderer";
  *
  * The numSections vector stores the number of sections in each dimension,
  * not including the trailing section.
+ *
+ * The renderer state is mutable because it is updated every frame, and changes
+ * to it are tracked by shader uniforms and reflected on the Canvas automatically
+ * by ThreeJS.
  */
 export type RendererState = {
   /**
@@ -35,8 +39,6 @@ export type RendererState = {
    * trailing section.
    */
   readonly numSections: THREE.Vector2;
-
-  activeSegment: number;
 };
 
 export function calculateSectionSize(
