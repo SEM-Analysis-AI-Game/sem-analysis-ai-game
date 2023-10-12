@@ -1,23 +1,29 @@
-import ultralytics
 import atexit
 from flask import Flask, send_from_directory
-# from dotenv import load_dotenv
-# import os
+from ultralytics import SAM
 
-# load_dotenv()
+# Load the model
+model = SAM('mobile_sam.pt')
 
-app = Flask(__name__)
+# Predict a segment based on a point prompt
+result = model.predict('sem.png', points=[900, 370], labels=[1])
 
-@app.route('/')
-def segment():
-    # for now mock out result and return JSON something blah blah blah
-    return {
-        "result": "Hello"
-    }
+print(result)
 
-def shutdown():
-    print("Flask is shutting down...")
+# app = Flask(__name__)
 
-atexit.register(shutdown)
+# @app.route('/')
+# def segment():
 
-app.run()
+
+#     # for now mock out result and return JSON something blah blah blah
+#     return {
+#         "result": "Hello"
+#     }
+
+# def shutdown():
+#     print("Flask is shutting down...")
+
+# atexit.register(shutdown)
+
+# app.run()
