@@ -6,11 +6,8 @@ import { useMemo } from "react";
 import { PainterRenderer } from "./renderer";
 import { useBackground } from "./background-loader";
 import { PainterControls } from "./controls";
-import { SegmentInfoOverlay, StatisticsProvider } from "./statistics";
-import { ActionHistoryProvider } from "./action-history";
-import { DrawingLayerProvider } from "./drawing-layer";
+import { SegmentInfoOverlay } from "./statistics";
 import { PainterController } from "./controller";
-import { RendererStateProvider } from "./renderer-state";
 
 /**
  * Responsible for sizing the canvas and initializing the controls and
@@ -47,30 +44,22 @@ export function PainterCanvas(): JSX.Element {
         height: canvasSize.y,
       }}
     >
-      <StatisticsProvider>
-        <RendererStateProvider>
-          <DrawingLayerProvider>
-            <ActionHistoryProvider>
-              <PainterControls>
-                <SegmentInfoOverlay
-                  canvasSize={canvasSize}
-                  backgroundResolution={backgroundResolution}
-                  padding={
-                    new THREE.Vector2(
-                      (window.innerWidth - canvasSize.x) / 2,
-                      (window.innerHeight - canvasSize.y) / 2
-                    )
-                  }
-                />
-                <Canvas>
-                  <PainterController />
-                  <PainterRenderer />
-                </Canvas>
-              </PainterControls>
-            </ActionHistoryProvider>
-          </DrawingLayerProvider>
-        </RendererStateProvider>
-      </StatisticsProvider>
+      <PainterControls>
+        <SegmentInfoOverlay
+          canvasSize={canvasSize}
+          backgroundResolution={backgroundResolution}
+          padding={
+            new THREE.Vector2(
+              (window.innerWidth - canvasSize.x) / 2,
+              (window.innerHeight - canvasSize.y) / 2
+            )
+          }
+        />
+        <Canvas>
+          <PainterController />
+          <PainterRenderer />
+        </Canvas>
+      </PainterControls>
     </div>
   );
 }

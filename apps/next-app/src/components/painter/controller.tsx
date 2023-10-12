@@ -8,7 +8,7 @@ import { useDrawingLayer } from "./drawing-layer";
 import { useActionHistory } from "./action-history";
 import { useControls } from "./controls";
 import { useRendererState } from "./renderer-state";
-import { kInitialToolSize } from "./overlay/brush-size-slider";
+import { kInitialToolSize } from "./toolbar/brush-size-slider";
 
 /**
  * Listens for input events and updates pan, zoom, and the

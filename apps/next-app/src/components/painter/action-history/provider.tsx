@@ -2,6 +2,7 @@
 
 import {
   Dispatch,
+  PropsWithChildren,
   createContext,
   useContext,
   useEffect,
@@ -38,9 +39,7 @@ export function useActionHistory(): [
 /**
  * Provider for the current action history.
  */
-export function ActionHistoryProvider(props: {
-  children: JSX.Element;
-}): JSX.Element {
+export function ActionHistoryProvider(props: PropsWithChildren): JSX.Element {
   // the action history needs to be able to update the drawing layer
   const [drawingLayer] = useDrawingLayer();
 
