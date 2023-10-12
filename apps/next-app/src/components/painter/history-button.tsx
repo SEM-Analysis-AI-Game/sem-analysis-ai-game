@@ -2,11 +2,14 @@
 
 import { PropsWithChildren } from "react";
 import { useActionHistory } from "./action-history";
+import { useStatistics } from "./statistics";
 
 export function HistoryButton(
   props: PropsWithChildren<{ type: "Redo" | "Undo" }>
 ): JSX.Element {
   const [, updateHistory] = useActionHistory();
+
+  const [, updateStatistics] = useStatistics();
 
   return (
     <button

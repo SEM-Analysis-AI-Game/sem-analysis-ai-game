@@ -55,6 +55,7 @@ export type ActionHistory = {
   readonly head: Node<HistoryAction>;
   readonly drawingLayer: DrawingLayer;
   readonly current: Node<HistoryAction>;
+  readonly recentStatisticsUpdates: StatisticsMap | null;
 };
 
 /**
@@ -114,12 +115,14 @@ export function historyReducer(
       return {
         ...state,
         current: node,
+        recentStatisticsUpdates: null,
       };
     case "reset":
       return {
         drawingLayer: event.drawingLayer,
         head: { data: null, next: null, prev: null },
         current: { data: null, next: null, prev: null },
+        recentStatisticsUpdates: null,
       };
     case "redo":
       if (state.current.next) {
@@ -131,20 +134,10 @@ export function historyReducer(
           setSegment(state.drawingLayer, pos, data.newSegment, null);
         });
 
-        // batch update the statistics
-        for (let [segment, stat] of statistics) {
-          state.drawingLayer.updateStatistics({
-            type: "update",
-            numPoints: stat.numPoints,
-            sum: stat.sum,
-            oldSegment: -1,
-            newSegment: segment,
-          });
-        }
-
         return {
           ...state,
           current,
+          recentStatisticsUpdates: statistics,
         };
       } else {
         return state;
@@ -158,20 +151,10 @@ export function historyReducer(
           setSegment(state.drawingLayer, pos, data.oldSegment, null);
         });
 
-        // batch update the statistics
-        for (let [segment, stat] of statistics) {
-          state.drawingLayer.updateStatistics({
-            type: "update",
-            numPoints: stat.numPoints,
-            sum: stat.sum,
-            oldSegment: -1,
-            newSegment: segment,
-          });
-        }
-
         return {
           ...state,
           current: state.current.prev,
+          recentStatisticsUpdates: statistics,
         };
       } else {
         return state;

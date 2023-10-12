@@ -9,6 +9,7 @@ import { useActionHistory } from "./action-history";
 import { useControls } from "./controls";
 import { useRendererState } from "./renderer-state";
 import { kInitialToolSize } from "./toolbar/brush-size-slider";
+import { useStatistics } from "./statistics";
 
 /**
  * Listens for input events and updates pan, zoom, and the
@@ -29,6 +30,7 @@ export function PainterController(): null {
 
   const [drawingLayer] = useDrawingLayer();
   const [, updateHistory] = useActionHistory();
+  const [, updateStatistics] = useStatistics();
   const [controls, updateControls] = useControls();
   const rendererState = useRendererState();
 
