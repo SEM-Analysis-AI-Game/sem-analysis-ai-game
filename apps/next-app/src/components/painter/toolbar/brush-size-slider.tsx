@@ -1,8 +1,6 @@
 "use client";
 
-import { kToolFactory, useTool } from "../tools";
-
-export const kInitialToolSize = 100;
+import { kInitialToolSize, kToolFactory, useTool } from "../tools";
 
 /**
  * A slider to control the size of the current tool.

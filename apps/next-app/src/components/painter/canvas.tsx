@@ -2,39 +2,51 @@
 
 import * as THREE from "three";
 import { Canvas } from "@react-three/fiber";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { PainterRenderer } from "./renderer";
-import { useBackground } from "./background-loader";
 import { PainterControls } from "./controls";
-import { SegmentInfoOverlay } from "./statistics";
+import { SegmentInfoOverlay, useStatistics } from "./statistics";
 import { PainterController } from "./controller";
+import { useRendererState } from "./renderer-state";
+import { useDrawingLayer } from "./drawing-layer";
+import { useActionHistory } from "./action-history";
 
 /**
  * Responsible for sizing the canvas and initializing the controls and
  * renderer.
  */
 export function PainterCanvas(): JSX.Element {
-  const [background] = useBackground();
+  const rendererState = useRendererState();
+  const [drawingLayer, updateDrawingLayer] = useDrawingLayer();
+  const [, updateActionHistory] = useActionHistory();
+  const [, updateStatistics] = useStatistics();
 
   // Whenever the background changes we need to resize the canvas
-  const [canvasSize, backgroundResolution] = useMemo(() => {
-    const resolution = new THREE.Vector2(
-      background.image.width,
-      background.image.height
-    );
-
+  const [canvasSize] = useMemo(() => {
     // This is used to constrain the size of the canvas
     // while preserving the aspect ratio.
     const inverse = Math.min(
-      window.innerWidth / background.image.width,
-      window.innerHeight / background.image.height,
+      window.innerWidth / rendererState.pixelSize.x,
+      window.innerHeight / rendererState.pixelSize.y,
       1.0
     );
 
-    const canvasSize = resolution.clone().multiplyScalar(inverse).floor();
+    const canvasSize = rendererState.pixelSize
+      .clone()
+      .multiplyScalar(inverse)
+      .floor();
 
-    return [canvasSize, resolution];
-  }, [background]);
+    return [canvasSize];
+  }, [rendererState]);
+
+  useEffect(() => {
+    updateDrawingLayer({ type: "reset", rendererState });
+    updateStatistics({ type: "clear" });
+  }, [rendererState]);
+
+  useEffect(() => {
+    updateActionHistory({ type: "reset", drawingLayer });
+  }, [drawingLayer]);
 
   return (
     <div
@@ -47,7 +59,7 @@ export function PainterCanvas(): JSX.Element {
       <PainterControls>
         <SegmentInfoOverlay
           canvasSize={canvasSize}
-          backgroundResolution={backgroundResolution}
+          backgroundResolution={rendererState.pixelSize}
           padding={
             new THREE.Vector2(
               (window.innerWidth - canvasSize.x) / 2,

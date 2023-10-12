@@ -5,7 +5,6 @@ import {
   PropsWithChildren,
   createContext,
   useContext,
-  useEffect,
   useReducer,
 } from "react";
 import {
@@ -54,14 +53,6 @@ export function DrawingLayerProvider(props: PropsWithChildren): JSX.Element {
     drawingLayerReducer,
     initialState(rendererState, updateStatistics)
   );
-
-  // reset the drawing layer when the renderer state resets
-  useEffect(() => {
-    drawingLayer[1]({
-      type: "reset",
-      rendererState,
-    });
-  }, [rendererState]);
 
   return (
     <DrawingLayerContext.Provider value={drawingLayer}>

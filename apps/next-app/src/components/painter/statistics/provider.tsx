@@ -5,7 +5,6 @@ import {
   PropsWithChildren,
   createContext,
   useContext,
-  useEffect,
   useReducer,
 } from "react";
 import {
@@ -13,7 +12,6 @@ import {
   StatisticsEvent,
   statisticsReducer,
 } from "./statistics";
-import { useBackground } from "../background-loader";
 
 /**
  * Context for the current statistics.
@@ -47,13 +45,6 @@ export function StatisticsProvider(props: PropsWithChildren): JSX.Element {
   const statisticsState = useReducer(statisticsReducer, {
     segments: new Map(),
   });
-
-  const [background] = useBackground();
-
-  // clear the statistics when the background changes
-  useEffect(() => {
-    statisticsState[1]({ type: "clear" });
-  }, [background]);
 
   return (
     <PainterStatisticsContext.Provider value={statisticsState}>

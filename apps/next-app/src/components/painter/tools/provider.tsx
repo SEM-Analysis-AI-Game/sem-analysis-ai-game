@@ -9,21 +9,19 @@ import {
   useState,
 } from "react";
 import { Tool } from "./tool";
+import { circleBrush } from "./draw";
 
 /**
  * Context for the current tool.
  */
 export const ToolContext = createContext<
-  [Tool | null, Dispatch<SetStateAction<Tool | null>>] | null
+  [Tool, Dispatch<SetStateAction<Tool>>] | null
 >(null);
 
 /**
  * Hook to get/set the current tool. Must be used within a ToolContext.
  */
-export function useTool(): [
-  Tool | null,
-  Dispatch<SetStateAction<Tool | null>>
-] {
+export function useTool(): [Tool, Dispatch<SetStateAction<Tool>>] {
   const tool = useContext(ToolContext);
 
   if (!tool) {
@@ -33,11 +31,13 @@ export function useTool(): [
   return tool;
 }
 
+export const kInitialToolSize = 100;
+
 /**
  * Provider for the current tool.
  */
 export function PainterToolProvider(props: PropsWithChildren): JSX.Element {
-  const toolState = useState<Tool | null>(null);
+  const toolState = useState<Tool>(circleBrush(kInitialToolSize));
 
   return (
     <ToolContext.Provider value={toolState}>

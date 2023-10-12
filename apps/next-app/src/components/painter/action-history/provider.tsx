@@ -51,11 +51,6 @@ export function ActionHistoryProvider(props: PropsWithChildren): JSX.Element {
     recentStatisticsUpdates: null,
   });
 
-  // clear the history when the drawing layer changes
-  useEffect(() => {
-    history[1]({ type: "reset", drawingLayer });
-  }, [drawingLayer]);
-
   const [, updateStatistics] = useStatistics();
 
   useEffect(() => {
