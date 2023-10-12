@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { CanvasAction } from "./action";
+import { HistoryAction } from "./action";
 import { DrawingLayer, setSegment } from "../drawing-layer";
 import { forEachPoint } from "../point-container";
 
@@ -18,7 +18,7 @@ type Node<T> = {
 
 type Push = {
   type: "push";
-  action: CanvasAction;
+  action: HistoryAction;
 };
 
 type Undo = {
@@ -40,9 +40,9 @@ export type ActionHistoryEvent = Push | Undo | Redo | Reset;
  * This represents the undo/redo history.
  */
 export type ActionHistory = {
-  readonly head: Node<CanvasAction>;
+  readonly head: Node<HistoryAction>;
   readonly drawingLayer: DrawingLayer;
-  readonly current: Node<CanvasAction>;
+  readonly current: Node<HistoryAction>;
 };
 
 export function historyReducer(
@@ -96,7 +96,8 @@ export function historyReducer(
           setSegment(
             state.drawingLayer,
             new THREE.Vector2(x, y),
-            data.newSegment
+            data.newSegment,
+            null
           );
         });
 
@@ -149,7 +150,8 @@ export function historyReducer(
           setSegment(
             state.drawingLayer,
             new THREE.Vector2(x, y),
-            data.oldSegment
+            data.oldSegment,
+            null
           );
         });
 

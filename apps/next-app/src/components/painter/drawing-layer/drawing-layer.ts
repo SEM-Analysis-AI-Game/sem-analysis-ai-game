@@ -1,6 +1,5 @@
 import * as THREE from "three";
 import { Dispatch } from "react";
-import { CanvasAction } from "../action-history";
 import {
   PointContainer,
   deletePoint,
@@ -13,6 +12,7 @@ import {
 import { breadthFirstTraversal } from "./bft";
 import { StatisticsEvent } from "../statistics";
 import { RendererState, fillPixel } from "../renderer-state";
+import { ActionState } from "../tools";
 
 // The alpha is boosted by this amount when a pixel is on the border of a segment.
 const kBorderAlphaBoost = 0.5;
@@ -122,9 +122,9 @@ const kAdjacency = [
  */
 export function recomputeSegments(
   state: DrawingLayer,
-  action: CanvasAction
+  actionState: ActionState
 ): void {
-  for (let segment of action.effectedSegments) {
+  for (let segment of actionState.effectedSegments) {
     // these are all of the newly drawn boundary points
     // that were created by the action on the effected
     // segment
@@ -202,14 +202,14 @@ export function recomputeSegments(
             // for each point we flood filled, we will update the
             // action history for undo/redo if we have not already
             // painted it previously during this action
-            if (!hasPoint(action.paintedPoints, x, y)) {
-              setPoint(action.paintedPoints, x, y, {
+            if (!hasPoint(actionState.historyAction.paintedPoints, x, y)) {
+              setPoint(actionState.historyAction.paintedPoints, x, y, {
                 newSegment: newSegment,
                 oldSegment: segment[0],
               });
             }
 
-            setSegment(state, pos, newSegment);
+            setSegment(state, pos, newSegment, null);
           });
 
           // update the flood-filled pixels in the drawing layer
@@ -245,8 +245,8 @@ export function setSegment(
   state: DrawingLayer,
   pos: THREE.Vector2,
   segment: number,
-  action?: CanvasAction
-): void {
+  effectedSegments: Map<number, { newBoundaryPoints: PointContainer }> | null
+) {
   // the segment we are overwriting
   const oldSegment = getSegment(state, pos);
 
@@ -287,8 +287,8 @@ export function setSegment(
     // from the effectedSegments map in case we previously added it.
     // the effectedSegments map is meant to represent just the new
     // boundary points created at the end of this action.
-    if (point.numNeighbors < 4 && action) {
-      let effectedSegment = action.effectedSegments.get(oldSegment);
+    if (point.numNeighbors < 4 && effectedSegments) {
+      let effectedSegment = effectedSegments.get(oldSegment);
       // create the data for this segment if it wasn't already created
       if (effectedSegment) {
         deletePoint(effectedSegment.newBoundaryPoints, pos.x, pos.y);
@@ -322,8 +322,8 @@ export function setSegment(
         // if there as an action argument passed in, we need to update the
         // effectedSegments map to reflect that this pixel is now a boundary
         // pixel.
-        if (action) {
-          let effectedSegment = action.effectedSegments.get(oldSegment);
+        if (effectedSegments) {
+          let effectedSegment = effectedSegments.get(oldSegment);
           // create the data for this segment if it wasn't already created
           if (!effectedSegment) {
             effectedSegment = {
@@ -332,7 +332,7 @@ export function setSegment(
                 points: new Map(),
               },
             };
-            action.effectedSegments.set(oldSegment, effectedSegment);
+            effectedSegments.set(oldSegment, effectedSegment);
           }
           setPoint(
             effectedSegment.newBoundaryPoints,
