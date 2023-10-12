@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { Dispatch } from "react";
 import { CanvasAction } from "../action-history";
 import {
   PointContainer,
@@ -10,25 +11,26 @@ import {
   setPoint,
 } from "../point-container";
 import { breadthFirstTraversal } from "./bft";
-import { DrawingLayerUniforms } from "./uniforms";
-import { kDrawAlpha } from "../tools";
-import { Dispatch } from "react";
 import { StatisticsEvent } from "../statistics";
+import { RendererState, fillPixel } from "../renderer-state";
 
 // The alpha is boosted by this amount when a pixel is on the border of a segment.
 const kBorderAlphaBoost = 0.5;
+
+/**
+ * This is the alpha used to fill in points when drawing.
+ */
+const kDrawAlpha = 0.5;
 
 /**
  * The drawing layer is responsible for updating shader uniforms and
  * tracking drawn segments. Segments are given 1-based indexes.
  */
 export type DrawingLayer = {
-  readonly pixelSize: THREE.Vector2;
-
   /**
-   * all of the shader uniform data is stored in this class
+   * the drawing layer can directly write to the renderer state.
    */
-  readonly uniforms: DrawingLayerUniforms;
+  readonly rendererState: RendererState;
 
   /**
    * the segment buffer stores the segment ID (1-indexed) for each
@@ -55,11 +57,6 @@ export type DrawingLayer = {
    * Dispatches update events to the statistics reducer.
    */
   readonly updateStatistics: Dispatch<StatisticsEvent>;
-
-  /**
-   * The segment currently being drawn
-   */
-  activeSegment: number;
 };
 
 /**
@@ -85,16 +82,16 @@ export function incrementSegments(drawingLayer: DrawingLayer): void {
  * reference to update the statistics reducer.
  */
 export function initialState(
-  pixelSize: THREE.Vector2,
+  rendererState: RendererState,
   updateStatistics: Dispatch<StatisticsEvent>
 ): DrawingLayer {
   return {
     updateStatistics,
-    pixelSize,
+    rendererState,
     segmentMap: new Map(),
-    segmentBuffer: new Int32Array(pixelSize.x * pixelSize.y).fill(-1),
-    uniforms: new DrawingLayerUniforms(pixelSize),
-    activeSegment: -1,
+    segmentBuffer: new Int32Array(
+      rendererState.pixelSize.x * rendererState.pixelSize.y
+    ).fill(-1),
   };
 }
 
@@ -105,7 +102,9 @@ export function getSegment(
   drawingLayer: DrawingLayer,
   pos: THREE.Vector2
 ): number {
-  return drawingLayer.segmentBuffer[pos.y * drawingLayer.pixelSize.x + pos.x];
+  return drawingLayer.segmentBuffer[
+    pos.y * drawingLayer.rendererState.pixelSize.x + pos.x
+  ];
 }
 
 const kAdjacency = [
@@ -145,8 +144,8 @@ export function recomputeSegments(
           hasPoint(boundary, pos.x, pos.y) &&
           pos.x >= 0 &&
           pos.y >= 0 &&
-          pos.x < state.pixelSize.x &&
-          pos.y < state.pixelSize.y,
+          pos.x < state.rendererState.pixelSize.x &&
+          pos.y < state.rendererState.pixelSize.y,
         // for this breadth-first traversal we can walk diagonally because
         // border pixels diagonal to eachother are still considered
         // contiguous
@@ -169,8 +168,8 @@ export function recomputeSegments(
               getSegment(state, pos) === segment[0] &&
               pos.x >= 0 &&
               pos.y >= 0 &&
-              pos.x < state.pixelSize.x &&
-              pos.y < state.pixelSize.y
+              pos.x < state.rendererState.pixelSize.x &&
+              pos.y < state.rendererState.pixelSize.y
             ) {
               // if we encounter any boundary points, we will remove
               // them from the boundary container. This prevents further
@@ -194,7 +193,12 @@ export function recomputeSegments(
         // segment and thus we can continue to the next effected segment.
         // otherwise, we need to now fill all of the visited pixels.
         if (boundary.size > 0) {
+          const sum = new THREE.Vector2();
+
           forEachPoint(fillVisited, (x, y) => {
+            const pos = new THREE.Vector2(x, y);
+            sum.add(pos);
+
             // for each point we flood filled, we will update the
             // action history for undo/redo if we have not already
             // painted it previously during this action
@@ -205,16 +209,16 @@ export function recomputeSegments(
               });
             }
 
-            // update the segment statistics for the new segment and the old
-            state.updateStatistics({
-              type: "update",
-              oldSegment: segment[0],
-              pos: new THREE.Vector2(x, y),
-              newSegment,
-            });
+            setSegment(state, pos, newSegment);
+          });
 
-            // update the flood-filled pixels in the drawing layer
-            setSegment(state, new THREE.Vector2(x, y), newSegment);
+          // update the flood-filled pixels in the drawing layer
+          state.updateStatistics({
+            type: "update",
+            pos: sum,
+            numPoints: fillVisited.size,
+            oldSegment: segment[0],
+            newSegment,
           });
         }
       } else {
@@ -247,19 +251,13 @@ export function setSegment(
   const oldSegment = getSegment(state, pos);
 
   // early return if we are not actually changing the segment
-  if (oldSegment == segment) {
+  if (oldSegment === segment) {
     return;
   }
 
-  state.updateStatistics({
-    type: "update",
-    newSegment: segment,
-    oldSegment,
-    pos,
-  });
-
   // update the segment buffer (this is a flattened 2D array row-major)
-  state.segmentBuffer[pos.y * state.pixelSize.x + pos.x] = segment;
+  state.segmentBuffer[pos.y * state.rendererState.pixelSize.x + pos.x] =
+    segment;
 
   // get adjacent points (clamped by resolution)
   const adjacent = kAdjacency
@@ -270,8 +268,8 @@ export function setSegment(
       (neighbor) =>
         neighbor.x >= 0 &&
         neighbor.y >= 0 &&
-        neighbor.x < state.pixelSize.x &&
-        neighbor.y < state.pixelSize.y
+        neighbor.x < state.rendererState.pixelSize.x &&
+        neighbor.y < state.rendererState.pixelSize.y
     );
 
   // if we are overwriting a segment, we need to update the
@@ -279,6 +277,10 @@ export function setSegment(
   // reported to the action argument if it is provided through the
   // effectedSegments map.
   if (oldSegment !== -1 && segment !== oldSegment) {
+    if (!state.segmentMap.has(oldSegment)) {
+      console.log("old segment does not exist", oldSegment);
+      console.log(state);
+    }
     const oldSegmentEntry = state.segmentMap.get(oldSegment)!;
     const point = getPoint(oldSegmentEntry.points, pos.x, pos.y)!;
     // if this point used to be a boundary point, we need to remove it
@@ -311,9 +313,9 @@ export function setSegment(
       if (neighborEntry.numNeighbors === 4) {
         // this pixel used to not be a boundary pixel, but now it is.
         // update the shader uniforms to reflect this.
-        state.uniforms.fillPixel(
-          neighbor.x,
-          neighbor.y,
+        fillPixel(
+          state.rendererState,
+          neighbor,
           kDrawAlpha + kBorderAlphaBoost,
           oldSegmentEntry.color
         );
@@ -350,7 +352,7 @@ export function setSegment(
 
   if (segment === -1 && oldSegment !== -1) {
     // we are erasing a segment, so we need to update the shader uniforms
-    state.uniforms.fillPixel(pos.x, pos.y, 0, new THREE.Color());
+    fillPixel(state.rendererState, pos, 0, new THREE.Color());
   } else if (segment !== -1) {
     const color = state.segmentMap.get(segment)!.color;
     const segmentEntry = state.segmentMap.get(segment)!;
@@ -368,9 +370,9 @@ export function setSegment(
 
     // update the shader uniforms to reflect that this pixel is now
     // part of the segment (applying a boost if it is a boundary pixel)
-    state.uniforms.fillPixel(
-      pos.x,
-      pos.y,
+    fillPixel(
+      state.rendererState,
+      pos,
       kDrawAlpha + (inSegmentNeighbors.length < 4 ? kBorderAlphaBoost : 0.0),
       color
     );
@@ -386,9 +388,9 @@ export function setSegment(
       // we should update the shader uniforms to reflect that it is no longer
       // a boundary point.
       if (newNumNeighbors === 4) {
-        state.uniforms.fillPixel(
-          neighbor.x,
-          neighbor.y,
+        fillPixel(
+          state.rendererState,
+          neighbor,
           kDrawAlpha,
           segmentEntry.color
         );
@@ -399,7 +401,7 @@ export function setSegment(
 
 type Reset = {
   type: "reset";
-  pixelSize: THREE.Vector2;
+  rendererState: RendererState;
 };
 
 export type DrawingLayerEvent = Reset;
@@ -410,6 +412,6 @@ export function drawingLayerReducer(
 ): DrawingLayer {
   switch (event.type) {
     case "reset":
-      return initialState(event.pixelSize, state.updateStatistics);
+      return initialState(event.rendererState, state.updateStatistics);
   }
 }

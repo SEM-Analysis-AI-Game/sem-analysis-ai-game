@@ -6,6 +6,10 @@ import { PointContainer } from "../point-container";
 export type CanvasAction = {
   /**
    * The points that were painted by this action.
+   *
+   * This container is mutable, because it can be modified on
+   * every frame. If it were immutable, we would have to copy it
+   * on every update, which would be extremely slow.
    */
   readonly paintedPoints: PointContainer<{
     oldSegment: number;
@@ -20,6 +24,10 @@ export type CanvasAction = {
    *
    * The key is the segment ID, and the value is the new boundary points that
    * were created by this action.
+   *
+   * This container is mutable, because it can be modified on
+   * every frame. If it were immutable, we would have to copy it
+   * on every update, which would be extremely slow.
    */
   readonly effectedSegments: Map<number, { newBoundaryPoints: PointContainer }>;
 };

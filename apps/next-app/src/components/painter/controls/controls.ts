@@ -1,11 +1,11 @@
 import * as THREE from "three";
 
 export type Controls = {
-  zoom: number;
-  pan: THREE.Vector2;
-  cursorDown: boolean;
-  zooming: boolean;
-  shiftDown: boolean;
+  readonly zoom: number;
+  readonly pan: THREE.Vector2;
+  readonly cursorDown: boolean;
+  readonly zooming: boolean;
+  readonly shiftDown: boolean;
 };
 
 type Zoom = {
@@ -27,6 +27,10 @@ type Cursor = {
 
 export type ControlsEvent = Zoom | Pan | Cursor;
 
+function panBounds(zoom: number) {
+  return new THREE.Vector2(1.0, 1.0).subScalar(1.0 / Math.sqrt(zoom));
+}
+
 export function controlsReducer(
   state: Controls,
   event: ControlsEvent
@@ -39,17 +43,13 @@ export function controlsReducer(
         shiftDown: event.shiftDown,
       };
     case "pan":
-      const panBounds = new THREE.Vector2(1.0, 1.0).subScalar(
-        1.0 / Math.sqrt(state.zoom)
-      );
+      const bounds = panBounds(state.zoom);
       return {
         ...state,
-        pan: event.newPan.clamp(panBounds.clone().negate(), panBounds),
+        pan: event.newPan.clamp(bounds.clone().negate(), bounds),
       };
     case "zoom":
-      const newPanBounds = new THREE.Vector2(1.0, 1.0).subScalar(
-        1.0 / Math.sqrt(event.newZoom)
-      );
+      const newPanBounds = panBounds(event.newZoom);
       return {
         ...state,
         pan: state.pan.clamp(newPanBounds.clone().negate(), newPanBounds),

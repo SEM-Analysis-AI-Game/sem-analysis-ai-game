@@ -1,6 +1,12 @@
 "use client";
 
-import { Dispatch, createContext, useContext, useReducer } from "react";
+import {
+  Dispatch,
+  createContext,
+  useContext,
+  useEffect,
+  useReducer,
+} from "react";
 import { ActionHistory, ActionHistoryEvent, historyReducer } from "./history";
 import { useDrawingLayer } from "../drawing-layer";
 
@@ -38,15 +44,16 @@ export function ActionHistoryProvider(props: {
   // the action history needs to be able to update the drawing layer
   const [drawingLayer] = useDrawingLayer();
 
-  const history = useReducer(
-    historyReducer,
-    { prev: null, next: null, data: null },
-    (head) => ({
-      drawingLayer,
-      head,
-      current: head,
-    })
-  );
+  const history = useReducer(historyReducer, {
+    drawingLayer,
+    head: { prev: null, next: null, data: null },
+    current: { prev: null, next: null, data: null },
+  });
+
+  // clear the history when the background changes
+  useEffect(() => {
+    history[1]({ type: "reset", drawingLayer });
+  }, [drawingLayer]);
 
   return (
     <ActionHistoryContext.Provider value={history}>

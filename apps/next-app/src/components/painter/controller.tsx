@@ -3,15 +3,15 @@
 import { useEffect, useMemo } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { usePinch } from "@use-gesture/react";
-import { panTool, useTool } from "../tools";
+import { panTool, useTool } from "./tools";
 import {
   getSegment,
   incrementSegments,
   useDrawingLayer,
-} from "../drawing-layer";
-import { useActionHistory } from "../action-history";
-import { useBackground } from "../background-loader";
-import { useControls } from "./provider";
+} from "./drawing-layer";
+import { useActionHistory } from "./action-history";
+import { useControls } from "./controls";
+import { useRendererState } from "./renderer-state";
 
 /**
  * Listens for input events and updates pan, zoom, and the
@@ -20,12 +20,6 @@ import { useControls } from "./provider";
 export function PainterController(): null {
   // these are provided by the canvas
   const { mouse, gl } = useThree();
-
-  const [background] = useBackground();
-
-  if (!background) {
-    throw new Error("Background not loaded");
-  }
 
   // this is a secondary tool for panning that can be
   // used by holding shift, and maybe eventually we can
@@ -38,6 +32,7 @@ export function PainterController(): null {
   const [drawingLayer] = useDrawingLayer();
   const [, updateHistory] = useActionHistory();
   const [controls, updateControls] = useControls();
+  const rendererState = useRendererState();
 
   // this handles pinch + mouse wheel zooming
   usePinch(
@@ -61,7 +56,9 @@ export function PainterController(): null {
     }
   );
 
-  // keybinds for undo/redo
+  useEffect(() => {}, []);
+
+  // handle undo/redo, cursor up/down, and cursor leave canvas event.
   useEffect(() => {
     document.addEventListener("keydown", (e) => {
       if (e.ctrlKey) {
@@ -73,15 +70,6 @@ export function PainterController(): null {
         }
       }
     });
-  }, []);
-
-  // clear the history when the background changes
-  useEffect(() => {
-    updateHistory({ type: "clear" });
-  }, [background]);
-
-  // handle cursor up/down event and cursor leave canvas event.
-  useEffect(() => {
     gl.domElement.addEventListener("pointerdown", (e) => {
       updateControls({
         type: "cursor",
@@ -107,47 +95,54 @@ export function PainterController(): null {
 
   // handle each canvas frame
   useFrame(() => {
-    const cursor = mouse
-      .clone()
-      .divideScalar(Math.sqrt(controls.zoom))
-      .add(controls.pan)
-      .multiplyScalar(0.5)
-      .addScalar(0.5)
-      .multiply(drawingLayer.pixelSize)
-      .floor();
+    if (tool) {
+      const cursor = mouse
+        .clone()
+        .divideScalar(Math.sqrt(controls.zoom))
+        .add(controls.pan)
+        .multiplyScalar(0.5)
+        .addScalar(0.5)
+        .multiply(rendererState.pixelSize)
+        .floor();
 
-    // if the cursor was not previously down
-    if (controls.cursorDown && drawingLayer.activeSegment === -1) {
-      // get the segment at the cursor position
-      let segment = getSegment(drawingLayer, cursor);
+      // if the cursor was not previously down
+      if (controls.cursorDown && rendererState.activeSegment === -1) {
+        // get the segment at the cursor position
+        let segment = getSegment(drawingLayer, cursor);
 
-      // if no segment is found at the cursor position, increment the
-      // number of segments and use the new segment, otherwise use the found
-      // segment.
-      if (segment === -1) {
-        incrementSegments(drawingLayer);
-        drawingLayer.activeSegment = drawingLayer.segmentMap.size;
-      } else {
-        drawingLayer.activeSegment = segment;
+        // if no segment is found at the cursor position, increment the
+        // number of segments and use the new segment, otherwise use the found
+        // segment.
+        if (segment === -1) {
+          incrementSegments(drawingLayer);
+          rendererState.activeSegment = drawingLayer.segmentMap.size;
+        } else {
+          rendererState.activeSegment = segment;
+        }
+      } else if (!controls.cursorDown) {
+        rendererState.activeSegment = -1;
       }
-    }
 
-    if (!controls.cursorDown) {
-      drawingLayer.activeSegment = -1;
-    }
-
-    // use the secondary pan tool if shift is held. we should
-    // try to also implement two-finger drag here on mobile.
-    if (controls.shiftDown || tool.name === "Pan") {
-      secondaryTool.handleFrame(
-        secondaryTool,
-        cursor,
-        controls,
-        drawingLayer,
-        updateControls
-      );
-    } else {
-      tool.handleFrame(tool, cursor, controls, drawingLayer, updateHistory);
+      // use the secondary pan tool if shift is held. we should
+      // try to also implement two-finger drag here on mobile.
+      if (controls.shiftDown || tool.name === "Pan") {
+        secondaryTool.handleFrame(
+          secondaryTool,
+          cursor,
+          controls,
+          drawingLayer,
+          updateControls
+        );
+      } else {
+        tool.handleFrame(
+          tool,
+          cursor,
+          controls,
+          drawingLayer,
+          rendererState.activeSegment,
+          updateHistory
+        );
+      }
     }
   });
 

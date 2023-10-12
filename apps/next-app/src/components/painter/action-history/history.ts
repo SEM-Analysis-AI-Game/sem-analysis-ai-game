@@ -29,11 +29,12 @@ type Redo = {
   type: "redo";
 };
 
-type Clear = {
-  type: "clear";
+type Reset = {
+  type: "reset";
+  drawingLayer: DrawingLayer;
 };
 
-export type ActionHistoryEvent = Push | Undo | Redo | Clear;
+export type ActionHistoryEvent = Push | Undo | Redo | Reset;
 
 /**
  * This represents the undo/redo history.
@@ -41,7 +42,7 @@ export type ActionHistoryEvent = Push | Undo | Redo | Clear;
 export type ActionHistory = {
   readonly head: Node<CanvasAction>;
   readonly drawingLayer: DrawingLayer;
-  current: Node<CanvasAction>;
+  readonly current: Node<CanvasAction>;
 };
 
 export function historyReducer(
@@ -56,22 +57,59 @@ export function historyReducer(
         ...state,
         current: node,
       };
-    case "clear":
+    case "reset":
       return {
-        ...state,
+        drawingLayer: event.drawingLayer,
         head: { data: null, next: null, prev: null },
         current: { data: null, next: null, prev: null },
       };
     case "redo":
       if (state.current.next) {
         const current = state.current.next;
+        const statistics = new Map<
+          number,
+          { numPoints: number; sum: THREE.Vector2 }
+        >();
         forEachPoint(current.data!.paintedPoints, (x, y, data) => {
+          if (!statistics.has(data.newSegment)) {
+            statistics.set(data.newSegment, {
+              numPoints: 1,
+              sum: new THREE.Vector2(x, y),
+            });
+          } else {
+            const stat = statistics.get(data.newSegment)!;
+            stat.numPoints++;
+            stat.sum.add(new THREE.Vector2(x, y));
+          }
+
+          if (!statistics.has(data.oldSegment)) {
+            statistics.set(data.oldSegment, {
+              numPoints: -1,
+              sum: new THREE.Vector2(-x, -y),
+            });
+          } else {
+            const stat = statistics.get(data.oldSegment)!;
+            stat.numPoints--;
+            stat.sum.sub(new THREE.Vector2(x, y));
+          }
+
           setSegment(
             state.drawingLayer,
             new THREE.Vector2(x, y),
             data.newSegment
           );
         });
+
+        for (let [segment, stat] of statistics) {
+          state.drawingLayer.updateStatistics({
+            type: "update",
+            numPoints: stat.numPoints,
+            pos: stat.sum,
+            oldSegment: -1,
+            newSegment: segment,
+          });
+        }
+
         return {
           ...state,
           current,
@@ -81,13 +119,50 @@ export function historyReducer(
       }
     case "undo":
       if (state.current.prev) {
+        const statistics = new Map<
+          number,
+          { numPoints: number; sum: THREE.Vector2 }
+        >();
         forEachPoint(state.current.data!.paintedPoints, (x, y, data) => {
+          if (!statistics.has(data.newSegment)) {
+            statistics.set(data.newSegment, {
+              numPoints: -1,
+              sum: new THREE.Vector2(-x, -y),
+            });
+          } else {
+            const stat = statistics.get(data.newSegment)!;
+            stat.numPoints--;
+            stat.sum.sub(new THREE.Vector2(x, y));
+          }
+
+          if (!statistics.has(data.oldSegment)) {
+            statistics.set(data.oldSegment, {
+              numPoints: 1,
+              sum: new THREE.Vector2(x, y),
+            });
+          } else {
+            const stat = statistics.get(data.oldSegment)!;
+            stat.numPoints++;
+            stat.sum.add(new THREE.Vector2(x, y));
+          }
+
           setSegment(
             state.drawingLayer,
             new THREE.Vector2(x, y),
             data.oldSegment
           );
         });
+
+        for (let [segment, stat] of statistics) {
+          state.drawingLayer.updateStatistics({
+            type: "update",
+            numPoints: stat.numPoints,
+            pos: stat.sum,
+            oldSegment: -1,
+            newSegment: segment,
+          });
+        }
+
         return {
           ...state,
           current: state.current.prev,

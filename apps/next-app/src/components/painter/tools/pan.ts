@@ -20,7 +20,7 @@ function handleFrame(
             cursorPos
               .clone()
               .sub(state.lastCursorPos!)
-              .divide(drawingLayer.pixelSize)
+              .divide(drawingLayer.rendererState.pixelSize)
           ),
       });
     }

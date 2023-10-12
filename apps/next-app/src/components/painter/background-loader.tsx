@@ -27,7 +27,7 @@ export const BackgroundContext = createContext<
  * Hook to get/set the current background image. Must be used within a BackgroundContext.
  */
 export function useBackground(): [
-  THREE.Texture | undefined,
+  THREE.Texture,
   Dispatch<SetStateAction<THREE.Texture | undefined>>
 ] {
   const state = useContext(BackgroundContext);
@@ -36,7 +36,14 @@ export function useBackground(): [
     throw new Error("useBackground must be used within a BackgroundContext");
   }
 
-  return state;
+  if (!state[0]) {
+    throw new Error("No background found");
+  }
+
+  return state as [
+    THREE.Texture,
+    Dispatch<SetStateAction<THREE.Texture | undefined>>
+  ];
 }
 
 /**

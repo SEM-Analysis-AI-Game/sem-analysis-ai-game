@@ -15,6 +15,7 @@ function handleFrame(
   cursorPos: THREE.Vector2,
   controls: Controls,
   drawingLayer: DrawingLayer,
+  activeSegment: number,
   updateHistory: Dispatch<ActionHistoryEvent>
 ): void {
   // don't draw if zooming
@@ -31,12 +32,16 @@ function handleFrame(
     }
     const drawAction = state.drawAction;
 
+    const drawingStatistics = new Map<
+      number,
+      { numPoints: number; sum: THREE.Vector2 }
+    >();
+    // the new segment to draw
+    const drawSegment = state.drawingSegment(activeSegment);
+
     const fill = (pos: THREE.Vector2) => {
       // the segment we are drawing over
       const oldSegment = getSegment(drawingLayer, pos);
-
-      // the new segment to draw
-      const drawSegment = state.drawingSegment(drawingLayer.activeSegment);
 
       // if we have already drawn over the point, we won't write it into
       // the action history again, because undoing resets back to the
@@ -49,6 +54,19 @@ function handleFrame(
         });
       }
 
+      if (drawSegment !== oldSegment) {
+        if (drawingStatistics.has(oldSegment)) {
+          const stat = drawingStatistics.get(oldSegment)!;
+          stat.numPoints++;
+          stat.sum.add(pos);
+        } else {
+          drawingStatistics.set(oldSegment, {
+            numPoints: 1,
+            sum: pos.clone(),
+          });
+        }
+      }
+
       // Updates the segment in the drawing layer. Passing drawAction
       // as the last argument will cause the updates boundaries to be
       // recorded in the action history.
@@ -56,7 +74,12 @@ function handleFrame(
     };
 
     // paint the point at the cursor position
-    state.paint(fill, state.size, cursorPos, drawingLayer.pixelSize);
+    state.paint(
+      fill,
+      state.size,
+      cursorPos,
+      drawingLayer.rendererState.pixelSize
+    );
 
     // if the cursor was already down on the last frame as well,
     // interpolate between the last cursor position and the current
@@ -80,9 +103,21 @@ function handleFrame(
           fill,
           state.size,
           current.clone().floor(),
-          drawingLayer.pixelSize
+          drawingLayer.rendererState.pixelSize
         );
         current.add(step);
+      }
+    }
+
+    if (drawingStatistics.size > 0) {
+      for (let [segment, stat] of drawingStatistics) {
+        drawingLayer.updateStatistics({
+          type: "update",
+          numPoints: stat.numPoints,
+          pos: stat.sum,
+          oldSegment: segment,
+          newSegment: drawSegment,
+        });
       }
     }
 
@@ -108,11 +143,6 @@ function handleFrame(
     }
   }
 }
-
-/**
- * This is the alpha used to fill in points when drawing.
- */
-export const kDrawAlpha = 0.5;
 
 /**
  * Tool for drawing strokes with the cursor.

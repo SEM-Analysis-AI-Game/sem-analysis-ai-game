@@ -16,6 +16,7 @@ export type StatisticsEvent = Update | Clear;
 type Update = {
   type: "update";
   pos: THREE.Vector2;
+  numPoints: number;
   oldSegment: number;
   newSegment: number;
 };
@@ -49,11 +50,13 @@ export function statisticsReducer(
           newSegmentEntry.centroid
             .multiplyScalar(newSegmentEntry.numPoints)
             .add(event.pos)
-            .divideScalar(newSegmentEntry.numPoints + 1);
+            .divideScalar(newSegmentEntry.numPoints + event.numPoints);
         } else {
-          newSegmentEntry.centroid = event.pos.clone();
+          newSegmentEntry.centroid = event.pos
+            .clone()
+            .divideScalar(event.numPoints);
         }
-        newSegmentEntry.numPoints++;
+        newSegmentEntry.numPoints += event.numPoints;
       }
 
       if (event.oldSegment !== -1) {
@@ -69,8 +72,8 @@ export function statisticsReducer(
         oldSegmentEntry.centroid
           .multiplyScalar(oldSegmentEntry.numPoints)
           .sub(event.pos)
-          .divideScalar(oldSegmentEntry.numPoints - 1);
-        oldSegmentEntry.numPoints--;
+          .divideScalar(oldSegmentEntry.numPoints - event.numPoints);
+        oldSegmentEntry.numPoints -= event.numPoints;
       }
       return { segments };
   }

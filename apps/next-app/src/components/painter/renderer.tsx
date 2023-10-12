@@ -10,8 +10,8 @@ import {
   buildFragmentShader,
   vertexShader,
 } from "./shaders";
-import { useDrawingLayer } from "./drawing-layer";
 import { useControls } from "./controls";
+import { useRendererState, getSectionSize, getUniform } from "./renderer-state";
 
 /**
  * The canvas is subdivided into sections of this size.
@@ -27,14 +27,10 @@ export function PainterRenderer(): null {
 
   const [background] = useBackground();
 
-  if (!background) {
-    throw new Error("Background not loaded");
-  }
-
   // This is used to update the background and drawing layer uniforms.
   const [controls] = useControls();
 
-  const [drawingLayer] = useDrawingLayer();
+  const rendererState = useRendererState();
 
   // creates composers and uniforms on mount.
   const [backgroundComposer, drawingComposers, zoomUniform, panUniform] =
@@ -60,9 +56,9 @@ export function PainterRenderer(): null {
 
       // renders each section of the drawing layer.
       const drawingComps: EffectComposer[] = [];
-      for (let i = 0; i < drawingLayer.uniforms.numSections.y + 1; i++) {
-        for (let j = 0; j < drawingLayer.uniforms.numSections.x + 1; j++) {
-          const sectionSize = drawingLayer.uniforms.sectionSize(j, i);
+      for (let i = 0; i < rendererState.numSections.y + 1; i++) {
+        for (let j = 0; j < rendererState.numSections.x + 1; j++) {
+          const sectionSize = getSectionSize(rendererState, j, i);
           if (sectionSize.x > 0 && sectionSize.y > 0) {
             const drawing = new THREE.WebGLRenderTarget(
               sectionSize.x,
@@ -76,10 +72,10 @@ export function PainterRenderer(): null {
 
             // build the shader for this section
             const drawingShader = buildFragmentShader(
-              sectionSize.clone().divide(drawingLayer.pixelSize),
+              sectionSize.clone().divide(rendererState.pixelSize),
               new THREE.Vector2(j, i)
                 .multiplyScalar(kSubdivisionSize)
-                .divide(drawingLayer.pixelSize)
+                .divide(rendererState.pixelSize)
             );
 
             drawingComposer.addPass(
@@ -88,7 +84,7 @@ export function PainterRenderer(): null {
                   vertexShader,
                   fragmentShader: drawingShader,
                   uniforms: {
-                    inputDiffuse: drawingLayer.uniforms.uniform(j, i),
+                    inputDiffuse: getUniform(rendererState, j, i),
                     pan,
                     zoom,
                   },
@@ -104,7 +100,7 @@ export function PainterRenderer(): null {
         }
       }
       return [bgComposer, drawingComps, zoom, pan];
-    }, [drawingLayer]);
+    }, [rendererState]);
 
   // update the uniforms when the pan or zoom changes.
   useEffect(() => {
@@ -119,15 +115,13 @@ export function PainterRenderer(): null {
 
     backgroundComposer.render();
 
-    for (let i = 0; i < drawingLayer.uniforms.numSections.y + 1; i++) {
-      for (let j = 0; j < drawingLayer.uniforms.numSections.x + 1; j++) {
+    for (let i = 0; i < rendererState.numSections.y + 1; i++) {
+      for (let j = 0; j < rendererState.numSections.x + 1; j++) {
         if (
-          drawingLayer.uniforms.sectionSize(j, i).x !== 0 &&
-          drawingLayer.uniforms.sectionSize(j, i).y !== 0
+          getSectionSize(rendererState, j, i).x !== 0 &&
+          getSectionSize(rendererState, j, i).y !== 0
         ) {
-          drawingComposers[
-            i * (drawingLayer.uniforms.numSections.x + 1) + j
-          ].render();
+          drawingComposers[i * (rendererState.numSections.x + 1) + j].render();
         }
       }
     }
