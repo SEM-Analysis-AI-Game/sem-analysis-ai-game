@@ -16,6 +16,7 @@ import { useActionHistory } from "./action-history";
  * renderer.
  */
 export function PainterCanvas(): JSX.Element {
+  // the renderer state updates whenever the background changes
   const rendererState = useRendererState();
   const [drawingLayer, updateDrawingLayer] = useDrawingLayer();
   const [, updateActionHistory] = useActionHistory();
@@ -39,11 +40,13 @@ export function PainterCanvas(): JSX.Element {
     return [canvasSize];
   }, [rendererState]);
 
+  // clear drawing layer and statistics when the renderer state changes.
   useEffect(() => {
     updateDrawingLayer({ type: "reset", rendererState });
     updateStatistics({ type: "clear" });
   }, [rendererState]);
 
+  // reset the action history when the drawing layer changes.
   useEffect(() => {
     updateActionHistory({ type: "reset", drawingLayer });
   }, [drawingLayer]);

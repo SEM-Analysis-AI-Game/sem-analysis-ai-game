@@ -44,18 +44,24 @@ export function ActionHistoryProvider(props: PropsWithChildren): JSX.Element {
   // the action history needs to be able to update the drawing layer
   const [drawingLayer] = useDrawingLayer();
 
-  const history = useReducer(historyReducer, {
-    drawingLayer,
-    head: { prev: null, next: null, data: null },
-    current: { prev: null, next: null, data: null },
-    recentStatisticsUpdates: null,
-  });
+  const history = useReducer(
+    historyReducer,
+    { prev: null, next: null, data: null },
+    (head) => ({
+      drawingLayer,
+      head,
+      current: head,
+      recentStatisticsUpdates: null,
+    })
+  );
 
   const [, updateStatistics] = useStatistics();
 
   useEffect(() => {
-    // batch update the statistics
+    // if the history has been updated as a result of an undo/redo,
+    // the recentStatisticsUpdates will be populated.
     if (history[0].recentStatisticsUpdates) {
+      // update the statistics for the most recent undo/redo
       for (let [segment, stat] of history[0].recentStatisticsUpdates) {
         updateStatistics({
           type: "update",

@@ -52,15 +52,34 @@ type Reset = {
  * This represents the undo/redo history. (doubly-linked list)
  */
 export type ActionHistory = {
+  /**
+   * Sentinel head node (null data)
+   */
   readonly head: Node<HistoryAction>;
+
+  /**
+   * The action history needs a reference to the drawing layer to
+   * update segments.
+   */
   readonly drawingLayer: DrawingLayer;
+
+  /**
+   * The current action in the history.
+   */
   readonly current: Node<HistoryAction>;
+
+  /**
+   * The statistics updates corresponding to the most recent undo/redo.
+   * This is used for batch updating the statistics reducer. The update
+   * cannot be done inside the history reducer, so it needs to be done in
+   * a useEffect hook in the ActionHistoryProvider.
+   */
   readonly recentStatisticsUpdates: StatisticsMap | null;
 };
 
 /**
- * Tracks statistics for a single action. This is useful for
- * batch updating the statistics reducer.
+ * Tracks statistics for a single action. This is useful for batch
+ * updating the statistics reducer.
  */
 class StatisticsMap extends Map<
   number,
@@ -103,6 +122,11 @@ function updateStatistics(
  * Produces a new action history state given an event. The painted
  * points point container is mutated in place for all events except
  * for "reset".
+ *
+ * The undo/redo events set recentStatisticsUpdates to a StatisticsMap
+ * that contains the statistics updates for the most recent undo/redo.
+ * These statistics updates are handled in a useEffect hook in the
+ * ActionHistoryProvider.
  */
 export function historyReducer(
   state: ActionHistory,

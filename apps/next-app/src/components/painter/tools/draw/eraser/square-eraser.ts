@@ -3,6 +3,14 @@ import { drawSquare } from "../../utils";
 import { eraserTool } from "./eraser";
 import { DrawTool } from "../draw";
 
+export type SquareEraser = DrawTool<"Square Eraser">;
+
+export function squareEraser(length: number): SquareEraser {
+  return eraserTool("Square Eraser", length, (fill, size, pos, resolution) =>
+    paint(fill, pos, resolution, size)
+  );
+}
+
 function paint(
   fill: (pos: THREE.Vector2) => void,
   pos: THREE.Vector2,
@@ -15,12 +23,4 @@ function paint(
     pos,
     length,
   });
-}
-
-export type SquareEraser = DrawTool<"Square Eraser">;
-
-export function squareEraser(length: number): SquareEraser {
-  return eraserTool("Square Eraser", length, (fill, size, pos, resolution) =>
-    paint(fill, pos, resolution, size)
-  );
 }

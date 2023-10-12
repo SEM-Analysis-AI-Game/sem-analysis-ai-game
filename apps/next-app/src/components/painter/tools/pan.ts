@@ -3,6 +3,31 @@ import { Dispatch } from "react";
 import { DrawingLayer } from "../drawing-layer";
 import { Controls, ControlsEvent } from "../controls";
 
+export type PanTool = {
+  readonly name: "Pan";
+  readonly handleFrame: typeof handleFrame;
+
+  /**
+   * The pan tool will hold onto the tool size so we can
+   * use it next time we switch to a drawing tool.
+   */
+  readonly size: number;
+
+  /**
+   * The cursor position on the last frame.
+   */
+  lastCursorPos: THREE.Vector2 | null;
+};
+
+export function panTool(size: number): PanTool {
+  return {
+    name: "Pan",
+    lastCursorPos: null,
+    size,
+    handleFrame,
+  };
+}
+
 function handleFrame(
   state: PanTool,
   cursorPos: THREE.Vector2,
@@ -28,29 +53,4 @@ function handleFrame(
   } else {
     state.lastCursorPos = null;
   }
-}
-
-export type PanTool = {
-  readonly name: "Pan";
-  readonly handleFrame: typeof handleFrame;
-
-  /**
-   * The pan tool will hold onto the tool size so we can
-   * use it next time we switch to a drawing tool.
-   */
-  readonly size: number;
-
-  /**
-   * The cursor position on the last frame.
-   */
-  lastCursorPos: THREE.Vector2 | null;
-};
-
-export function panTool(size: number): PanTool {
-  return {
-    name: "Pan",
-    lastCursorPos: null,
-    size,
-    handleFrame,
-  };
 }

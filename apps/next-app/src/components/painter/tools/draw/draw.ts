@@ -131,13 +131,16 @@ function handleFrame(
     const historyAction = state.actionState.historyAction;
     const effectedSegments = state.actionState.effectedSegments;
 
+    // statistics tracked during the current frame
     const drawingStatistics = new Map<
       number,
       { numPoints: number; sum: THREE.Vector2 }
     >();
+
     // the new segment to draw
     const drawSegment = state.drawingSegment(state.actionState.activeSegment);
 
+    // callback to be ran on every painted pixel
     const fill = (pos: THREE.Vector2) => {
       // the segment we are drawing over
       const oldSegment = getSegment(drawingLayer, pos);
@@ -153,6 +156,7 @@ function handleFrame(
         });
       }
 
+      // update statistics
       if (drawSegment !== oldSegment) {
         if (drawingStatistics.has(oldSegment)) {
           const stat = drawingStatistics.get(oldSegment)!;
@@ -210,6 +214,7 @@ function handleFrame(
       }
     }
 
+    // apply this frames updated statistics to the statistics reducer
     if (drawingStatistics.size > 0) {
       for (let [segment, stat] of drawingStatistics) {
         drawingLayer.updateStatistics({
