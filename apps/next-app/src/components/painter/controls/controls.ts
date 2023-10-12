@@ -43,8 +43,12 @@ type Cursor = {
  * Calculates the bounds of the pan based on the zoom level.
  */
 function panBounds(zoom: number) {
-  return new THREE.Vector2(1.0, 1.0).subScalar(1.0 / Math.sqrt(zoom));
+  return new THREE.Vector2(1.0, 1.0)
+    .subScalar(1.0 / Math.sqrt(zoom))
+    .divideScalar(kPanSpeed);
 }
+
+export const kPanSpeed = 2.5;
 
 /**
  * The controls reducer is used to update the controls state based on

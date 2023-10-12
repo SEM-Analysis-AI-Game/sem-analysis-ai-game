@@ -1,15 +1,14 @@
 import {
   CircleBrush,
   CircleEraser,
-  PanTool,
   SquareBrush,
   SquareEraser,
   circleBrush,
   circleEraser,
-  panTool,
   squareBrush,
   squareEraser,
-} from "../tools";
+} from "./draw";
+import { PanTool, panTool } from "./pan";
 
 type Tools =
   | [CircleEraser, typeof circleEraser]
