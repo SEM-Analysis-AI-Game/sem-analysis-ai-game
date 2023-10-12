@@ -2,8 +2,8 @@ import "./globals.css";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "SEM Analysis AI Game",
-  description: "SEM Analysis AI Game",
+  title: "Behind Density Lines",
+  description: "Behind Density Lines",
 };
 
 export default function RootLayout({

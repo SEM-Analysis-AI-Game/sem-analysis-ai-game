@@ -1,5 +1,5 @@
 {
-  "name": "sem-analysis-ai-game",
+  "name": "behind-density-lines",
   "private": true,
   "workspaces": [
     "apps/*"
