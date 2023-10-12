@@ -15,13 +15,9 @@ export function BrushSizeSlider(): JSX.Element {
       min={5}
       max={300}
       defaultValue={kInitialToolSize}
-      onChange={(e) => {
-        if (tool) {
-          setTool(
-            kToolFactory[tool.name](Number.parseInt(e.currentTarget.value))
-          );
-        }
-      }}
+      onChange={(e) =>
+        setTool(kToolFactory[tool.name](Number.parseInt(e.currentTarget.value)))
+      }
     />
   );
 }
