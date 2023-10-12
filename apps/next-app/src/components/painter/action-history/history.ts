@@ -16,28 +16,40 @@ type Node<T> = {
   readonly data: T | null;
 };
 
+export type ActionHistoryEvent = Push | Undo | Redo | Reset;
+
+/**
+ * Push a new action onto the history.
+ */
 type Push = {
   type: "push";
   action: HistoryAction;
 };
 
+/**
+ * Undo the last action.
+ */
 type Undo = {
   type: "undo";
 };
 
+/**
+ * Redo the last undone action.
+ */
 type Redo = {
   type: "redo";
 };
 
+/**
+ * Reset the history.
+ */
 type Reset = {
   type: "reset";
   drawingLayer: DrawingLayer;
 };
 
-export type ActionHistoryEvent = Push | Undo | Redo | Reset;
-
 /**
- * This represents the undo/redo history.
+ * This represents the undo/redo history. (doubly-linked list)
  */
 export type ActionHistory = {
   readonly head: Node<HistoryAction>;
@@ -45,6 +57,52 @@ export type ActionHistory = {
   readonly current: Node<HistoryAction>;
 };
 
+/**
+ * Tracks statistics for a single action. This is useful for
+ * batch updating the statistics reducer.
+ */
+class StatisticsMap extends Map<
+  number,
+  { numPoints: number; sum: THREE.Vector2 }
+> {}
+
+/**
+ * Update the statistics map for a single point.
+ */
+function updateStatistics(
+  statistics: StatisticsMap,
+  newSegment: number,
+  oldSegment: number,
+  pos: THREE.Vector2
+): void {
+  if (!statistics.has(newSegment)) {
+    statistics.set(newSegment, {
+      numPoints: 1,
+      sum: pos.clone(),
+    });
+  } else {
+    const stat = statistics.get(newSegment)!;
+    stat.numPoints++;
+    stat.sum.add(pos);
+  }
+
+  if (!statistics.has(oldSegment)) {
+    statistics.set(oldSegment, {
+      numPoints: -1,
+      sum: pos.clone().negate(),
+    });
+  } else {
+    const stat = statistics.get(oldSegment)!;
+    stat.numPoints--;
+    stat.sum.sub(pos.clone());
+  }
+}
+
+/**
+ * Produces a new action history state given an event. The painted
+ * points point container is mutated in place for all events except
+ * for "reset".
+ */
 export function historyReducer(
   state: ActionHistory,
   event: ActionHistoryEvent
@@ -66,33 +124,14 @@ export function historyReducer(
     case "redo":
       if (state.current.next) {
         const current = state.current.next;
-        const statistics = new Map<
-          number,
-          { numPoints: number; sum: THREE.Vector2 }
-        >();
+        const statistics = new StatisticsMap();
         forEachPoint(current.data!.paintedPoints, (x, y, data) => {
-          if (!statistics.has(data.newSegment)) {
-            statistics.set(data.newSegment, {
-              numPoints: 1,
-              sum: new THREE.Vector2(x, y),
-            });
-          } else {
-            const stat = statistics.get(data.newSegment)!;
-            stat.numPoints++;
-            stat.sum.add(new THREE.Vector2(x, y));
-          }
-
-          if (!statistics.has(data.oldSegment)) {
-            statistics.set(data.oldSegment, {
-              numPoints: -1,
-              sum: new THREE.Vector2(-x, -y),
-            });
-          } else {
-            const stat = statistics.get(data.oldSegment)!;
-            stat.numPoints--;
-            stat.sum.sub(new THREE.Vector2(x, y));
-          }
-
+          updateStatistics(
+            statistics,
+            data.newSegment,
+            data.oldSegment,
+            new THREE.Vector2(x, y)
+          );
           setSegment(
             state.drawingLayer,
             new THREE.Vector2(x, y),
@@ -101,6 +140,7 @@ export function historyReducer(
           );
         });
 
+        // batch update the statistics
         for (let [segment, stat] of statistics) {
           state.drawingLayer.updateStatistics({
             type: "update",
@@ -120,33 +160,14 @@ export function historyReducer(
       }
     case "undo":
       if (state.current.prev) {
-        const statistics = new Map<
-          number,
-          { numPoints: number; sum: THREE.Vector2 }
-        >();
+        const statistics = new StatisticsMap();
         forEachPoint(state.current.data!.paintedPoints, (x, y, data) => {
-          if (!statistics.has(data.newSegment)) {
-            statistics.set(data.newSegment, {
-              numPoints: -1,
-              sum: new THREE.Vector2(-x, -y),
-            });
-          } else {
-            const stat = statistics.get(data.newSegment)!;
-            stat.numPoints--;
-            stat.sum.sub(new THREE.Vector2(x, y));
-          }
-
-          if (!statistics.has(data.oldSegment)) {
-            statistics.set(data.oldSegment, {
-              numPoints: 1,
-              sum: new THREE.Vector2(x, y),
-            });
-          } else {
-            const stat = statistics.get(data.oldSegment)!;
-            stat.numPoints++;
-            stat.sum.add(new THREE.Vector2(x, y));
-          }
-
+          updateStatistics(
+            statistics,
+            data.oldSegment,
+            data.newSegment,
+            new THREE.Vector2(x, y)
+          );
           setSegment(
             state.drawingLayer,
             new THREE.Vector2(x, y),
@@ -155,6 +176,7 @@ export function historyReducer(
           );
         });
 
+        // batch update the statistics
         for (let [segment, stat] of statistics) {
           state.drawingLayer.updateStatistics({
             type: "update",
