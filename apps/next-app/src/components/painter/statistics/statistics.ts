@@ -1,5 +1,8 @@
 import * as THREE from "three";
 
+/**
+ * Tracks data about the segments in the drawing layer.
+ */
 export type PainterStatistics = {
   segments: Map<
     number,
@@ -13,18 +16,28 @@ export type PainterStatistics = {
 
 export type StatisticsEvent = Update | Clear;
 
+/**
+ * Update the statistics map with data for a collection of
+ * points.
+ */
 type Update = {
   type: "update";
-  pos: THREE.Vector2;
+  sum: THREE.Vector2;
   numPoints: number;
   oldSegment: number;
   newSegment: number;
 };
 
+/**
+ * Clear the statistics map.
+ */
 type Clear = {
   type: "clear";
 };
 
+/**
+ * Returns an updated state given a previous state and an event.
+ */
 export function statisticsReducer(
   state: PainterStatistics,
   event: StatisticsEvent
@@ -49,10 +62,10 @@ export function statisticsReducer(
         if (newSegmentEntry.numPoints > 0) {
           newSegmentEntry.centroid
             .multiplyScalar(newSegmentEntry.numPoints)
-            .add(event.pos)
+            .add(event.sum)
             .divideScalar(newSegmentEntry.numPoints + event.numPoints);
         } else {
-          newSegmentEntry.centroid = event.pos
+          newSegmentEntry.centroid = event.sum
             .clone()
             .divideScalar(event.numPoints);
         }
@@ -71,7 +84,7 @@ export function statisticsReducer(
         }
         oldSegmentEntry.centroid
           .multiplyScalar(oldSegmentEntry.numPoints)
-          .sub(event.pos)
+          .sub(event.sum)
           .divideScalar(oldSegmentEntry.numPoints - event.numPoints);
         oldSegmentEntry.numPoints -= event.numPoints;
       }

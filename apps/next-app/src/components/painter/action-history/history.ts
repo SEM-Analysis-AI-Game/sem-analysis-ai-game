@@ -136,7 +136,7 @@ export function historyReducer(
           state.drawingLayer.updateStatistics({
             type: "update",
             numPoints: stat.numPoints,
-            pos: stat.sum,
+            sum: stat.sum,
             oldSegment: -1,
             newSegment: segment,
           });
@@ -163,7 +163,7 @@ export function historyReducer(
           state.drawingLayer.updateStatistics({
             type: "update",
             numPoints: stat.numPoints,
-            pos: stat.sum,
+            sum: stat.sum,
             oldSegment: -1,
             newSegment: segment,
           });

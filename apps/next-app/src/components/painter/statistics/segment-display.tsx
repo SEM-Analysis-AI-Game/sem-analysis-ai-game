@@ -5,6 +5,9 @@ import { clamp } from "three/src/math/MathUtils.js";
 
 const kFontScale = 0.25;
 
+/**
+ * HTML overlay for a single segment.
+ */
 export function SegmentDisplay(
   props: PropsWithChildren<{
     key: number;

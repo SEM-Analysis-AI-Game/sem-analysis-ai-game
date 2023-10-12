@@ -40,6 +40,9 @@ export function useStatistics(): [
   return statistics;
 }
 
+/**
+ * Provides a statistics context.
+ */
 export function StatisticsProvider(props: PropsWithChildren): JSX.Element {
   const statisticsState = useReducer(statisticsReducer, {
     segments: new Map(),

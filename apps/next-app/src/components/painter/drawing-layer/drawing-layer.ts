@@ -29,9 +29,7 @@ const kDrawAlpha = 0.5;
 export type DrawingLayer = {
   /**
    * The drawing layer can directly write to the renderer state. The renderer
-   * state is mutable because it is not used for React state, but rather for
-   * WebGL state. The frame loop references this state by memory address so
-   * it is important that it is not copied, but rather mutated.
+   * state is not used for React state, but rather for WebGL state.
    */
   readonly rendererState: RendererState;
 
@@ -235,7 +233,7 @@ export function recomputeSegments(
           // update the statistics
           state.updateStatistics({
             type: "update",
-            pos: sum,
+            sum: sum,
             numPoints: fillVisited.size,
             oldSegment: segment[0],
             newSegment,

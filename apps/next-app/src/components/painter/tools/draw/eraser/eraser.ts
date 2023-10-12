@@ -10,5 +10,6 @@ export function eraserTool<ToolName extends string>(
     resolution: THREE.Vector2
   ) => void
 ): DrawTool<ToolName> {
+  // always chooses -1 as the segment to draw
   return drawTool(name, size, paint, () => -1);
 }

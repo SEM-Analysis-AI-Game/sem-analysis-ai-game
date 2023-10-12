@@ -6,6 +6,9 @@ import { useStatistics } from ".";
 import { SegmentDisplay } from "./segment-display";
 import { useControls } from "../controls";
 
+/**
+ * Displays a collection of segments overlayed over the canvas.
+ */
 export function SegmentInfoOverlay(props: {
   padding: THREE.Vector2;
   canvasSize: THREE.Vector2;
