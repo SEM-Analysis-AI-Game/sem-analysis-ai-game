@@ -57,7 +57,8 @@ export function SegmentInfoOverlay(props: {
             .clone()
             .multiply(
               props.canvasSize.clone().divide(props.backgroundResolution)
-            )}
+            )
+          }
         />
       );
     }

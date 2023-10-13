@@ -46,12 +46,15 @@ export function UploadButtonClientSide(props: PropsWithChildren): JSX.Element {
               alert("Failed to load image");
             }
           };
+          
           const files = fileUploadRef.current?.files;
+
           if (files && files.length > 0) {
             reader.readAsDataURL(files[0]);
           }
         }}
       />
+
       <button
         className="flex flex-row bg-slate-200 hover:bg-slate-400 transition active:bg-slate-300 p-1 text-slate-800 font-bold rounded text-sm h-10"
         style={{

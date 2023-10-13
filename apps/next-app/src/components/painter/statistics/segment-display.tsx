@@ -20,7 +20,7 @@ export function SegmentDisplay(
 
   return (
     <div
-      className="absolute z-10 -translate-x-1/2 translate-y-1/2 text-center rounded-full"
+      className="absolute z-10 -translate-x-1/2 translate-y-1/2 text-center rounded-full select-none"
       style={{
         left: `${props.position.x}px`,
         bottom: `${props.position.y}px`,
