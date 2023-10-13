@@ -419,6 +419,9 @@ export function setSegment(
   }
 }
 
+/**
+ * The preferred number of pixels padding from the boundary for a median estimate.
+ */
 const kMedianPadding = 40;
 
 /**

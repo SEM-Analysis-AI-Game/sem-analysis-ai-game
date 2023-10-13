@@ -1,5 +1,9 @@
 import * as THREE from "three";
 
+type ZoomState = {
+  origin: THREE.Vector2;
+};
+
 /**
  * The controls state is used to keep track of the current inputs.
  */
@@ -7,7 +11,7 @@ export type Controls = {
   readonly zoom: number;
   readonly pan: THREE.Vector2;
   readonly cursorDown: boolean;
-  readonly zooming: boolean;
+  readonly zoomState: ZoomState | null;
   readonly shiftDown: boolean;
 };
 
@@ -20,6 +24,7 @@ type Zoom = {
   type: "zoom";
   newZoom: number;
   zooming: boolean;
+  origin: THREE.Vector2;
 };
 
 /**
@@ -73,11 +78,36 @@ export function controlsReducer(
       };
     case "zoom":
       const newPanBounds = panBounds(event.newZoom);
-      return {
-        ...state,
-        pan: state.pan.clamp(newPanBounds.clone().negate(), newPanBounds),
-        zoom: event.newZoom,
-        zooming: event.zooming,
-      };
+      if (event.zooming) {
+        if (state.zoomState) {
+          return {
+            ...state,
+            pan: state.pan
+              .lerp(state.zoomState.origin, 0.01)
+              .clamp(newPanBounds.clone().negate(), newPanBounds),
+            zoom: event.newZoom,
+          };
+        } else {
+          const origin = event.origin
+            .clone()
+            .divideScalar(Math.sqrt(event.newZoom))
+            .add(state.pan);
+          return {
+            ...state,
+            zoom: event.newZoom,
+            pan: state.pan
+              .lerp(origin, 0.01)
+              .clamp(newPanBounds.clone().negate(), newPanBounds),
+            zoomState: { origin },
+          };
+        }
+      } else {
+        return {
+          ...state,
+          pan: state.pan.clamp(newPanBounds.clone().negate(), newPanBounds),
+          zoom: event.newZoom,
+          zoomState: null,
+        };
+      }
   }
 }

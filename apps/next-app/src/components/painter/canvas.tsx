@@ -1,6 +1,5 @@
 "use client";
 
-import * as THREE from "three";
 import { Canvas } from "@react-three/fiber";
 import { useEffect, useMemo } from "react";
 import { PainterRenderer } from "./renderer";
@@ -63,12 +62,6 @@ export function PainterCanvas(): JSX.Element {
         <SegmentInfoOverlay
           canvasSize={canvasSize}
           backgroundResolution={rendererState.pixelSize}
-          padding={
-            new THREE.Vector2(
-              (window.innerWidth - canvasSize.x) / 2,
-              (window.innerHeight - canvasSize.y) / 2
-            )
-          }
         />
         <Canvas>
           <PainterController />

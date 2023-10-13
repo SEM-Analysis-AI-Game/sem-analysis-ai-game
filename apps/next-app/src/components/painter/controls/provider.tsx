@@ -39,10 +39,10 @@ export function useControls(): [Controls, Dispatch<ControlsEvent>] {
 export function PainterControls(props: PropsWithChildren): JSX.Element {
   const controls = useReducer(controlsReducer, {
     cursorDown: false,
-    zooming: false,
     shiftDown: false,
     pan: kInitialPan,
     zoom: kInitialZoom,
+    zoomState: null,
   });
 
   return (

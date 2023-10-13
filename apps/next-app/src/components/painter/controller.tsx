@@ -1,5 +1,6 @@
 "use client";
 
+import * as THREE from "three";
 import { useEffect, useMemo } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { usePinch } from "@use-gesture/react";
@@ -15,7 +16,7 @@ import { useRendererState } from "./renderer-state";
  */
 export function PainterController(): null {
   // these are provided by the canvas
-  const { mouse, gl } = useThree();
+  const { mouse, gl, size } = useThree();
 
   // this is a secondary tool for panning that can be
   // used by holding shift, and maybe eventually we can
@@ -33,10 +34,18 @@ export function PainterController(): null {
   // this handles pinch + mouse wheel zooming
   usePinch(
     (e) => {
+      const origin = new THREE.Vector2(
+        (e.origin[0] - size.left) / size.width,
+        (e.origin[1] - size.top) / size.height
+      )
+        .multiplyScalar(2.0)
+        .subScalar(1.0);
+      origin.setY(-origin.y);
       updateControls({
         type: "zoom",
         newZoom: e.offset[0],
         zooming: e.pinching || false,
+        origin,
       });
     },
     {
