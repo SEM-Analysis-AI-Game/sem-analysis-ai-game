@@ -55,6 +55,8 @@ function panBounds(zoom: number) {
 
 export const kPanSpeed = 2.5;
 
+const kZoomPanSpeed = 0.01;
+
 /**
  * The controls reducer is used to update the controls state based on
  * user input.
@@ -83,7 +85,7 @@ export function controlsReducer(
           return {
             ...state,
             pan: state.pan
-              .lerp(state.zoomState.origin, 0.01)
+              .lerp(state.zoomState.origin, kZoomPanSpeed)
               .clamp(newPanBounds.clone().negate(), newPanBounds),
             zoom: event.newZoom,
           };
@@ -96,7 +98,7 @@ export function controlsReducer(
             ...state,
             zoom: event.newZoom,
             pan: state.pan
-              .lerp(origin, 0.01)
+              .lerp(origin, kZoomPanSpeed)
               .clamp(newPanBounds.clone().negate(), newPanBounds),
             zoomState: { origin },
           };
