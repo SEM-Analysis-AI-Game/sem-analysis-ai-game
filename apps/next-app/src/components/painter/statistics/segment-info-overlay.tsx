@@ -18,12 +18,12 @@ export function SegmentInfoOverlay(props: {
 
   const [controls] = useControls();
 
-  const centroidWidgets = useMemo(() => {
-    const meansWithZoom: Map<number, THREE.Vector2> = new Map();
+  const segmentWidgets = useMemo(() => {
+    const mediansWithZoom: Map<number, THREE.Vector2> = new Map();
     for (let [segment, data] of statistics.segments) {
       if (data.numPoints > 0) {
-        const mean = data.centroid.clone();
-        const meanWithZoom = mean
+        const median = data.medianEstimate.clone();
+        const medianWithZoom = median
           .clone()
           .multiplyScalar(2)
           .sub(props.backgroundResolution)
@@ -31,23 +31,23 @@ export function SegmentInfoOverlay(props: {
           .add(props.backgroundResolution)
           .divideScalar(2);
         if (
-          meanWithZoom.x >= 0 &&
-          meanWithZoom.y >= 0 &&
-          meanWithZoom.x <= props.backgroundResolution.x &&
-          meanWithZoom.y <= props.backgroundResolution.y
+          medianWithZoom.x >= 0 &&
+          medianWithZoom.y >= 0 &&
+          medianWithZoom.x <= props.backgroundResolution.x &&
+          medianWithZoom.y <= props.backgroundResolution.y
         ) {
-          meansWithZoom.set(segment, meanWithZoom);
+          mediansWithZoom.set(segment, medianWithZoom);
         } else {
-          meansWithZoom.set(segment, new THREE.Vector2(-1, -1));
+          mediansWithZoom.set(segment, new THREE.Vector2(-1, -1));
         }
       } else {
-        meansWithZoom.set(segment, new THREE.Vector2(-1, -1));
+        mediansWithZoom.set(segment, new THREE.Vector2(-1, -1));
       }
     }
 
     const widgets: JSX.Element[] = [];
 
-    for (let [segment, centroid] of meansWithZoom) {
+    for (let [segment, centroid] of mediansWithZoom) {
       widgets.push(
         <SegmentDisplay
           key={segment}
@@ -73,7 +73,7 @@ export function SegmentInfoOverlay(props: {
         height: `${props.canvasSize.y}px`,
       }}
     >
-      {centroidWidgets}
+      {segmentWidgets}
     </div>
   );
 }

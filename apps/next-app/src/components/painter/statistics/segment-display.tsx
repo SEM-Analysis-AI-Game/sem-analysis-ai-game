@@ -18,8 +18,6 @@ export function SegmentDisplay(
 ): JSX.Element {
   const [statistics] = useStatistics();
 
-  const [expanded, setExpanded] = useState(false);
-
   return (
     <div
       className="absolute z-10 -translate-x-1/2 translate-y-1/2 text-center rounded-full"

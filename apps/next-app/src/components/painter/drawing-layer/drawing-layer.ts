@@ -10,7 +10,7 @@ import {
   setPoint,
 } from "../point-container";
 import { breadthFirstTraversal } from "./bft";
-import { StatisticsEvent } from "../statistics";
+import { PainterStatistics, StatisticsEvent } from "../statistics";
 import { RendererState, fillPixel } from "../renderer-state";
 import { ActionState } from "../tools";
 
@@ -152,12 +152,12 @@ export function recomputeSegments(
     // and iterating until it is empty.
     while (boundary.size > 0) {
       // find a random point in the boundary container
-      let bfsStart = firstPointWhere(boundary, () => true)!;
+      let bftStart = firstPointWhere(boundary, () => true)!;
 
       // traverse the contiguous boundary points breadth-first
       // starting at the random point until we cannot traverse any further.
       const visited = breadthFirstTraversal(
-        new THREE.Vector2(bfsStart[0], bfsStart[1]),
+        new THREE.Vector2(bftStart[0], bftStart[1]),
         (pos) =>
           hasPoint(boundary, pos.x, pos.y) &&
           pos.x >= 0 &&
@@ -180,7 +180,7 @@ export function recomputeSegments(
         incrementSegments(state);
         const newSegment = state.segmentMap.size;
         const fillVisited = breadthFirstTraversal(
-          new THREE.Vector2(bfsStart[0], bfsStart[1]),
+          new THREE.Vector2(bftStart[0], bftStart[1]),
           (pos, exitLoop) => {
             if (
               getSegment(state, pos) === segment[0] &&
@@ -415,6 +415,89 @@ export function setSegment(
           segmentEntry.color
         );
       }
+    }
+  }
+}
+
+const kMedianPadding = 40;
+
+/**
+ * Updates the median estimate for each segment.
+ */
+export function updateMedianStatistics(
+  state: DrawingLayer,
+  statistics: PainterStatistics
+): void {
+  for (let [segment, stats] of statistics.segments) {
+    if (stats.numPoints > 0) {
+      // our estimate starts at the centroid
+      const centroid = stats.centroid.clone().floor();
+
+      // first we will the nearest point in the segment to the centroid
+      const bestPoint = centroid.clone();
+
+      // if the centroid is not in the segment, we need to find an estimate
+      if (getSegment(state, centroid) !== segment) {
+        // search for the nearest point in the segment
+        breadthFirstTraversal(
+          bestPoint,
+          (pos, exitLoop) => {
+            const pointSegment = getSegment(state, pos);
+
+            // exit loop when we find a point in the segment
+            if (pointSegment === segment) {
+              bestPoint.copy(pos);
+              exitLoop();
+            }
+
+            return (
+              pos.x >= 0 &&
+              pos.y >= 0 &&
+              pos.x < state.rendererState.pixelSize.x &&
+              pos.y < state.rendererState.pixelSize.y
+            );
+          },
+          kAdjacency
+        );
+
+        // the estimate will be on a boundary point, so we need to pad it
+        // so that it is not on the boundary.
+
+        // we will binary search for a padded point, this factor will be divided
+        // by 2 on each iteration.
+        let factor = 1.0;
+        let foundValid = false;
+        while (!foundValid) {
+          // add padding to the boundary point in the opposite direction of the centroid
+          const paddedBest = bestPoint
+            .clone()
+            .add(
+              bestPoint
+                .clone()
+                .sub(centroid)
+                .normalize()
+                // multiply by the factor (for binary search)
+                .multiplyScalar(kMedianPadding * factor)
+            )
+            .floor();
+          // if the padded point is in the segment, we have found a valid estimate
+          if (getSegment(state, paddedBest) === segment) {
+            bestPoint.copy(paddedBest);
+            foundValid = true;
+          } else {
+            // otherwise, we need to reduce the factor and try again.
+            // in the base case, this will floor the padded point to the boundary.
+            factor /= 2;
+          }
+        }
+      }
+
+      // update the statistics
+      state.updateStatistics({
+        type: "setMedianEstimate",
+        medianEstimate: bestPoint,
+        segment,
+      });
     }
   }
 }

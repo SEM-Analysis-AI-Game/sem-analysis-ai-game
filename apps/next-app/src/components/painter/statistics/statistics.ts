@@ -14,7 +14,7 @@ export type PainterStatistics = {
   >;
 };
 
-export type StatisticsEvent = Update | Clear;
+export type StatisticsEvent = Update | Clear | SetMedianEstimate;
 
 /**
  * Update the statistics map with data for a collection of
@@ -26,6 +26,15 @@ type Update = {
   numPoints: number;
   oldSegment: number;
   newSegment: number;
+};
+
+/**
+ * Set median estimate for a segment.
+ */
+type SetMedianEstimate = {
+  type: "setMedianEstimate";
+  segment: number;
+  medianEstimate: THREE.Vector2;
 };
 
 /**
@@ -47,6 +56,14 @@ export function statisticsReducer(
       return {
         segments: new Map(),
       };
+    case "setMedianEstimate":
+      const segmentEntry = state.segments.get(event.segment)!;
+      if (!segmentEntry.medianEstimate.equals(event.medianEstimate)) {
+        segmentEntry.medianEstimate = event.medianEstimate;
+        return { segments: state.segments };
+      } else {
+        return state;
+      }
     case "update":
       const segments = state.segments;
       if (event.newSegment !== -1) {
@@ -55,7 +72,7 @@ export function statisticsReducer(
           newSegmentEntry = {
             numPoints: 0,
             centroid: new THREE.Vector2(),
-            medianEstimate: new THREE.Vector2(),
+            medianEstimate: new THREE.Vector2(-1, -1),
           };
           segments.set(event.newSegment, newSegmentEntry);
         }
@@ -78,7 +95,7 @@ export function statisticsReducer(
           oldSegmentEntry = {
             numPoints: 0,
             centroid: new THREE.Vector2(),
-            medianEstimate: new THREE.Vector2(),
+            medianEstimate: new THREE.Vector2(-1, -1),
           };
           segments.set(event.oldSegment, oldSegmentEntry);
         }
