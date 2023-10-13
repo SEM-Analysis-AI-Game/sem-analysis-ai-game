@@ -1,7 +1,7 @@
 import * as THREE from "three";
 
 type ZoomState = {
-  origin: THREE.Vector2;
+  readonly origin: THREE.Vector2;
 };
 
 /**
