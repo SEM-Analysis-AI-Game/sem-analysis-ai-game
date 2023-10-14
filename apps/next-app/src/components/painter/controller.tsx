@@ -3,7 +3,7 @@
 import * as THREE from "three";
 import { useEffect, useMemo } from "react";
 import { useThree } from "@react-three/fiber";
-import { useMove, usePinch } from "@use-gesture/react";
+import { useDrag, usePinch } from "@use-gesture/react";
 import { panTool, useTool } from "./tools";
 import { useDrawingLayer } from "./drawing-layer";
 import { useActionHistory } from "./action-history";
@@ -76,31 +76,10 @@ export function PainterController(): null {
         }
       }
     });
-    gl.domElement.addEventListener("pointerdown", (e) => {
-      updateControls({
-        type: "cursor",
-        cursorDown: true,
-        shiftDown: e.shiftKey,
-      });
-    });
-    gl.domElement.addEventListener("pointerup", (e) => {
-      updateControls({
-        type: "cursor",
-        cursorDown: false,
-        shiftDown: e.shiftKey,
-      });
-    });
-    gl.domElement.addEventListener("pointerleave", (e) => {
-      updateControls({
-        type: "cursor",
-        cursorDown: false,
-        shiftDown: e.shiftKey,
-      });
-    });
   }, []);
 
   // handle each canvas frame
-  useMove(
+  useDrag(
     (e) => {
       const cursor = new THREE.Vector2(
         (e.xy[0] - size.left) / size.width,
@@ -116,10 +95,21 @@ export function PainterController(): null {
         .multiply(rendererState.pixelSize)
         .floor();
 
+      const updatedControls = {
+        ...controls,
+        shiftDown: e.shiftKey,
+        cursorDown: e.down,
+      };
+
+      updateControls({
+        type: "cursor",
+        ...updatedControls,
+      });
+
       // use the secondary pan tool if shift is held. we should
       // try to also implement two-finger drag here on mobile.
       if (
-        controls.shiftDown ||
+        e.shiftKey ||
         e.touches > 1 ||
         controls.zooming ||
         tool.name === "Pan"
@@ -127,12 +117,18 @@ export function PainterController(): null {
         secondaryTool.handleFrame(
           secondaryTool,
           cursor,
-          controls,
+          updatedControls,
           rendererState.pixelSize,
           updateControls
         );
       } else {
-        tool.handleFrame(tool, cursor, controls, drawingLayer, updateHistory);
+        tool.handleFrame(
+          tool,
+          cursor,
+          updatedControls,
+          drawingLayer,
+          updateHistory
+        );
       }
     },
     {
