@@ -27,8 +27,7 @@ export function PainterCanvas(): JSX.Element {
     // while preserving the aspect ratio.
     const inverse = Math.min(
       window.innerWidth / rendererState.pixelSize.x,
-      window.innerHeight / rendererState.pixelSize.y,
-      1.0
+      window.innerHeight / rendererState.pixelSize.y
     );
 
     const canvasSize = rendererState.pixelSize

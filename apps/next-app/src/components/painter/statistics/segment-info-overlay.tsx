@@ -22,20 +22,25 @@ export function SegmentInfoOverlay(props: {
     for (let [segment, data] of statistics.segments) {
       if (data.numPoints > 0) {
         const median = data.medianEstimate.clone();
-        const medianWithZoom = median
+        const medianWithZoomAndPan = median
           .clone()
-          .multiplyScalar(2)
-          .sub(props.backgroundResolution)
+          .sub(
+            controls.pan
+              .clone()
+              .divideScalar(2)
+              .multiply(props.backgroundResolution)
+          )
+          .sub(props.backgroundResolution.clone().divideScalar(2))
           .multiplyScalar(Math.sqrt(controls.zoom))
-          .add(props.backgroundResolution)
-          .divideScalar(2);
+          .add(props.backgroundResolution.clone().divideScalar(2));
+
         if (
-          medianWithZoom.x >= 0 &&
-          medianWithZoom.y >= 0 &&
-          medianWithZoom.x <= props.backgroundResolution.x &&
-          medianWithZoom.y <= props.backgroundResolution.y
+          medianWithZoomAndPan.x >= 0 &&
+          medianWithZoomAndPan.y >= 0 &&
+          medianWithZoomAndPan.x <= props.backgroundResolution.x &&
+          medianWithZoomAndPan.y <= props.backgroundResolution.y
         ) {
-          mediansWithZoom.set(segment, medianWithZoom);
+          mediansWithZoom.set(segment, medianWithZoomAndPan);
         } else {
           mediansWithZoom.set(segment, new THREE.Vector2(-1, -1));
         }
@@ -56,14 +61,13 @@ export function SegmentInfoOverlay(props: {
             .clone()
             .multiply(
               props.canvasSize.clone().divide(props.backgroundResolution)
-            )
-          }
+            )}
         />
       );
     }
 
     return widgets;
-  }, [statistics, controls.zoom]);
+  }, [statistics, controls.zoom, controls.pan]);
 
   return (
     <div

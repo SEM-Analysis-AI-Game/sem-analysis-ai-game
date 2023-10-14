@@ -11,8 +11,8 @@ import { PainterToolProvider } from "./tools";
 
 export function Painter(): JSX.Element {
   return (
-    <div className="flex h-screen justify-center items-center">
-      <PainterToolProvider>
+    <PainterToolProvider>
+      <div className="flex flex-col">
         <BackgroundLoader overlay={<Toolbar />} fallback={<Loader />}>
           <StatisticsProvider>
             <RendererStateProvider>
@@ -31,7 +31,7 @@ export function Painter(): JSX.Element {
             </RendererStateProvider>
           </StatisticsProvider>
         </BackgroundLoader>
-      </PainterToolProvider>
-    </div>
+      </div>
+    </PainterToolProvider>
   );
 }

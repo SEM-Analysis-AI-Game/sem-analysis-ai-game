@@ -1,11 +1,10 @@
-"use client"
+"use client";
 
 import { UploadButton } from "@/components";
 import { BrushSizeSlider } from "./brush-size-slider";
 import { ToolbarButton } from "./toolbar-button";
 import { ToolName, kToolFactory } from "../tools";
 import { useTool } from "../tools";
-import { useEffect, useState } from "react";
 
 /**
  * Server-side rendered toolbar for the painter.
@@ -13,17 +12,21 @@ import { useEffect, useState } from "react";
  * Tool names are rendered server-side.
  */
 export function Toolbar(): JSX.Element {
-  const [tool, _] = useTool();
+  const [tool] = useTool();
 
   return (
-    <div className="absolute z-10 left-8 top-0 flex flex-col">
+    <>
       {Object.keys(kToolFactory).map((toolName) => (
-        <ToolbarButton key={toolName} toolName={toolName as ToolName} selected={tool?.name === toolName}>
+        <ToolbarButton
+          key={toolName}
+          toolName={toolName as ToolName}
+          selected={tool?.name === toolName}
+        >
           {toolName}
         </ToolbarButton>
       ))}
       <BrushSizeSlider />
       <UploadButton />
-    </div>
+    </>
   );
 }

@@ -1,7 +1,21 @@
 import * as THREE from "three";
+import { Controls, ControlsEvent, panBounds } from "../controls";
 import { Dispatch } from "react";
-import { DrawingLayer } from "../drawing-layer";
-import { Controls, ControlsEvent } from "../controls";
+
+/**
+ * Tracks a pan action.
+ */
+type PanToolAction = {
+  /**
+   * The cursor position on the last frame.
+   */
+  lastCursorPos: THREE.Vector2;
+
+  /**
+   * The current pan.
+   */
+  currentPan: THREE.Vector2;
+};
 
 export type PanTool = {
   readonly name: "Pan";
@@ -14,15 +28,15 @@ export type PanTool = {
   readonly size: number;
 
   /**
-   * The cursor position on the last frame.
+   * The current pan action state.
    */
-  lastCursorPos: THREE.Vector2 | null;
+  action: PanToolAction | null;
 };
 
 export function panTool(size: number): PanTool {
   return {
     name: "Pan",
-    lastCursorPos: null,
+    action: null,
     size,
     handleFrame,
   };
@@ -32,25 +46,28 @@ function handleFrame(
   state: PanTool,
   cursorPos: THREE.Vector2,
   controls: Controls,
-  drawingLayer: DrawingLayer,
+  resolution: THREE.Vector2,
   updateControls: Dispatch<ControlsEvent>
 ): void {
   if (controls.cursorDown) {
-    if (state.lastCursorPos) {
+    if (state.action) {
+      const bounds = panBounds(controls.zoom);
+      state.action.currentPan
+        .add(
+          state.action.lastCursorPos.clone().sub(cursorPos).divide(resolution)
+        )
+        .clamp(bounds.clone().negate(), bounds);
       updateControls({
         type: "pan",
-        newPan: controls.pan
-          .clone()
-          .sub(
-            cursorPos
-              .clone()
-              .sub(state.lastCursorPos!)
-              .divide(drawingLayer.rendererState.pixelSize)
-          ),
+        newPan: state.action.currentPan,
       });
+    } else {
+      state.action = {
+        currentPan: controls.pan.clone(),
+        lastCursorPos: cursorPos.clone(),
+      };
     }
-    state.lastCursorPos = cursorPos.clone();
   } else {
-    state.lastCursorPos = null;
+    state.action = null;
   }
 }

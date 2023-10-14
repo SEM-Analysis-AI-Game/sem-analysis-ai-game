@@ -101,7 +101,7 @@ function handleFrame(
   updateHistory: Dispatch<ActionHistoryEvent>
 ): void {
   // don't draw if zooming
-  if (controls.cursorDown && controls.zoomState === null) {
+  if (controls.cursorDown && !controls.zooming) {
     // if the cursor has just been pressed, initialize the draw action
     if (!state.actionState) {
       // get the segment at the cursor position

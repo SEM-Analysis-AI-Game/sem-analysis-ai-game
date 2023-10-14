@@ -10,7 +10,7 @@ import {
   buildFragmentShader,
   vertexShader,
 } from "./shaders";
-import { kPanSpeed, useControls } from "./controls";
+import { useControls } from "./controls";
 import { useRendererState, getSectionSize, getUniform } from "./renderer-state";
 
 /**
@@ -104,7 +104,7 @@ export function PainterRenderer(): null {
 
   // update the uniforms when the pan or zoom changes.
   useEffect(() => {
-    panUniform.value = controls.pan.clone().multiplyScalar(kPanSpeed);
+    panUniform.value = controls.pan;
     zoomUniform.value = controls.zoom;
   }, [controls]);
 

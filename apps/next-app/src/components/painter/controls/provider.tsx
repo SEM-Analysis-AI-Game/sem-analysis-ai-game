@@ -42,7 +42,7 @@ export function PainterControls(props: PropsWithChildren): JSX.Element {
     shiftDown: false,
     pan: kInitialPan,
     zoom: kInitialZoom,
-    zoomState: null,
+    zooming: false,
   });
 
   return (

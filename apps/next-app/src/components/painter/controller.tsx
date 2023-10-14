@@ -39,8 +39,11 @@ export function PainterController(): null {
         (e.origin[1] - size.top) / size.height
       )
         .multiplyScalar(2.0)
-        .subScalar(1.0);
-      origin.setY(-origin.y);
+        .subScalar(1.0)
+        .multiply(new THREE.Vector2(1, -1))
+        .divideScalar(Math.sqrt(controls.zoom))
+        .add(controls.pan);
+
       updateControls({
         type: "zoom",
         newZoom: e.offset[0],
@@ -114,7 +117,7 @@ export function PainterController(): null {
         secondaryTool,
         cursor,
         controls,
-        drawingLayer,
+        rendererState.pixelSize,
         updateControls
       );
     } else {
