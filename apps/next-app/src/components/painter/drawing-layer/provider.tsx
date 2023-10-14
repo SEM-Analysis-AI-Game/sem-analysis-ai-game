@@ -5,7 +5,6 @@ import {
   PropsWithChildren,
   createContext,
   useContext,
-  useEffect,
   useReducer,
 } from "react";
 import {
@@ -13,7 +12,6 @@ import {
   DrawingLayerEvent,
   drawingLayerReducer,
   initialState,
-  updateMedianStatistics,
 } from "./drawing-layer";
 import { useStatistics } from "../statistics";
 import { useRendererState } from "../renderer-state";
@@ -49,16 +47,12 @@ export function DrawingLayerProvider(props: PropsWithChildren): JSX.Element {
   const rendererState = useRendererState();
 
   // the drawing layer needs to update the statistics
-  const [statistics, updateStatistics] = useStatistics();
+  const [, updateStatistics] = useStatistics();
 
   const drawingLayer = useReducer(
     drawingLayerReducer,
     initialState(rendererState, updateStatistics)
   );
-
-  useEffect(() => {
-    updateMedianStatistics(drawingLayer[0], statistics);
-  }, [statistics, drawingLayer[0]]);
 
   return (
     <DrawingLayerContext.Provider value={drawingLayer}>

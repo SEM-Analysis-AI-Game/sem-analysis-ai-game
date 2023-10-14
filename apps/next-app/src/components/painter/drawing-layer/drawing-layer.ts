@@ -114,7 +114,7 @@ export function getSegment(
 /**
  * Used for finding adjacent pixels.
  */
-const kAdjacency = [
+export const kAdjacency = [
   [-1, 0],
   [1, 0],
   [0, -1],
@@ -243,6 +243,7 @@ export function recomputeSegments(
             sum: sum,
             numPoints: fillVisited.size,
             oldSegment: segment[0],
+            drawingLayer: state,
             newSegment,
           });
         }
@@ -422,92 +423,6 @@ export function setSegment(
           segmentEntry.color
         );
       }
-    }
-  }
-}
-
-/**
- * The preferred number of pixels padding from the boundary for a median estimate.
- */
-const kMedianPadding = 40;
-
-/**
- * Updates the median estimate for each segment.
- */
-export function updateMedianStatistics(
-  state: DrawingLayer,
-  statistics: PainterStatistics
-): void {
-  for (let [segment, stats] of statistics.segments) {
-    if (stats.numPoints > 0) {
-      // our estimate starts at the centroid
-      const centroid = stats.centroid.clone().floor();
-
-      // first we will the nearest point in the segment to the centroid
-      const bestPoint = centroid.clone();
-
-      // if the centroid is not in the segment, we need to find an estimate
-      if (getSegment(state, centroid) !== segment) {
-        // search for the nearest point in the segment
-        breadthFirstTraversal(
-          bestPoint,
-          (pos, exitLoop) => {
-            const pointSegment = getSegment(state, pos);
-
-            // exit loop when we find a point in the segment
-            if (pointSegment === segment) {
-              bestPoint.copy(pos);
-              exitLoop();
-            }
-
-            return (
-              pos.x >= 0 &&
-              pos.y >= 0 &&
-              pos.x < state.rendererState.pixelSize.x &&
-              pos.y < state.rendererState.pixelSize.y
-            );
-          },
-          kAdjacency
-        );
-
-        // the estimate will be on a boundary point, so we need to pad it
-        // so that it is not on the boundary.
-
-        // we will binary search for a padded point, this factor will be divided
-        // by 2 on each iteration.
-        let factor = 1.0;
-        let foundValid = false;
-        while (!foundValid) {
-          // add padding to the boundary point in the opposite direction of the centroid
-          const paddedBest = bestPoint
-            .clone()
-            .add(
-              bestPoint
-                .clone()
-                .sub(centroid)
-                .normalize()
-                // multiply by the factor (for binary search)
-                .multiplyScalar(kMedianPadding * factor)
-            )
-            .floor();
-          // if the padded point is in the segment, we have found a valid estimate
-          if (getSegment(state, paddedBest) === segment) {
-            bestPoint.copy(paddedBest);
-            foundValid = true;
-          } else {
-            // otherwise, we need to reduce the factor and try again.
-            // in the base case, this will floor the padded point to the boundary.
-            factor /= 2;
-          }
-        }
-      }
-
-      // update the statistics
-      state.updateStatistics({
-        type: "setMedianEstimate",
-        medianEstimate: bestPoint,
-        segment,
-      });
     }
   }
 }
