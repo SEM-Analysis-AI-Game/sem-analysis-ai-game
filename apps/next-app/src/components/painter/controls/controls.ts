@@ -76,6 +76,7 @@ export function controlsReducer(
           .multiplyScalar(Math.sqrt(event.newZoom / state.zoom));
         return {
           ...state,
+          cursorDown: false,
           pan: state.pan
             .clone()
             .add(scaledOriginOffset.clone().sub(originOffset))

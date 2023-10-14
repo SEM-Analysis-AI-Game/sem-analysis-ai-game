@@ -33,7 +33,6 @@ export function SegmentInfoOverlay(props: {
           .sub(props.backgroundResolution.clone().divideScalar(2))
           .multiplyScalar(Math.sqrt(controls.zoom))
           .add(props.backgroundResolution.clone().divideScalar(2));
-
         if (
           medianWithZoomAndPan.x >= 0 &&
           medianWithZoomAndPan.y >= 0 &&
@@ -67,7 +66,7 @@ export function SegmentInfoOverlay(props: {
     }
 
     return widgets;
-  }, [statistics, controls.zoom, controls.pan]);
+  }, [statistics, controls]);
 
   return (
     <div
