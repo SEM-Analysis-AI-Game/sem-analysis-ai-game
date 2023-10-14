@@ -8,11 +8,10 @@ export type Controls = {
   readonly pan: THREE.Vector2;
   readonly cursorDown: boolean;
   readonly zooming: boolean;
-  readonly numFingers: number;
   readonly shiftDown: boolean;
 };
 
-export type ControlsEvent = Zoom | Pan | Cursor | SetNumFingers;
+export type ControlsEvent = Zoom | Pan | Cursor;
 
 /**
  * Used to update the zoom level.
@@ -39,14 +38,6 @@ type Cursor = {
   type: "cursor";
   cursorDown: boolean;
   shiftDown: boolean;
-};
-
-/**
- * Updates numFingers
- */
-type SetNumFingers = {
-  type: "setNumFingers";
-  numFingers: number;
 };
 
 /**
@@ -98,11 +89,6 @@ export function controlsReducer(
         pan: state.pan.clamp(newPanBounds.clone().negate(), newPanBounds),
         zoom: event.newZoom,
         zooming: false,
-      };
-    case "setNumFingers":
-      return {
-        ...state,
-        numFingers: event.numFingers,
       };
   }
 }

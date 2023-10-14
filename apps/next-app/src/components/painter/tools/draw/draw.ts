@@ -122,7 +122,7 @@ function handleFrame(
             points: new Map(),
           },
         },
-        activeSegment: segment,
+        activeSegment: state.drawingSegment(segment),
         effectedSegments: new Map(),
         lastCursorPos: cursorPos.clone(),
       };
@@ -137,8 +137,7 @@ function handleFrame(
       { numPoints: number; sum: THREE.Vector2 }
     >();
 
-    // the new segment to draw
-    const drawSegment = state.drawingSegment(state.actionState.activeSegment);
+    const activeSegment = state.actionState.activeSegment;
 
     // callback to be ran on every painted pixel
     const fill = (pos: THREE.Vector2) => {
@@ -151,13 +150,13 @@ function handleFrame(
       // draw over needs to be recorded.
       if (!hasPoint(historyAction.paintedPoints, pos.x, pos.y)) {
         setPoint(historyAction.paintedPoints, pos.x, pos.y, {
-          newSegment: drawSegment,
+          newSegment: activeSegment,
           oldSegment: oldSegment,
         });
       }
 
       // update statistics
-      if (drawSegment !== oldSegment) {
+      if (activeSegment !== oldSegment) {
         if (drawingStatistics.has(oldSegment)) {
           const stat = drawingStatistics.get(oldSegment)!;
           stat.numPoints++;
@@ -173,7 +172,7 @@ function handleFrame(
       // Updates the segment in the drawing layer. Passing drawAction
       // as the last argument will cause the updates boundaries to be
       // recorded in the action history.
-      setSegment(drawingLayer, pos, drawSegment, effectedSegments);
+      setSegment(drawingLayer, pos, activeSegment, effectedSegments);
     };
 
     // paint the point at the cursor position
@@ -222,7 +221,7 @@ function handleFrame(
           numPoints: stat.numPoints,
           sum: stat.sum,
           oldSegment: segment,
-          newSegment: drawSegment,
+          newSegment: activeSegment,
         });
       }
     }

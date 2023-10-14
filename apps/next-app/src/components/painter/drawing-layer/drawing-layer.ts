@@ -142,6 +142,7 @@ export function recomputeSegments(
   state: DrawingLayer,
   actionState: ActionState
 ): void {
+  let firstSplitDone = false;
   for (let segment of actionState.effectedSegments) {
     // these are all of the newly drawn boundary points
     // that were created by the action on the effected
@@ -177,7 +178,13 @@ export function recomputeSegments(
         // we will create a new segment and flood fill the effected
         // segment breadth-first starting from our initial random
         // point.
-        incrementSegments(state);
+        // if the active segment is -1, we don't need to increment
+        // segments on the first split.
+        if (firstSplitDone || actionState.activeSegment !== -1) {
+          incrementSegments(state);
+        } else {
+          firstSplitDone = true;
+        }
         const newSegment = state.segmentMap.size;
         const fillVisited = breadthFirstTraversal(
           new THREE.Vector2(bftStart[0], bftStart[1]),

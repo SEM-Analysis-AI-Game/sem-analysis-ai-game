@@ -2,7 +2,7 @@
 
 import * as THREE from "three";
 import { useEffect, useMemo } from "react";
-import { useFrame, useThree } from "@react-three/fiber";
+import { useThree } from "@react-three/fiber";
 import { useMove, usePinch } from "@use-gesture/react";
 import { panTool, useTool } from "./tools";
 import { useDrawingLayer } from "./drawing-layer";
@@ -16,7 +16,7 @@ import { useRendererState } from "./renderer-state";
  */
 export function PainterController(): null {
   // these are provided by the canvas
-  const { mouse, gl, size } = useThree();
+  const { gl, size } = useThree();
 
   // this is a secondary tool for panning that can be
   // used by holding shift, and maybe eventually we can
@@ -64,13 +64,6 @@ export function PainterController(): null {
     }
   );
 
-  useMove((e) => {
-    updateControls({
-      type: "setNumFingers",
-      numFingers: e.touches,
-    });
-  });
-
   // handle undo/redo, cursor up/down, and cursor leave canvas event.
   useEffect(() => {
     document.addEventListener("keydown", (e) => {
@@ -107,35 +100,48 @@ export function PainterController(): null {
   }, []);
 
   // handle each canvas frame
-  useFrame(() => {
-    const cursor = mouse
-      .clone()
-      .divideScalar(Math.sqrt(controls.zoom))
-      .add(controls.pan)
-      .multiplyScalar(0.5)
-      .addScalar(0.5)
-      .multiply(rendererState.pixelSize)
-      .floor();
+  useMove(
+    (e) => {
+      const cursor = new THREE.Vector2(
+        (e.xy[0] - size.left) / size.width,
+        (e.xy[1] - size.top) / size.height
+      )
+        .clone()
+        .subScalar(0.5)
+        .multiply(new THREE.Vector2(2.0, -2.0))
+        .divideScalar(Math.sqrt(controls.zoom))
+        .add(controls.pan)
+        .divideScalar(2.0)
+        .addScalar(0.5)
+        .multiply(rendererState.pixelSize)
+        .floor();
 
-    // use the secondary pan tool if shift is held. we should
-    // try to also implement two-finger drag here on mobile.
-    if (
-      controls.shiftDown ||
-      controls.numFingers > 1 ||
-      controls.zooming ||
-      tool.name === "Pan"
-    ) {
-      secondaryTool.handleFrame(
-        secondaryTool,
-        cursor,
-        controls,
-        rendererState.pixelSize,
-        updateControls
-      );
-    } else {
-      tool.handleFrame(tool, cursor, controls, drawingLayer, updateHistory);
+      // use the secondary pan tool if shift is held. we should
+      // try to also implement two-finger drag here on mobile.
+      if (
+        controls.shiftDown ||
+        e.touches > 1 ||
+        controls.zooming ||
+        tool.name === "Pan"
+      ) {
+        secondaryTool.handleFrame(
+          secondaryTool,
+          cursor,
+          controls,
+          rendererState.pixelSize,
+          updateControls
+        );
+      } else {
+        tool.handleFrame(tool, cursor, controls, drawingLayer, updateHistory);
+      }
+    },
+    {
+      target: gl.domElement,
+      pointer: {
+        touch: true,
+      },
     }
-  });
+  );
 
   return null;
 }
