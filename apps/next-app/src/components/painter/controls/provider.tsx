@@ -41,6 +41,7 @@ export function PainterControls(props: PropsWithChildren): JSX.Element {
     cursorDown: false,
     shiftDown: false,
     pan: kInitialPan,
+    numFingers: 0,
     zoom: kInitialZoom,
     zooming: false,
   });

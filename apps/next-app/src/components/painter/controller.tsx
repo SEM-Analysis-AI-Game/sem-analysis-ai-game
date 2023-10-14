@@ -3,7 +3,7 @@
 import * as THREE from "three";
 import { useEffect, useMemo } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
-import { usePinch } from "@use-gesture/react";
+import { useMove, usePinch } from "@use-gesture/react";
 import { panTool, useTool } from "./tools";
 import { useDrawingLayer } from "./drawing-layer";
 import { useActionHistory } from "./action-history";
@@ -64,6 +64,13 @@ export function PainterController(): null {
     }
   );
 
+  useMove((e) => {
+    updateControls({
+      type: "setNumFingers",
+      numFingers: e.touches,
+    });
+  });
+
   // handle undo/redo, cursor up/down, and cursor leave canvas event.
   useEffect(() => {
     document.addEventListener("keydown", (e) => {
@@ -112,7 +119,12 @@ export function PainterController(): null {
 
     // use the secondary pan tool if shift is held. we should
     // try to also implement two-finger drag here on mobile.
-    if (controls.shiftDown || controls.zooming || tool.name === "Pan") {
+    if (
+      controls.shiftDown ||
+      controls.numFingers > 1 ||
+      controls.zooming ||
+      tool.name === "Pan"
+    ) {
       secondaryTool.handleFrame(
         secondaryTool,
         cursor,
