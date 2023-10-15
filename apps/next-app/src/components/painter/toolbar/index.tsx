@@ -15,7 +15,7 @@ export function Toolbar(): JSX.Element {
   const [tool] = useTool();
 
   return (
-    <>
+    <div className="flex flex-row justify-center">
       {Object.keys(kToolFactory).map((toolName) => (
         <ToolbarButton
           key={toolName}
@@ -27,6 +27,6 @@ export function Toolbar(): JSX.Element {
       ))}
       <BrushSizeSlider />
       <UploadButton />
-    </>
+    </div>
   );
 }

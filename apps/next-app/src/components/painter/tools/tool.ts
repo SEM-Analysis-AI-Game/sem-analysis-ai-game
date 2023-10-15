@@ -12,9 +12,9 @@ import { PanTool, panTool } from "./pan";
 
 type Tools =
   | [CircleEraser, typeof circleEraser]
-  | [SquareEraser, typeof squareEraser]
+  // | [SquareEraser, typeof squareEraser]
   | [CircleBrush, typeof circleBrush]
-  | [SquareBrush, typeof squareBrush]
+  // | [SquareBrush, typeof squareBrush]
   | [PanTool, typeof panTool];
 
 export type Tool = Tools[0];
@@ -28,8 +28,8 @@ export const kToolFactory: {
   [T in Tools as T[0]["name"]]: T[1];
 } = {
   "Circle Eraser": circleEraser,
-  "Square Eraser": squareEraser,
+  // "Square Eraser": squareEraser,
   "Circle Brush": circleBrush,
-  "Square Brush": squareBrush,
+  // "Square Brush": squareBrush,
   Pan: panTool,
 };

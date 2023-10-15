@@ -18,11 +18,9 @@ export function Painter(): JSX.Element {
             <RendererStateProvider>
               <DrawingLayerProvider>
                 <ActionHistoryProvider>
-                  <div className="flex justify-between">
+                  <div className="flex justify-center">
                     {(["Undo", "Redo"] as const).map((type) => (
-                      <HistoryButton key={type} type={type}>
-                        {type}
-                      </HistoryButton>
+                      <HistoryButton key={type} type={type} />
                     ))}
                   </div>
                   <PainterCanvas />
