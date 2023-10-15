@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import React, { PropsWithChildren, useContext, useRef } from "react";
+import React, { PropsWithChildren, useContext, useRef, useState } from "react";
 import {
   BackgroundContext,
   loadBackground,
@@ -18,6 +18,22 @@ export function UploadButtonClientSide(props: PropsWithChildren): JSX.Element {
 
   const backgroundState = useContext(BackgroundContext);
 
+  const [loading, setLoading] = useState(false);
+
+  const setImage = (dataUri: string) => {
+    // Save to localStorage
+    localStorage.setItem("background", dataUri);
+    if (pathName !== "/paint") {
+      router.push("/paint");
+    }
+    // Update BackgroundContext if it exists
+    if (backgroundState) {
+      loadBackground(dataUri, (texture) => {
+        backgroundState[1](texture);
+      });
+    }
+  }
+
   return (
     <>
       <input
@@ -29,19 +45,10 @@ export function UploadButtonClientSide(props: PropsWithChildren): JSX.Element {
           const reader = new FileReader();
           reader.onload = (ev: ProgressEvent<FileReader>) => {
             const img = ev.target?.result;
+
             if (img) {
               const dataUri = img.toString();
-              // Save to localStorage
-              localStorage.setItem("background", dataUri);
-              if (pathName !== "/paint") {
-                router.push("/paint");
-              }
-              // Update BackgroundContext if it exists
-              if (backgroundState) {
-                loadBackground(dataUri, (texture) => {
-                  backgroundState[1](texture);
-                });
-              }
+              setImage(dataUri);
             } else {
               alert("Failed to load image");
             }
@@ -56,12 +63,28 @@ export function UploadButtonClientSide(props: PropsWithChildren): JSX.Element {
       />
 
       <button
-        className="flex flex-row bg-slate-100 hover:bg-slate-300 transition active:bg-slate-300 p-1 m-1 text-slate-800 font-bold rounded text-sm h-8 border-black border-2"
+        className="flex flex-row bg-slate-100 hover:bg-slate-300 disabled:bg-slate-500 transition active:bg-slate-300 p-1 m-1 text-slate-800 font-bold rounded text-sm h-8 border-black border-2"
         style={{
           alignItems: "center",
         }}
-        onClick={() => {
-          fileUploadRef.current?.click();
+        disabled={loading}
+        onClick={async () => {
+          // fileUploadRef.current?.click();
+          setLoading(true);
+          try {
+            const result = await fetch("/api/image");
+            const json = await result.json();
+            if (json.hasOwnProperty("uri")) {
+              setImage(json.uri);
+            }
+            else {
+              throw Error("Response came back with no URI field");
+            }
+          }
+          catch (err) {
+            console.error(err);
+          }
+          setLoading(false);
         }}
       >
         {props.children}
