@@ -35,9 +35,9 @@ export function ToolbarButton(
 
   return (
     <button
-      className="text-[#333] rounded p-1 m-1 transition-colors border-black border-2"
+      className="text-[#333] rounded p-1 m-1 transition border-black hover:border-blue-800 border-2"
       style={{
-        backgroundColor: props.selected ? "blue" : "#f1f5f9"
+        backgroundColor: props.selected ? "#a8c6ff" : "#f1f5f9"
       }}
       key={props.toolName}
       onClick={() => setTool(kToolFactory[props.toolName](tool.size))}

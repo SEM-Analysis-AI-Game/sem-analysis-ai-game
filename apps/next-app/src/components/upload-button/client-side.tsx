@@ -56,7 +56,7 @@ export function UploadButtonClientSide(props: PropsWithChildren): JSX.Element {
       />
 
       <button
-        className="flex flex-row bg-slate-200 hover:bg-slate-400 transition active:bg-slate-300 p-1 m-1 text-slate-800 font-bold rounded text-sm h-8 border-black border-2"
+        className="flex flex-row bg-slate-100 hover:bg-slate-300 transition active:bg-slate-300 p-1 m-1 text-slate-800 font-bold rounded text-sm h-8 border-black border-2"
         style={{
           alignItems: "center",
         }}

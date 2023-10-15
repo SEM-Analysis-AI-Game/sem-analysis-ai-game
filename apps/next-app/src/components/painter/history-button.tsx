@@ -10,7 +10,7 @@ export function HistoryButton(
 
   return (
     <button
-      className="text-[#333] bg-slate-100 rounded p-1 m-1 border-black border-2"
+      className="text-[#333] bg-slate-100 hover:bg-slate-300 rounded p-1 m-1 border-black border-2"
       key="undo-button"
       onClick={() =>
         updateHistory({ type: props.type.toLowerCase() as "redo" | "undo" })
