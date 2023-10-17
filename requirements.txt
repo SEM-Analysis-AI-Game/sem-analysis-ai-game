@@ -4,3 +4,5 @@ onnxruntime
 onnx
 pycocotools
 opencv-python
+flask
+ultralytics
