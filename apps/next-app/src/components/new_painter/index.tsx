@@ -42,7 +42,7 @@ export function Painter(props: {
     texture.premultiplyAlpha = true;
     texture.needsUpdate = true;
     return [buffer, data, [image.width, image.height] as const, texture];
-  }, [image]);
+  }, [image, props.initialState]);
 
   const [zoom, setZoom] = useState(1);
 
@@ -107,25 +107,27 @@ export function Painter(props: {
   useDrag(
     (e) => {
       if ((e.down && e.shiftKey) || e.touches > 1) {
-        if (lastCursor) {
-          const currentSize = [
-            (resolution[0] * zoom) / 2,
-            (resolution[1] * zoom) / 2,
-          ];
-          setPan((pan) => {
-            const delta = [e.xy[0] - lastCursor[0], e.xy[1] - lastCursor[1]];
-            const cursorPos = (axis: 0 | 1) => {
-              return clamp(
-                pan[axis] + delta[axis],
-                -currentSize[axis],
-                currentSize[axis]
-              );
-            };
-            return [cursorPos(0), cursorPos(1)];
-          });
-        }
-        setCursorDown(false);
-        setLastCursor(e.xy);
+        setLastCursor((lastCursor) => {
+          if (lastCursor) {
+            const currentSize = [
+              (resolution[0] * zoom) / 2,
+              (resolution[1] * zoom) / 2,
+            ];
+            setPan((pan) => {
+              const delta = [e.xy[0] - lastCursor[0], e.xy[1] - lastCursor[1]];
+              const cursorPos = (axis: 0 | 1) => {
+                return clamp(
+                  pan[axis] + delta[axis],
+                  -currentSize[axis],
+                  currentSize[axis]
+                );
+              };
+              return [cursorPos(0), cursorPos(1)];
+            });
+          }
+          setCursorDown(false);
+          return e.xy;
+        });
       } else {
         if (socket) {
           setCursorDown(e.down);
