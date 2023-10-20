@@ -10,7 +10,7 @@ import {
   setPoint,
 } from "../point-container";
 import { breadthFirstTraversal } from "./bft";
-import { PainterStatistics, StatisticsEvent } from "../statistics";
+import { StatisticsEvent } from "../statistics";
 import { RendererState, fillPixel } from "../renderer-state";
 import { ActionState } from "../tools";
 

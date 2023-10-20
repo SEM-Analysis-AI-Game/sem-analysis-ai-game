@@ -1,11 +1,8 @@
 "use client";
 
-import { PropsWithChildren } from "react";
 import { useActionHistory } from "./action-history";
 
-export function HistoryButton(
-  props: { type: "Redo" | "Undo" }
-): JSX.Element {
+export function HistoryButton(props: { type: "Redo" | "Undo" }): JSX.Element {
   const [, updateHistory] = useActionHistory();
 
   return (

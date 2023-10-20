@@ -1,6 +1,5 @@
 "use client";
 
-import { UploadButton } from "@/components";
 import { BrushSizeSlider } from "./brush-size-slider";
 import { ToolbarButton } from "./toolbar-button";
 import { ToolName, kToolFactory } from "../tools";
@@ -26,7 +25,6 @@ export function Toolbar(): JSX.Element {
         </ToolbarButton>
       ))}
       <BrushSizeSlider />
-      <UploadButton />
     </div>
   );
 }

@@ -1,0 +1,8 @@
+import { AppProps } from "next/app";
+import "../styles/globals.css";
+
+export default function App(props: AppProps): JSX.Element {
+  const { Component, pageProps } = props;
+
+  return <Component {...pageProps} />;
+}
