@@ -1,7 +1,7 @@
 "use client";
 
 import * as THREE from "three";
-import ExportedImage from "next-image-export-optimizer";
+import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { useDrag, usePinch } from "@use-gesture/react";
 import { Canvas } from "@react-three/fiber";
@@ -137,7 +137,7 @@ export function Painter(props: { imageIndex: number }): JSX.Element {
           transform: `translate(${pan[0]}px, ${pan[1]}px)`,
         }}
       >
-        <ExportedImage
+        <Image
           className="touch-none pointer-events-none"
           src={image}
           alt="SEM image"

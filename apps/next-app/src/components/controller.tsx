@@ -8,7 +8,7 @@ export type MemoizedPoints = readonly {
   boundaryEdges: readonly (readonly [number, number])[];
 }[];
 
-const kDrawingSmoothStep = 10;
+const kDrawingSmoothStep = 8;
 
 export function PainterController(props: {
   zoom: number;
@@ -145,6 +145,8 @@ export function PainterController(props: {
     }
   });
 }
+
+function recomputeSegments(): void {}
 
 function getSegment(
   segmentBuffer: Int32Array,
