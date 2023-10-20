@@ -21,21 +21,31 @@ export function SocketConnectionProvider(
   const [socket, setSocket] = useState<Socket | null>(null);
 
   useEffect((): any => {
-    const socket = SocketIOClient(process.env.BASE_URL!, {
+    const newSocket = SocketIOClient(process.env.BASE_URL!, {
       path: "/api/socketio",
       addTrailingSlash: false,
     });
 
-    socket.on("connect", () => {
-      setSocket(socket);
+    newSocket.on("connect", () => {
+      setSocket(newSocket);
     });
 
-    return () => socket.disconnect();
+    return () => {
+      setSocket(null);
+      newSocket.disconnect();
+    };
   }, []);
 
   return (
-    <SocketConnectionContext.Provider value={socket}>
-      {props.children}
-    </SocketConnectionContext.Provider>
+    <>
+      {socket ? null : (
+        <div className="absolute top-0 right-0">
+          <h1>Connecting...</h1>
+        </div>
+      )}
+      <SocketConnectionContext.Provider value={socket}>
+        {props.children}
+      </SocketConnectionContext.Provider>
+    </>
   );
 }
