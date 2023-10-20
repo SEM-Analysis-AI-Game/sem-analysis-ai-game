@@ -12,13 +12,7 @@ import SocketIOClient, { Socket } from "socket.io-client";
 const SocketConnectionContext = createContext<Socket | null>(null);
 
 export function useSocket(): Socket | null {
-  const socket = useContext(SocketConnectionContext);
-
-  if (!socket) {
-    throw new Error("Socket connection not initialized");
-  }
-
-  return socket;
+  return useContext(SocketConnectionContext);
 }
 
 export function SocketConnectionProvider(
