@@ -21,7 +21,7 @@ export function SegmentInfoOverlay(props: {
     const mediansWithZoom: Map<number, THREE.Vector2> = new Map();
     for (let [segment, data] of statistics.segments) {
       if (data.numPoints > 0) {
-        const median = data.medianEstimate.clone();
+        const median = data.centroid.clone();
         const medianWithZoomAndPan = median
           .clone()
           .sub(

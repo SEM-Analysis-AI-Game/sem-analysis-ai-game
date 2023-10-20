@@ -69,7 +69,7 @@ export function ActionHistoryProvider(props: PropsWithChildren): JSX.Element {
           sum: stat.sum,
           oldSegment: -1,
           newSegment: segment,
-          drawingLayer,
+          src: "history",
         });
       }
     }

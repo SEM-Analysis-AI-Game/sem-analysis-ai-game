@@ -45,7 +45,7 @@ export function PainterController(props: {
           clamp(
             ((mousePos * windowDim) / 2 - pan) / props.zoom + resolutionDim / 2,
             0,
-            resolutionDim
+            resolutionDim - 1
           )
         );
 
@@ -175,6 +175,7 @@ function draw(
       pixelPos[1] < resolution[1]
     ) {
       segmentBuffer[pixelPos[1] * resolution[0] + pixelPos[0]] = activeSegment;
+
       const isBoundary =
         point.boundaryEdges.filter((offset) => {
           const pos = [
@@ -204,7 +205,12 @@ function draw(
             }
           }
           return false;
-        }).length > 0;
+        }).length > 0 ||
+        pixelPos[0] === 0 ||
+        pixelPos[1] === 0 ||
+        pixelPos[0] === resolution[0] - 1 ||
+        pixelPos[1] === resolution[1] - 1;
+
       fillPixel(
         drawing,
         pixelPos,

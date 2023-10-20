@@ -1,3 +1,5 @@
+"use client";
+
 import * as THREE from "three";
 import ExportedImage from "next-image-export-optimizer";
 import { useEffect, useMemo, useState } from "react";

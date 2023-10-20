@@ -243,8 +243,8 @@ export function recomputeSegments(
             sum: sum,
             numPoints: fillVisited.size,
             oldSegment: segment[0],
-            drawingLayer: state,
             newSegment,
+            src: "recomputeSegments",
           });
         }
       } else {

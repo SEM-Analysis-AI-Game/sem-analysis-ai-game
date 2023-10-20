@@ -222,7 +222,7 @@ function handleFrame(
           sum: stat.sum,
           oldSegment: segment,
           newSegment: activeSegment,
-          drawingLayer,
+          src: "draw",
         });
       }
     }
