@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { clamp } from "three/src/math/MathUtils.js";
 import { DrawEvent, getSegment, smoothPaint } from "@/util";
@@ -11,16 +11,10 @@ export function PainterController(props: {
   cursorDown: boolean;
   resolution: readonly [number, number];
   drawing: THREE.DataTexture;
+  segmentBuffer: Int32Array;
+  segmentData: { color: THREE.Color }[];
 }): null {
   const { mouse } = useThree();
-
-  const [segmentBuffer, segmentData] = useMemo(() => {
-    const buffer = new Int32Array(
-      props.resolution[0] * props.resolution[1]
-    ).fill(-1);
-    const data = new Array<{ color: THREE.Color }>();
-    return [buffer, data];
-  }, [props.resolution]);
 
   const [, setCurrentAction] = useState<{
     lastCursorPos: readonly [number, number];
@@ -31,32 +25,24 @@ export function PainterController(props: {
 
   useEffect((): any => {
     if (socket) {
-      socket.on("draw", (data: DrawEvent) => {
-        let segment = getSegment(segmentBuffer, props.resolution, data.from);
-        if (segment === -1) {
-          if (!data.color) {
-            throw new Error(
-              "Received draw event with a new segment but without color"
-            );
-          }
-          segmentData.push({
-            color: new THREE.Color(`#${data.color}`),
-          });
-          segment = segmentData.length - 1;
-        }
+      socket.on("draw", (data: DrawEvent) =>
         smoothPaint(
-          segmentBuffer,
-          segment,
-          segmentData,
+          data,
+          props.segmentBuffer,
+          props.segmentData,
           props.drawing,
-          data.to,
-          data.from,
           props.resolution
-        );
-      });
+        )
+      );
       return () => socket.off("draw");
     }
-  }, [socket, segmentBuffer, segmentData, props.resolution, props.drawing]);
+  }, [
+    socket,
+    props.segmentBuffer,
+    props.segmentData,
+    props.resolution,
+    props.drawing,
+  ]);
 
   return useFrame(() => {
     if (props.cursorDown && socket) {
@@ -94,7 +80,7 @@ export function PainterController(props: {
           currentAction ??
           (() => {
             const segment = getSegment(
-              segmentBuffer,
+              props.segmentBuffer,
               props.resolution,
               pixelPos
             );
@@ -104,7 +90,7 @@ export function PainterController(props: {
                 activeSegment: segment,
               };
             } else {
-              segmentData.push({
+              props.segmentData.push({
                 color: new THREE.Color(
                   Math.random(),
                   Math.random(),
@@ -113,7 +99,7 @@ export function PainterController(props: {
               });
               return {
                 lastCursorPos: pixelPos,
-                activeSegment: segmentData.length - 1,
+                activeSegment: props.segmentData.length - 1,
               };
             }
           })();
@@ -121,19 +107,15 @@ export function PainterController(props: {
         const drawEvent: DrawEvent = {
           from: action.lastCursorPos,
           to: pixelPos,
-          color: currentAction
-            ? undefined
-            : segmentData[action.activeSegment].color.getHexString(),
+          color: props.segmentData[action.activeSegment].color.getHexString(),
         };
         socket.emit("draw", drawEvent);
 
         smoothPaint(
-          segmentBuffer,
-          action.activeSegment,
-          segmentData,
+          drawEvent,
+          props.segmentBuffer,
+          props.segmentData,
           props.drawing,
-          pixelPos,
-          action.lastCursorPos,
           props.resolution
         );
 

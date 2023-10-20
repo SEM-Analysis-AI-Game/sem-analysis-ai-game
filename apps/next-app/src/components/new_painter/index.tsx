@@ -5,7 +5,7 @@ import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { useDrag, usePinch } from "@use-gesture/react";
 import { Canvas } from "@react-three/fiber";
-import { kImages } from "@/util";
+import { DrawEvent, kImages, smoothPaint } from "@/util";
 import { PainterRenderer } from "./renderer";
 import { StaticImageData } from "next/image";
 import { PainterController } from "./controller";
@@ -21,16 +21,27 @@ function scale(image: StaticImageData): number {
 
 const kMaxZoom = 10.0;
 
-export function Painter(props: { imageIndex: number }): JSX.Element {
+export function Painter(props: {
+  imageIndex: number;
+  initialState: DrawEvent[];
+}): JSX.Element {
   const image = useMemo(() => kImages[props.imageIndex], []);
-  const [resolution, drawing] = useMemo(() => {
+  const [segmentBuffer, segmentData, resolution, drawing] = useMemo(() => {
     const texture = new THREE.DataTexture(
       new Uint8Array(image.width * image.height * 4),
       image.width,
       image.height
     );
+    const buffer = new Int32Array(image.width * image.height).fill(-1);
+    const data: { color: THREE.Color }[] = [];
+
+    for (const event of props.initialState) {
+      smoothPaint(event, buffer, data, texture, [image.width, image.height]);
+    }
+
     texture.premultiplyAlpha = true;
-    return [[image.width, image.height] as const, texture];
+    texture.needsUpdate = true;
+    return [buffer, data, [image.width, image.height] as const, texture];
   }, [image]);
 
   const [zoom, setZoom] = useState(1);
@@ -154,6 +165,8 @@ export function Painter(props: { imageIndex: number }): JSX.Element {
           pan={pan}
           cursorDown={cursorDown}
           drawing={drawing}
+          segmentBuffer={segmentBuffer}
+          segmentData={segmentData}
         />
         <PainterRenderer
           canvasSize={[resolution[0] * zoom, resolution[1] * zoom]}

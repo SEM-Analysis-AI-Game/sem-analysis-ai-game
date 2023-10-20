@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { DrawEvent } from "./socket-events";
 
 export const kBrushPoints = createCirclePoints(20);
 const kDrawingSmoothStep = 8;
@@ -52,38 +53,39 @@ function createCirclePoints(diameter: number): readonly {
 }
 
 export function smoothPaint(
+  event: DrawEvent,
   segmentBuffer: Int32Array,
-  activeSegment: number,
   segmentData: {
     color: THREE.Color;
   }[],
   drawing: THREE.DataTexture | null,
-  currentPos: readonly [number, number],
-  lastPos: readonly [number, number],
   resolution: readonly [number, number]
 ): void {
-  draw(
-    segmentBuffer,
-    activeSegment,
-    segmentData,
-    drawing,
-    currentPos,
-    resolution
-  );
+  let segment = getSegment(segmentBuffer, resolution, event.from);
+  if (segment === -1) {
+    segmentData.push({
+      color: new THREE.Color(`#${event.color}`),
+    });
+    segment = segmentData.length - 1;
+  }
 
-  const current: [number, number] = [currentPos[0], currentPos[1]];
+  draw(segmentBuffer, segment, segmentData, drawing, event.to, resolution);
+
+  const current: [number, number] = [event.to[0], event.to[1]];
 
   const length = Math.sqrt(
-    Math.pow(current[0] - lastPos[0], 2) + Math.pow(current[1] - lastPos[1], 2)
+    Math.pow(current[0] - event.from[0], 2) +
+      Math.pow(current[1] - event.from[1], 2)
   );
 
   const step = [
-    (kDrawingSmoothStep * (lastPos[0] - current[0])) / length,
-    (kDrawingSmoothStep * (lastPos[1] - current[1])) / length,
+    (kDrawingSmoothStep * (event.from[0] - current[0])) / length,
+    (kDrawingSmoothStep * (event.from[1] - current[1])) / length,
   ];
 
   while (
-    step[0] * (lastPos[0] - current[0]) + step[1] * (lastPos[1] - current[1]) >
+    step[0] * (event.from[0] - current[0]) +
+      step[1] * (event.from[1] - current[1]) >
     0
   ) {
     const currentPos = [
@@ -91,14 +93,7 @@ export function smoothPaint(
       Math.floor(current[1]),
     ] as const;
 
-    draw(
-      segmentBuffer,
-      activeSegment,
-      segmentData,
-      drawing,
-      currentPos,
-      resolution
-    );
+    draw(segmentBuffer, segment, segmentData, drawing, currentPos, resolution);
 
     current[0] += step[0];
     current[1] += step[1];

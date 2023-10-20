@@ -7,8 +7,17 @@ export function generateStaticParams() {
   }));
 }
 
-export default function Paint(props: {
+export default async function Paint(props: {
   params: { imageIndex: string };
-}): JSX.Element {
-  return <Painter imageIndex={parseInt(props.params.imageIndex)} />;
+}): Promise<JSX.Element> {
+  const response = await fetch(
+    `http://localhost:3000/api/state?imageIndex=${props.params.imageIndex}`,
+    { cache: "no-cache" }
+  )
+    .then((res) => res.json())
+    .catch(() => ({
+      state: [],
+    }));
+  const index = parseInt(props.params.imageIndex);
+  return <Painter imageIndex={index} initialState={response.state} />;
 }
