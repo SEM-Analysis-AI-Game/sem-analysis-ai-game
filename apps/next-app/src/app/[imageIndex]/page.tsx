@@ -7,6 +7,8 @@ export function generateStaticParams() {
   }));
 }
 
+export const revalidate = 30;
+
 export default async function Paint(props: {
   params: { imageIndex: string };
 }): Promise<JSX.Element> {

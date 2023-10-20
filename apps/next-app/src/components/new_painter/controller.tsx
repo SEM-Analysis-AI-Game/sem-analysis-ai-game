@@ -18,7 +18,7 @@ export function PainterController(props: {
 
   const [, setCurrentAction] = useState<{
     lastCursorPos: readonly [number, number];
-    activeSegment: number;
+    color: THREE.Color | undefined;
   } | null>(null);
 
   const socket = useSocket();
@@ -87,19 +87,16 @@ export function PainterController(props: {
             if (segment !== -1) {
               return {
                 lastCursorPos: pixelPos,
-                activeSegment: segment,
+                color: undefined,
               };
             } else {
-              props.segmentData.push({
+              return {
+                lastCursorPos: pixelPos,
                 color: new THREE.Color(
                   Math.random(),
                   Math.random(),
                   Math.random()
                 ),
-              });
-              return {
-                lastCursorPos: pixelPos,
-                activeSegment: props.segmentData.length - 1,
               };
             }
           })();
@@ -107,7 +104,7 @@ export function PainterController(props: {
         const drawEvent: DrawEvent = {
           from: action.lastCursorPos,
           to: pixelPos,
-          color: props.segmentData[action.activeSegment].color.getHexString(),
+          color: action?.color?.getHexString(),
         };
         socket.emit("draw", drawEvent);
 

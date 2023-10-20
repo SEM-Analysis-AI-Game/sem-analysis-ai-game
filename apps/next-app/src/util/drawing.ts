@@ -63,9 +63,11 @@ export function smoothPaint(
 ): void {
   let segment = getSegment(segmentBuffer, resolution, event.from);
   if (segment === -1) {
-    segmentData.push({
-      color: new THREE.Color(`#${event.color}`),
-    });
+    if (event.color) {
+      segmentData.push({
+        color: new THREE.Color(`#${event.color}`),
+      });
+    }
     segment = segmentData.length - 1;
   }
 
