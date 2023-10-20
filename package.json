@@ -2,6 +2,7 @@
   "name": "behind-density-lines",
   "private": true,
   "workspaces": [
-    "apps/*"
+    "apps/*",
+    "scripts/*"
   ]
 }
