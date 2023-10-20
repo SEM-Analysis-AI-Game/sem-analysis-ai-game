@@ -30,9 +30,9 @@ export default async function socket(
     });
 
     io.on("connection", (connection) => {
-      connection.on("draw", (data: DrawEvent) => {
+      connection.on("draw", async (data: DrawEvent) => {
         connection.broadcast.emit("draw", data);
-        fetch("http://localhost:3000/api/state", {
+        await fetch("http://localhost:3000/api/state", {
           method: "POST",
           body: JSON.stringify(data),
           cache: "no-cache",
