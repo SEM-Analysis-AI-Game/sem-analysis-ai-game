@@ -29,7 +29,9 @@ export default function socket(
     });
 
     io.on("connection", (connection) => {
-      connection.on("draw", (data) => {});
+      connection.on("draw", (data) => {
+        connection.broadcast.emit("draw", data);
+      });
     });
 
     res.socket.server.io = io;

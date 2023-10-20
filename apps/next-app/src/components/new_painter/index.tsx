@@ -10,6 +10,7 @@ import { PainterRenderer } from "./renderer";
 import { StaticImageData } from "next/image";
 import { MemoizedPoints, PainterController } from "./controller";
 import { clamp } from "three/src/math/MathUtils.js";
+import { useSocket } from "../socket-connection";
 
 function scale(image: StaticImageData): number {
   return Math.min(
@@ -90,6 +91,8 @@ export function Painter(props: { imageIndex: number }): JSX.Element {
 
   const [cursorDown, setCursorDown] = useState(false);
 
+  const socket = useSocket();
+
   useDrag(
     (e) => {
       if ((e.down && e.shiftKey) || e.touches > 1) {
@@ -113,7 +116,9 @@ export function Painter(props: { imageIndex: number }): JSX.Element {
         setCursorDown(false);
         setLastCursor(e.xy);
       } else {
-        setCursorDown(e.down);
+        if (socket) {
+          setCursorDown(e.down);
+        }
         setLastCursor(null);
       }
     },

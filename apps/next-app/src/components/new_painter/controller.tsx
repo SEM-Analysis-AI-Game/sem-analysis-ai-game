@@ -1,7 +1,8 @@
 import * as THREE from "three";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { clamp } from "three/src/math/MathUtils.js";
+import { useSocket } from "../socket-connection";
 
 export type MemoizedPoints = readonly {
   pos: readonly [number, number];
@@ -28,13 +29,57 @@ export function PainterController(props: {
     return [buffer, data];
   }, [props.resolution]);
 
-  const [currentAction, setCurrentAction] = useState<{
+  const [, setCurrentAction] = useState<{
     lastCursorPos: readonly [number, number];
     activeSegment: number;
   } | null>(null);
 
+  const socket = useSocket();
+
+  useEffect((): any => {
+    if (socket) {
+      socket.on(
+        "draw",
+        (data: {
+          from: readonly [number, number];
+          to: readonly [number, number];
+        }) => {
+          let segment = getSegment(segmentBuffer, props.resolution, data.from);
+          if (segment === -1) {
+            segmentData.push({
+              color: new THREE.Color(
+                Math.random(),
+                Math.random(),
+                Math.random()
+              ),
+            });
+            segment = segmentData.length - 1;
+          }
+          smoothPaint(
+            segmentBuffer,
+            segment,
+            segmentData,
+            props.drawing,
+            data.to,
+            data.from,
+            props.resolution,
+            props.brushPoints
+          );
+        }
+      );
+      return () => socket.off("draw");
+    }
+  }, [
+    socket,
+    segmentBuffer,
+    segmentData,
+    props.resolution,
+    props.drawing,
+    props.brushPoints,
+  ]);
+
   return useFrame(() => {
-    if (props.cursorDown) {
+    if (props.cursorDown && socket) {
       const getPixelPos = (
         mousePos: number,
         pan: number,
@@ -64,89 +109,112 @@ export function PainterController(props: {
         ),
       ] as const;
 
-      const action =
-        currentAction ??
-        (() => {
-          const segment = getSegment(segmentBuffer, props.resolution, pixelPos);
-          if (segment !== -1) {
-            return {
-              lastCursorPos: pixelPos,
-              activeSegment: segment,
-            };
-          } else {
-            segmentData.push({
-              color: new THREE.Color(
-                Math.random(),
-                Math.random(),
-                Math.random()
-              ),
-            });
-            return {
-              lastCursorPos: pixelPos,
-              activeSegment: segmentData.length - 1,
-            };
-          }
-        })();
+      setCurrentAction((currentAction) => {
+        const action =
+          currentAction ??
+          (() => {
+            const segment = getSegment(
+              segmentBuffer,
+              props.resolution,
+              pixelPos
+            );
+            if (segment !== -1) {
+              return {
+                lastCursorPos: pixelPos,
+                activeSegment: segment,
+              };
+            } else {
+              segmentData.push({
+                color: new THREE.Color(
+                  Math.random(),
+                  Math.random(),
+                  Math.random()
+                ),
+              });
+              return {
+                lastCursorPos: pixelPos,
+                activeSegment: segmentData.length - 1,
+              };
+            }
+          })();
 
-      draw(
-        segmentBuffer,
-        action.activeSegment,
-        segmentData,
-        props.drawing,
-        pixelPos,
-        props.resolution,
-        props.brushPoints
-      );
-
-      if (currentAction) {
-        const current: [number, number] = [pixelPos[0], pixelPos[1]];
-
-        const length = Math.sqrt(
-          Math.pow(current[0] - currentAction.lastCursorPos[0], 2) +
-            Math.pow(current[1] - currentAction.lastCursorPos[1], 2)
+        socket.emit("draw", { from: action.lastCursorPos, to: pixelPos });
+        smoothPaint(
+          segmentBuffer,
+          action.activeSegment,
+          segmentData,
+          props.drawing,
+          pixelPos,
+          action.lastCursorPos,
+          props.resolution,
+          props.brushPoints
         );
 
-        const step = [
-          (kDrawingSmoothStep * (currentAction.lastCursorPos[0] - current[0])) /
-            length,
-          (kDrawingSmoothStep * (currentAction.lastCursorPos[1] - current[1])) /
-            length,
-        ];
-
-        while (
-          step[0] * (currentAction.lastCursorPos[0] - current[0]) +
-            step[1] * (currentAction.lastCursorPos[1] - current[1]) >
-          0
-        ) {
-          const currentPos = [
-            Math.floor(current[0]),
-            Math.floor(current[1]),
-          ] as const;
-
-          draw(
-            segmentBuffer,
-            action.activeSegment,
-            segmentData,
-            props.drawing,
-            currentPos,
-            props.resolution,
-            props.brushPoints
-          );
-
-          current[0] += step[0];
-          current[1] += step[1];
-        }
-      }
-
-      action.lastCursorPos = pixelPos;
-      setCurrentAction(action);
+        action.lastCursorPos = pixelPos;
+        return action;
+      });
     } else {
       setCurrentAction(null);
     }
   });
 }
 
-function recomputeSegments(): void {}
+function smoothPaint(
+  segmentBuffer: Int32Array,
+  activeSegment: number,
+  segmentData: {
+    color: THREE.Color;
+  }[],
+  drawing: THREE.DataTexture,
+  currentPos: readonly [number, number],
+  lastPos: readonly [number, number],
+  resolution: readonly [number, number],
+  brushPoints: MemoizedPoints
+): void {
+  draw(
+    segmentBuffer,
+    activeSegment,
+    segmentData,
+    drawing,
+    currentPos,
+    resolution,
+    brushPoints
+  );
+
+  const current: [number, number] = [currentPos[0], currentPos[1]];
+
+  const length = Math.sqrt(
+    Math.pow(current[0] - lastPos[0], 2) + Math.pow(current[1] - lastPos[1], 2)
+  );
+
+  const step = [
+    (kDrawingSmoothStep * (lastPos[0] - current[0])) / length,
+    (kDrawingSmoothStep * (lastPos[1] - current[1])) / length,
+  ];
+
+  while (
+    step[0] * (lastPos[0] - current[0]) + step[1] * (lastPos[1] - current[1]) >
+    0
+  ) {
+    const currentPos = [
+      Math.floor(current[0]),
+      Math.floor(current[1]),
+    ] as const;
+
+    draw(
+      segmentBuffer,
+      activeSegment,
+      segmentData,
+      drawing,
+      currentPos,
+      resolution,
+      brushPoints
+    );
+
+    current[0] += step[0];
+    current[1] += step[1];
+  }
+}
 
 function getSegment(
   segmentBuffer: Int32Array,
