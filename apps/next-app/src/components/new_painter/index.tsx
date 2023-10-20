@@ -8,7 +8,7 @@ import { Canvas } from "@react-three/fiber";
 import { kImages } from "@/util";
 import { PainterRenderer } from "./renderer";
 import { StaticImageData } from "next/image";
-import { MemoizedPoints, PainterController } from "./controller";
+import { PainterController } from "./controller";
 import { clamp } from "three/src/math/MathUtils.js";
 import { useSocket } from "../socket-connection";
 
@@ -130,8 +130,6 @@ export function Painter(props: { imageIndex: number }): JSX.Element {
     }
   );
 
-  const [brushPoints] = useState(createCirclePoints(20));
-
   return (
     <div className="flex h-screen justify-center items-center">
       <div
@@ -156,7 +154,6 @@ export function Painter(props: { imageIndex: number }): JSX.Element {
           pan={pan}
           cursorDown={cursorDown}
           drawing={drawing}
-          brushPoints={brushPoints}
         />
         <PainterRenderer
           canvasSize={[resolution[0] * zoom, resolution[1] * zoom]}
@@ -166,47 +163,4 @@ export function Painter(props: { imageIndex: number }): JSX.Element {
       </Canvas>
     </div>
   );
-}
-
-export function createCirclePoints(diameter: number): MemoizedPoints {
-  const points: {
-    pos: readonly [number, number];
-    boundaryEdges: readonly (readonly [number, number])[];
-  }[] = [];
-  const radius = Math.ceil(diameter / 2);
-  for (let x = -radius; x < radius; x++) {
-    for (let y = -radius; y < radius; y++) {
-      const lengthSquared = x * x + y * y;
-      const radiusSquared = radius * radius;
-      if (lengthSquared < radiusSquared) {
-        const boundaryEdges: (readonly [number, number])[] = [];
-
-        function checkOffset(offset: readonly [number, number]) {
-          const lengthSquared =
-            (offset[0] + x) * (offset[0] + x) +
-            (offset[1] + y) * (offset[1] + y);
-          if (lengthSquared >= radiusSquared) {
-            boundaryEdges.push(offset);
-          }
-        }
-        if (x < 0) {
-          checkOffset([-1, 0]);
-        } else if (x > 0) {
-          checkOffset([1, 0]);
-        }
-
-        if (y < 0) {
-          checkOffset([0, -1]);
-        } else if (y > 0) {
-          checkOffset([0, 1]);
-        }
-
-        points.push({
-          boundaryEdges,
-          pos: [x, y],
-        });
-      }
-    }
-  }
-  return points;
 }
