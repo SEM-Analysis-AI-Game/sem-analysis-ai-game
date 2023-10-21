@@ -1,8 +1,11 @@
 import * as THREE from "three";
-import { useFrame, useThree } from "@react-three/fiber";
 import { useMemo } from "react";
+import { useFrame, useThree } from "@react-three/fiber";
 import { EffectComposer, TexturePass } from "three-stdlib";
 
+/**
+ * Renders the drawing texture to the screen.
+ */
 export function PainterRenderer(props: {
   drawing: THREE.DataTexture;
   canvasSize: readonly [number, number];
@@ -19,6 +22,8 @@ export function PainterRenderer(props: {
 
   return useFrame(() => {
     gl.clear();
+    // apply the pan offset to the viewport. the canvasSize prop has the
+    // zoom level applied to it, so we need to multiply by any zoom factor.
     gl.setViewport(
       (window.innerWidth - props.canvasSize[0]) / 2 + props.pan[0],
       (window.innerHeight - props.canvasSize[1]) / 2 - props.pan[1],

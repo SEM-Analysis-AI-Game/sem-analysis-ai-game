@@ -11,7 +11,9 @@ export default async function Paint(props: {
   params: { imageIndex: string };
 }): Promise<JSX.Element> {
   const response = await fetch(
-    `http://localhost:3000/api/state?imageIndex=${props.params.imageIndex}`,
+    `http://localhost${
+      process.env.PORT ? `:${process.env.PORT}` : ""
+    }/api/state?imageIndex=${props.params.imageIndex}`,
     { cache: "no-cache" }
   )
     .then((res) => res.json())

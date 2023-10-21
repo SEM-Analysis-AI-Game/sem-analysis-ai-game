@@ -32,11 +32,17 @@ export default async function socket(
     io.on("connection", (connection) => {
       connection.on("draw", async (data: DrawEvent) => {
         connection.broadcast.emit("draw", data);
-        await fetch("http://localhost:3000/api/state", {
-          method: "POST",
-          body: JSON.stringify(data),
-          cache: "no-cache",
-        });
+        // TODO: update the imageIndex param so we use the correct room/image for the user.
+        await fetch(
+          `http://localhost${
+            process.env.PORT ? `:${process.env.PORT}` : ""
+          }/api/state?imageIndex=${0}`,
+          {
+            method: "POST",
+            body: JSON.stringify(data),
+            cache: "no-cache",
+          }
+        );
       });
     });
 

@@ -7,9 +7,12 @@ export default async function handler(
   request: NextApiRequest,
   response: NextApiResponse
 ) {
+  const imageIndex = parseInt(request.query.imageIndex as string);
   if (request.method === "POST") {
     const body = await JSON.parse(request.body);
-    serverState[0].push(body);
+    serverState[imageIndex].push(body);
+    return response.status(200);
+  } else if (request.method === "GET") {
+    return response.status(200).json({ state: serverState[imageIndex] });
   }
-  response.status(200).json({ state: serverState[0] });
 }

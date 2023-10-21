@@ -97,18 +97,13 @@ export function PainterController(props: {
           pixelPos
         );
 
-        // color can be undefined if the segment we are drawing already exists
-        let color: THREE.Color | undefined = undefined;
-
-        // if we are creating a new segment (I.E. the cursor is not in any segment), then
-        // we need to emit the new color to the server.
-        if (segment === -1) {
-          color = new THREE.Color(Math.random(), Math.random(), Math.random());
-
-          // update our local segment data. the array indices of segmentData correspond to
-          // segment indices.
-          props.segmentData.push({ color });
-        }
+        // color can be undefined if the segment the user is drawing already exists. if
+        // they are creating a new segment (I.E. the cursor is not in any segment), then
+        // emit the new color to the server.
+        const color: THREE.Color | undefined =
+          segment === -1
+            ? new THREE.Color(Math.random(), Math.random(), Math.random())
+            : undefined;
 
         // representation used for the smoothPaint method, and for emitting to the server.
         const drawEvent: DrawEvent = {
