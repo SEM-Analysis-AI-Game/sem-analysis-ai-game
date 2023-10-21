@@ -5,6 +5,10 @@ import { clamp } from "three/src/math/MathUtils.js";
 import { DrawEvent, getSegment, smoothPaint } from "@/util";
 import { useSocket } from "../socket-connection";
 
+/**
+ * Processes user input, updates the drawing texture uniforms and
+ * emits draw events to the server.
+ */
 export function PainterController(props: {
   zoom: number;
   pan: readonly [number, number];
@@ -14,15 +18,19 @@ export function PainterController(props: {
   segmentBuffer: Int32Array;
   segmentData: { color: THREE.Color }[];
 }): null {
+  // current mouse position in screen coordinate system ([-1, -1] to [1, 1] with the origin
+  // at the center of the screen)
   const { mouse } = useThree();
 
-  const [, setCurrentAction] = useState<{
-    lastCursorPos: readonly [number, number];
-    color: THREE.Color | undefined;
-  } | null>(null);
+  // the last cursor position in texture coordinates ([0, 0] at the bottom left corner and,
+  // and [resolution[0], resolution[1]] at the top right corner), or null if the cursor is
+  // not down.
+  const [, setLastCursorPos] = useState<readonly [number, number] | null>(null);
 
+  // the socket connection to the server, or null if the connection has not been established.
   const socket = useSocket();
 
+  // listen for draw events from the server
   useEffect((): any => {
     if (socket) {
       socket.on("draw", (data: DrawEvent) =>
@@ -40,12 +48,16 @@ export function PainterController(props: {
     socket,
     props.segmentBuffer,
     props.segmentData,
-    props.resolution,
     props.drawing,
+    props.resolution,
   ]);
 
+  // handle updates on each frame
   return useFrame(() => {
+    // if the cursor is down and the user has a socket connection, allow drawing
     if (props.cursorDown && socket) {
+      // gets the pixel position of the cursor in texture coordinates ([0, 0] at the bottom left corner and,
+      // and [resolution[0], resolution[1]] at the top right corner)
       const getPixelPos = (
         mousePos: number,
         pan: number,
@@ -60,6 +72,7 @@ export function PainterController(props: {
           )
         );
 
+      // the pixel position of the cursor in texture coordinates
       const pixelPos = [
         getPixelPos(
           mouse.x,
@@ -75,39 +88,39 @@ export function PainterController(props: {
         ),
       ] as const;
 
-      setCurrentAction((currentAction) => {
-        const action =
-          currentAction ??
-          (() => {
-            const segment = getSegment(
-              props.segmentBuffer,
-              props.resolution,
-              pixelPos
-            );
-            if (segment !== -1) {
-              return {
-                lastCursorPos: pixelPos,
-                color: undefined,
-              };
-            } else {
-              return {
-                lastCursorPos: pixelPos,
-                color: new THREE.Color(
-                  Math.random(),
-                  Math.random(),
-                  Math.random()
-                ),
-              };
-            }
-          })();
+      // update the last cursor position
+      setLastCursorPos((lastCursor) => {
+        // get the segment that the cursor is in
+        const segment = getSegment(
+          props.segmentBuffer,
+          props.resolution,
+          pixelPos
+        );
 
+        // color can be undefined if the segment we are drawing already exists
+        let color: THREE.Color | undefined = undefined;
+
+        // if we are creating a new segment (I.E. the cursor is not in any segment), then
+        // we need to emit the new color to the server.
+        if (segment === -1) {
+          color = new THREE.Color(Math.random(), Math.random(), Math.random());
+
+          // update our local segment data. the array indices of segmentData correspond to
+          // segment indices.
+          props.segmentData.push({ color });
+        }
+
+        // representation used for the smoothPaint method, and for emitting to the server.
         const drawEvent: DrawEvent = {
-          from: action.lastCursorPos,
+          from: lastCursor ?? pixelPos,
           to: pixelPos,
-          color: action?.color?.getHexString(),
+          color: color?.getHexString(),
         };
+
+        // emit the draw event to the server
         socket.emit("draw", drawEvent);
 
+        // paint locally
         smoothPaint(
           drawEvent,
           props.segmentBuffer,
@@ -116,11 +129,12 @@ export function PainterController(props: {
           props.resolution
         );
 
-        action.lastCursorPos = pixelPos;
-        return action;
+        // update the last cursor position
+        return pixelPos;
       });
     } else {
-      setCurrentAction(null);
+      // if the cursor is not down, set the last cursor position to null
+      setLastCursorPos(null);
     }
   });
 }

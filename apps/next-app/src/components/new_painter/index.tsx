@@ -1,15 +1,14 @@
 "use client";
 
 import * as THREE from "three";
-import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
+import Image, { StaticImageData } from "next/image";
 import { useDrag, usePinch } from "@use-gesture/react";
 import { Canvas } from "@react-three/fiber";
+import { clamp } from "three/src/math/MathUtils.js";
 import { DrawEvent, kImages, smoothPaint } from "@/util";
 import { PainterRenderer } from "./renderer";
-import { StaticImageData } from "next/image";
 import { PainterController } from "./controller";
-import { clamp } from "three/src/math/MathUtils.js";
 import { useSocket } from "../socket-connection";
 
 /**
@@ -36,7 +35,7 @@ export function Painter(props: {
 
   // initialize client-side state
   const [segmentBuffer, segmentData, resolution, drawing] = useMemo(() => {
-    // the texture we will use for drawing
+    // the texture to use for drawing
     const texture = new THREE.DataTexture(
       new Uint8Array(image.width * image.height * 4),
       image.width,
@@ -60,18 +59,18 @@ export function Painter(props: {
     return [buffer, data, [image.width, image.height] as const, texture];
   }, [image, props.initialState]);
 
-  // on the server render we can initialize a zoom of 1, which will render the image
+  // on the server render initialize a zoom of 1, which will render the image
   // at its native resolution
   const [zoom, setZoom] = useState(1);
 
-  // once the client loads, we can set the zoom to fit the image to the screen
+  // once the client loads, set the zoom to fit the image to the screen
   useEffect(() => {
     setZoom(scale(image));
   }, [image]);
 
-  // the pan offset in screen pixels. [0, 0] means the image is centered. Moving 1 pixel
-  // in any direction will result in the image moving 1 pixel in that direction on the screen.
-  // this means that we will need to transform this offset when we zoom in/out in order to
+  // the pan offset in screen pixels. the image is centered on [0, 0]. Moving 1 pixel in any
+  // direction will result in the image moving 1 pixel in that direction on the screen. this
+  // means that this offset needs to be transformed when the user zooms in/out in order to
   // maintain a smooth zoom towards the pixel at the cursor location.
   //
   // this is also clamped to the image bounds such that the center of the screen is always
@@ -94,8 +93,8 @@ export function Painter(props: {
         (resolution[1] * e.offset[0]) / 2,
       ] as const;
 
-      // copies the previous zoom level so we don't reference the updated zoom level
-      // when the callback in setPan is triggered.
+      // copies the previous zoom level so the previous zoom level is referenced when the
+      // callback in setPan is triggered.
       const previousZoom = zoom;
 
       // update the pan so that the cursor position stays fixed on the same image pixel
@@ -133,11 +132,11 @@ export function Painter(props: {
       : undefined
   );
 
-  // the socket connection, or null if we are not connected to the server.
+  // the socket connection, or null if the user is not connected to the server.
   const socket = useSocket();
 
   // handle cursor down/up. this is used solely for controlling when the user is drawing
-  // segments. this is set to false if we are panning (despite the fact that the cursor
+  // segments. this is set to false if the user is panning (despite the fact that the cursor
   // would technically be down).
   const [cursorDown, setCursorDown] = useState(false);
 
@@ -151,8 +150,8 @@ export function Painter(props: {
   // of fingers touching the screen changes.
   useDrag(
     (e) => {
-      // if the shift + mouse are down, or if we are touching with multiple fingers, then we
-      // should pan the image.
+      // if the shift + mouse are down, or if the user is touching with multiple fingers, then the
+      // image should pan.
       if ((e.down && e.shiftKey) || e.touches > 1) {
         setPanAnchor((lastCursor) => {
           if (lastCursor) {
@@ -176,8 +175,9 @@ export function Painter(props: {
           return e.xy;
         });
       } else {
-        // if we are not panning and we are connected to the websocket, then
-        // update the cursor down state so we start/stop drawing
+        // if the user is not panning and is connected to the websocket, then
+        // update the cursor down state to start/stop drawing in the controller
+        // frame loop.
         if (socket) {
           setCursorDown(e.down);
         }
