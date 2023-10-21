@@ -94,7 +94,7 @@ export function PainterController(props: {
         const segment = getSegment(
           props.segmentBuffer,
           props.resolution,
-          pixelPos
+          lastCursor ?? pixelPos
         );
 
         // color can be undefined if the segment the user is drawing already exists. if
