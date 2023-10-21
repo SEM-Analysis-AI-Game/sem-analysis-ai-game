@@ -35,23 +35,26 @@ export default async function socket(
       if (imageIndex && imageIndex !== "") {
         connection.join(imageIndex);
       }
+      connection.on("join", (data: { room: string }) => {
+        connection.join(data.room);
+      });
+      connection.on("leave", (data: { room: string }) => {
+        connection.leave(data.room);
+      });
       connection.on("draw", async (data: DrawEvent) => {
         let room = undefined;
         for (const connectedRoom of connection.rooms) {
-          try {
-            const roomInt = parseInt(connectedRoom);
-            if (roomInt >= 0 && roomInt < kImages.length) {
-              room = connectedRoom;
-              break;
-            }
-          } catch (_) {}
+          if (connectedRoom !== connection.id) {
+            room = connectedRoom;
+            break;
+          }
         }
         if (room) {
           connection.broadcast.to(room).emit("draw", data);
           await fetch(
             `http://localhost${
               process.env.PORT ? `:${process.env.PORT}` : ""
-            }/api/state?imageIndex=${imageIndex}`,
+            }/api/state?imageIndex=${room}`,
             {
               method: "POST",
               body: JSON.stringify(data),

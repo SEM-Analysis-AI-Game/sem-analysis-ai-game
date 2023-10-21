@@ -63,10 +63,18 @@ export function Painter(props: {
   // at its native resolution
   const [zoom, setZoom] = useState(1);
 
+  // the socket connection, or null if the user is not connected to the server.
+  const socket = useSocket();
+
   // once the client loads, set the zoom to fit the image to the screen
   useEffect(() => {
     setZoom(scale(image));
-  }, [image]);
+    return () => {
+      if (socket) {
+        socket.emit("leave", { room: props.imageIndex.toString() });
+      }
+    };
+  }, [image, socket]);
 
   // the pan offset in screen pixels. the image is centered on [0, 0]. Moving 1 pixel in any
   // direction will result in the image moving 1 pixel in that direction on the screen. this
@@ -131,9 +139,6 @@ export function Painter(props: {
         }
       : undefined
   );
-
-  // the socket connection, or null if the user is not connected to the server.
-  const socket = useSocket();
 
   // handle cursor down/up. this is used solely for controlling when the user is drawing
   // segments. this is set to false if the user is panning (despite the fact that the cursor
