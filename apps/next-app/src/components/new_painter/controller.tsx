@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { Dispatch, SetStateAction, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { clamp } from "three/src/math/MathUtils.js";
 import { DrawEvent, getSegment, smoothPaint } from "@/util";
@@ -10,6 +10,7 @@ import { useSocket } from "../socket-connection";
  * emits draw events to the server.
  */
 export function PainterController(props: {
+  timestamp: number;
   imageIndex: number;
   zoom: number;
   pan: readonly [number, number];
@@ -18,8 +19,6 @@ export function PainterController(props: {
   drawing: THREE.DataTexture;
   segmentBuffer: Int32Array;
   segmentData: { color: THREE.Color }[];
-  reconciled: boolean;
-  setReconciled: Dispatch<SetStateAction<boolean>>;
 }): null {
   // current mouse position in screen coordinate system ([-1, -1] to [1, 1] with the origin
   // at the center of the screen)
@@ -33,26 +32,26 @@ export function PainterController(props: {
   // the socket connection to the server, or null if the connection has not been established.
   const socket = useSocket();
 
+  // controls whether or not reconcilliation of our local state with the server state is complete.
+  // user input should be disabled until this is true.
+  const [reconciled, setReconciled] = useState(false);
+
   // listen for draw events from the server
   useEffect((): any => {
     if (socket) {
+      socket.on("draw", (data: DrawEvent) =>
+        smoothPaint(
+          data,
+          props.segmentBuffer,
+          props.segmentData,
+          props.drawing,
+          props.resolution
+        )
+      );
       socket.emit("join", {
         room: props.imageIndex.toString(),
       });
-      socket
-        .on("draw", (data: DrawEvent) =>
-          smoothPaint(
-            data,
-            props.segmentBuffer,
-            props.segmentData,
-            props.drawing,
-            props.resolution
-          )
-        )
-        .on("reconcile", (data: { text: string }) => {
-          props.setReconciled(true);
-        });
-      return () => socket.off("draw").off("reconcile");
+      return () => socket.off("draw");
     }
   }, [
     socket,
@@ -60,12 +59,36 @@ export function PainterController(props: {
     props.segmentData,
     props.drawing,
     props.resolution,
+    props.imageIndex,
   ]);
+
+  useEffect(() => {
+    if (socket && !reconciled) {
+      fetch(
+        `/api/state?imageIndex=${props.imageIndex}&timestamp=${props.timestamp}`,
+        { method: "GET" }
+      )
+        .then((res) => res.json())
+        .then((res) => {
+          console.log(res.state.length);
+          for (const event of res.state) {
+            smoothPaint(
+              event,
+              props.segmentBuffer,
+              props.segmentData,
+              props.drawing,
+              props.resolution
+            );
+          }
+          setReconciled(true);
+        });
+    }
+  }, [socket, props.timestamp, setReconciled, reconciled]);
 
   // handle updates on each frame
   return useFrame(() => {
     // if the cursor is down and reconcilliation is done, allow drawing
-    if (props.cursorDown && socket && props.reconciled) {
+    if (props.cursorDown && socket && reconciled) {
       // gets the pixel position of the cursor in texture coordinates ([0, 0] at the bottom left corner and,
       // and [resolution[0], resolution[1]] at the top right corner)
       const getPixelPos = (

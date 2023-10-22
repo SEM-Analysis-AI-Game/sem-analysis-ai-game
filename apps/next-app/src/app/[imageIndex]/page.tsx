@@ -16,14 +16,25 @@ export default async function Paint(props: {
     `http://localhost${
       process.env.PORT ? `:${process.env.PORT}` : ""
     }/api/state?imageIndex=${props.params.imageIndex}`,
-    { cache: "no-cache" }
+    { next: { revalidate: 90 } }
   )
     .then((res) => res.json())
     .catch(() => ({
       state: [],
     }));
 
+  const timestamp =
+    response.state.length > 0
+      ? response.state[response.state.length - 1].timestamp
+      : 0;
+
   const index = parseInt(props.params.imageIndex);
 
-  return <Painter imageIndex={index} initialState={response.state} />;
+  return (
+    <Painter
+      timestamp={timestamp}
+      imageIndex={index}
+      initialState={response.state}
+    />
+  );
 }

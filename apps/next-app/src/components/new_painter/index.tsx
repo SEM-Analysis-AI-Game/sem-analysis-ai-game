@@ -9,7 +9,6 @@ import { clamp } from "three/src/math/MathUtils.js";
 import { DrawEvent, kImages, smoothPaint } from "@/util";
 import { PainterRenderer } from "./renderer";
 import { PainterController } from "./controller";
-import { useSocket } from "../socket-connection";
 
 /**
  * The max zoom multiplier
@@ -27,6 +26,7 @@ function scale(image: StaticImageData): number {
 }
 
 export function Painter(props: {
+  timestamp: number;
   imageIndex: number;
   initialState: DrawEvent[];
 }): JSX.Element {
@@ -142,13 +142,6 @@ export function Painter(props: {
   // right corner. this is used solely for panning.
   const [, setPanAnchor] = useState<readonly [number, number] | null>(null);
 
-  // the socket connection, or null if the user is not connected to the server.
-  const socket = useSocket();
-
-  // controls whether or not reconcilliation of our local state with the server state is complete.
-  // user input should be disabled until this is true.
-  const [reconciled, setReconciled] = useState(false);
-
   // this triggers when the mouse is pressed/released and when the number
   // of fingers touching the screen changes.
   useDrag(
@@ -178,12 +171,9 @@ export function Painter(props: {
           return e.xy;
         });
       } else {
-        // if the user is not panning and reconcilliation with the server is complete.
-        // update the cursor down state to start/stop drawing in the controller frame
-        // loop.
-        if (reconciled) {
-          setCursorDown(e.down);
-        }
+        // if the user is not panning  update the cursor down state to
+        // start/stop drawing in the controller frame loop.
+        setCursorDown(e.down);
         setPanAnchor(null);
       }
     },
@@ -217,6 +207,7 @@ export function Painter(props: {
       </div>
       <Canvas>
         <PainterController
+          timestamp={props.timestamp}
           imageIndex={props.imageIndex}
           resolution={resolution}
           zoom={zoom}
@@ -225,8 +216,6 @@ export function Painter(props: {
           drawing={drawing}
           segmentBuffer={segmentBuffer}
           segmentData={segmentData}
-          reconciled={reconciled}
-          setReconciled={setReconciled}
         />
         <PainterRenderer
           canvasSize={[resolution[0] * zoom, resolution[1] * zoom]}

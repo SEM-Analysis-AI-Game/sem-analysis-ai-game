@@ -41,9 +41,6 @@ export default async function socket(
       connection
         .on("join", (data: { room: string }) => {
           connection.join(data.room);
-          connection.emit("reconcile", {
-            text: "TODO: send events here to synchronize client with server",
-          });
         })
         // register an event listener to allow users to leave rooms
         .on("leave", (data: { room: string }) => {
@@ -64,7 +61,10 @@ export default async function socket(
           // save the draw event to the server state
           if (room) {
             connection.broadcast.to(room).emit("draw", data);
-            serverState[parseInt(room)].push(data);
+            serverState[parseInt(room)].push({
+              ...data,
+              timestamp: Date.now(),
+            });
           } else {
             throw new Error("Draw event from user not in a room");
           }
