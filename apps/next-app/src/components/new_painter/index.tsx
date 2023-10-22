@@ -6,7 +6,7 @@ import Image, { StaticImageData } from "next/image";
 import { useDrag, usePinch } from "@use-gesture/react";
 import { Canvas } from "@react-three/fiber";
 import { clamp } from "three/src/math/MathUtils.js";
-import { kImages } from "@/util";
+import { DrawEvent, kImages, smoothPaint } from "@/util";
 import { PainterRenderer } from "./renderer";
 import { PainterController } from "./controller";
 import { useSocket } from "../socket-connection";
@@ -28,9 +28,7 @@ function scale(image: StaticImageData): number {
 
 export function Painter(props: {
   imageIndex: number;
-  segmentBuffer: Int32Array;
-  segmentData: { color: string }[];
-  initialDrawingData: Uint8Array;
+  initialState: DrawEvent[];
 }): JSX.Element {
   // the image to draw on
   const image = useMemo(() => kImages[props.imageIndex], [props.imageIndex]);
@@ -38,25 +36,27 @@ export function Painter(props: {
   // initialize client-side state
   const [resolution, drawing, segmentBuffer, segmentData] = useMemo(() => {
     // the texture to use for drawing
-    const textureData = new Uint8Array(props.initialDrawingData);
+    const textureData = new Uint8Array(image.width * image.height * 4);
     const texture = new THREE.DataTexture(
       textureData,
       image.width,
       image.height
     );
-    texture.needsUpdate = true;
 
     // this is necessary for the texture to use transparency
     texture.premultiplyAlpha = true;
 
-    const buffer = new Int32Array(props.segmentBuffer);
+    // const buffer = new Int32Array(props.segmentBuffer);
+    const buffer = new Int32Array(image.width * image.height).fill(-1);
 
-    const data = props.segmentData.map((data) => ({
-      color: new THREE.Color(`#${data.color}`),
-    }));
+    const data: { color: THREE.Color }[] = [];
+
+    for (const event of props.initialState) {
+      smoothPaint(event, buffer, data, texture, [image.width, image.height]);
+    }
 
     return [[image.width, image.height] as const, texture, buffer, data];
-  }, [image, props.initialDrawingData, props.segmentBuffer]);
+  }, [image, props.initialState]);
 
   // on the server render initialize a zoom of 1, which will render the image
   // at its native resolution
@@ -145,7 +145,7 @@ export function Painter(props: {
   // the socket connection, or null if the user is not connected to the server.
   const socket = useSocket();
 
-  // controls whether or not we have reconciled our local state with the server state.
+  // controls whether or not reconcilliation of our local state with the server state is complete.
   // user input should be disabled until this is true.
   const [reconciled, setReconciled] = useState(false);
 
@@ -178,7 +178,7 @@ export function Painter(props: {
           return e.xy;
         });
       } else {
-        // if the user is not panning and we have already reconciled with the server
+        // if the user is not panning and reconcilliation with the server is complete.
         // update the cursor down state to start/stop drawing in the controller frame
         // loop.
         if (reconciled) {

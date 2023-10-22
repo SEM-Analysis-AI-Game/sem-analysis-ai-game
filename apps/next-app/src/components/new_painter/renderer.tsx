@@ -23,7 +23,7 @@ export function PainterRenderer(props: {
   return useFrame(() => {
     gl.clear();
     // apply the pan offset to the viewport. the canvasSize prop has the
-    // zoom level applied to it, so we need to multiply by any zoom factor.
+    // zoom level applied to it, so no need to multiply by any zoom factor.
     gl.setViewport(
       (window.innerWidth - props.canvasSize[0]) / 2 + props.pan[0],
       (window.innerHeight - props.canvasSize[1]) / 2 - props.pan[1],

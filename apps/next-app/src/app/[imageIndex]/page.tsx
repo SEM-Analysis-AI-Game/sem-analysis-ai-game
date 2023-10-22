@@ -1,4 +1,4 @@
-import { DrawEvent, kImages, smoothPaint } from "@/util";
+import { kImages } from "@/util";
 import { Painter } from "@/components";
 
 export function generateStaticParams() {
@@ -6,20 +6,6 @@ export function generateStaticParams() {
     imageIndex: index.toString(),
   }));
 }
-
-// cache the state of the drawing each time it is updated
-let previousState: DrawEvent[] = [];
-
-// the state of the drawing is computed and stored in-memory here on the SSR worker
-const imageDrawingStates: {
-  segmentBuffer: Int32Array;
-  segmentData: { color: THREE.Color }[];
-  textureData: Uint8Array;
-}[] = kImages.map((image) => ({
-  segmentBuffer: new Int32Array(image.width * image.height).fill(-1),
-  segmentData: [],
-  textureData: new Uint8Array(image.width * image.height * 4),
-}));
 
 export default async function Paint(props: {
   params: { imageIndex: string };
@@ -38,31 +24,6 @@ export default async function Paint(props: {
     }));
 
   const index = parseInt(props.params.imageIndex);
-  const image = kImages[index];
 
-  // update the server-side drawing state with any new events
-  for (let i = previousState.length; i < response.state.length; i++) {
-    const event = response.state[i];
-    smoothPaint(
-      event,
-      imageDrawingStates[index].segmentBuffer,
-      imageDrawingStates[index].segmentData,
-      imageDrawingStates[index].textureData,
-      [image.width, image.height]
-    );
-  }
-
-  // cache the state for the next render
-  previousState = response.state;
-
-  return (
-    <Painter
-      imageIndex={index}
-      segmentBuffer={imageDrawingStates[index].segmentBuffer}
-      segmentData={imageDrawingStates[index].segmentData.map((data) => ({
-        color: data.color.getHexString(),
-      }))}
-      initialDrawingData={imageDrawingStates[index].textureData}
-    />
-  );
+  return <Painter imageIndex={index} initialState={response.state} />;
 }

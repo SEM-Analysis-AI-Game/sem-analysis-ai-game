@@ -21,7 +21,7 @@ export function PainterCanvas(): JSX.Element {
   const [, updateActionHistory] = useActionHistory();
   const [, updateStatistics] = useStatistics();
 
-  // Whenever the background changes we need to resize the canvas
+  // Whenever the background changes resize the canvas
   const [canvasSize] = useMemo(() => {
     // This is used to constrain the size of the canvas
     // while preserving the aspect ratio.
