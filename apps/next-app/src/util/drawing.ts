@@ -1,11 +1,45 @@
 import * as THREE from "three";
 import { DrawEvent } from "./socket-events";
 
+/**
+ * the points that make up a brush. pos is the position of the point relative
+ * to the center of the brush. if a point is on the boundary of the brush, it
+ * will have its edges stored in boundaryEdges.
+ *
+ * the edges are stored as directions in the form [x, y] where x and y are -1, 0,
+ * or 1. for example, the edge [1, 0] is the right edge of the brush, or [0, -1]
+ * is the bottom edge of the brush. diagonal edges are not stored.
+ *
+ * the boundaryEdges are used for tracking segment boundaries while drawing.
+ */
+type BrushPoints = readonly {
+  pos: readonly [number, number];
+  boundaryEdges: readonly (readonly [number, number])[];
+}[];
+
+/**
+ * the points in the brush. the brush is a circle with a diameter of 20 pixels.
+ */
 export const kBrushPoints = createCirclePoints(20);
+
+/**
+ * the number of pixels to move for each interpolation step when drawing a line.
+ */
 const kDrawingSmoothStep = 8;
+
+/**
+ * the alpha value to use when drawing.
+ */
 const kDrawAlpha = 0.5;
+
+/**
+ * the alpha value to add to kDrawAlpha when drawing the border of a segment.
+ */
 const kBorderAlphaBoost = 0.5;
 
+/**
+ * draws a smooth brush stroke between two points.
+ */
 export function smoothPaint(
   event: DrawEvent,
   segmentBuffer: Int32Array,
@@ -15,40 +49,48 @@ export function smoothPaint(
   drawing: THREE.DataTexture | null,
   resolution: readonly [number, number]
 ): void {
+  // get the segment where the brush stroke starts
   let segment = getSegment(segmentBuffer, resolution, event.from);
+
+  // if the segment is -1, the brush stroke starts in an empty area.
   if (segment === -1) {
-    if (event.color) {
-      segmentData.push({
-        color: new THREE.Color(`#${event.color}`),
-      });
+    if (!event.color) {
+      throw new Error(
+        "Brush stroke starts in empty area but no color provided"
+      );
     }
+    segmentData.push({
+      color: new THREE.Color(`#${event.color}`),
+    });
     segment = segmentData.length - 1;
   }
 
-  draw(segmentBuffer, segment, segmentData, drawing, event.to, resolution);
+  // draw the starting point of the brush stroke
+  draw(segmentBuffer, segment, segmentData, drawing, event.from, resolution);
 
+  // current interpolation point
   const current: [number, number] = [event.to[0], event.to[1]];
 
+  // distance between the start and end points of the brush stroke
   const length = Math.sqrt(
     Math.pow(current[0] - event.from[0], 2) +
       Math.pow(current[1] - event.from[1], 2)
   );
 
+  // the step to take for each interpolation
   const step = [
     (kDrawingSmoothStep * (event.from[0] - current[0])) / length,
     (kDrawingSmoothStep * (event.from[1] - current[1])) / length,
   ];
 
-  while (
-    step[0] * (event.from[0] - current[0]) +
-      step[1] * (event.from[1] - current[1]) >
-    0
-  ) {
+  // interpolate between the end and start point of the brush stroke
+  for (let i = 0; i < Math.floor(length / kDrawingSmoothStep); i++) {
     const currentPos = [
       Math.floor(current[0]),
       Math.floor(current[1]),
     ] as const;
 
+    // draw at the current interpolation point
     draw(segmentBuffer, segment, segmentData, drawing, currentPos, resolution);
 
     current[0] += step[0];
@@ -56,6 +98,9 @@ export function smoothPaint(
   }
 }
 
+/**
+ * gets the segment at a given position.
+ */
 export function getSegment(
   segmentBuffer: Int32Array,
   resolution: readonly [number, number],
@@ -64,10 +109,10 @@ export function getSegment(
   return segmentBuffer[pos[1] * resolution[0] + pos[0]];
 }
 
-function createCirclePoints(diameter: number): readonly {
-  pos: readonly [number, number];
-  boundaryEdges: readonly (readonly [number, number])[];
-}[] {
+/**
+ * creates the points for a brush with the given diameter.
+ */
+function createCirclePoints(diameter: number): BrushPoints {
   const points: {
     pos: readonly [number, number];
     boundaryEdges: readonly (readonly [number, number])[];
@@ -110,6 +155,9 @@ function createCirclePoints(diameter: number): readonly {
   return points;
 }
 
+/**
+ * draws a brush stroke at a given position.
+ */
 function draw(
   segmentBuffer: Int32Array,
   activeSegment: number,
@@ -177,6 +225,9 @@ function draw(
   }
 }
 
+/**
+ * fills a pixel in the drawing uniform.
+ */
 function fillPixel(
   drawing: THREE.DataTexture,
   pos: readonly [number, number],

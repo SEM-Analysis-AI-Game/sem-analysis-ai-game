@@ -1,18 +1,20 @@
 import { DrawEvent, kImages } from "@/util";
 import { NextApiRequest, NextApiResponse } from "next";
 
-const serverState = kImages.map(() => <DrawEvent[]>[]);
+/**
+ * the server state is stored as an array of draw events in the order in which they were received.
+ * clients must recreate the drawing by iterating through the array and drawing each event in order.
+ */
+export const serverState = kImages.map(() => <DrawEvent[]>[]);
 
+/**
+ * responds with the current server state. this is invoked by a worker thread performing SSR.
+ */
 export default async function handler(
   request: NextApiRequest,
   response: NextApiResponse
 ) {
-  const imageIndex = parseInt(request.query.imageIndex as string);
-  if (request.method === "POST") {
-    const body = await JSON.parse(request.body);
-    serverState[imageIndex].push(body);
-    return response.status(200);
-  } else if (request.method === "GET") {
-    return response.status(200).json({ state: serverState[imageIndex] });
-  }
+  return response
+    .status(200)
+    .json({ state: serverState[parseInt(request.query.imageIndex as string)] });
 }

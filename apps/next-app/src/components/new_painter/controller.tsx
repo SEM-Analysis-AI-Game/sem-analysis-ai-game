@@ -6,7 +6,7 @@ import { DrawEvent, getSegment, smoothPaint } from "@/util";
 import { useSocket } from "../socket-connection";
 
 /**
- * Processes user input, updates the drawing texture uniforms and
+ * processes user input, updates the drawing texture uniforms and
  * emits draw events to the server.
  */
 export function PainterController(props: {

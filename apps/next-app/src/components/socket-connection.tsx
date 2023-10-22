@@ -15,6 +15,9 @@ export function useSocket(): Socket | null {
   return useContext(SocketConnectionContext);
 }
 
+/**
+ * provides a socket connection to children
+ */
 export function SocketConnectionProvider(
   props: PropsWithChildren
 ): JSX.Element {
