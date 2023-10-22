@@ -6,7 +6,7 @@ import Image, { StaticImageData } from "next/image";
 import { useDrag, usePinch } from "@use-gesture/react";
 import { Canvas } from "@react-three/fiber";
 import { clamp } from "three/src/math/MathUtils.js";
-import { DrawEvent, kImages, smoothPaint } from "@/util";
+import { kImages } from "@/util";
 import { PainterRenderer } from "./renderer";
 import { PainterController } from "./controller";
 import { useSocket } from "../socket-connection";
@@ -28,36 +28,35 @@ function scale(image: StaticImageData): number {
 
 export function Painter(props: {
   imageIndex: number;
-  initialState: DrawEvent[];
+  segmentBuffer: Int32Array;
+  segmentData: { color: string }[];
+  initialDrawingData: Uint8Array;
 }): JSX.Element {
   // the image to draw on
   const image = useMemo(() => kImages[props.imageIndex], [props.imageIndex]);
 
   // initialize client-side state
-  const [segmentBuffer, segmentData, resolution, drawing] = useMemo(() => {
+  const [resolution, drawing, segmentBuffer, segmentData] = useMemo(() => {
     // the texture to use for drawing
+    const textureData = new Uint8Array(props.initialDrawingData);
     const texture = new THREE.DataTexture(
-      new Uint8Array(image.width * image.height * 4),
+      textureData,
       image.width,
       image.height
     );
+    texture.needsUpdate = true;
 
     // this is necessary for the texture to use transparency
     texture.premultiplyAlpha = true;
 
-    // a 2D array where each element denotes the segment index of a pixel
-    const buffer = new Int32Array(image.width * image.height).fill(-1);
+    const buffer = new Int32Array(props.segmentBuffer);
 
-    // stores information about each segment
-    const data: { color: THREE.Color }[] = [];
+    const data = props.segmentData.map((data) => ({
+      color: new THREE.Color(`#${data.color}`),
+    }));
 
-    // draw the initial state
-    for (const event of props.initialState) {
-      smoothPaint(event, buffer, data, texture, [image.width, image.height]);
-    }
-
-    return [buffer, data, [image.width, image.height] as const, texture];
-  }, [image, props.initialState]);
+    return [[image.width, image.height] as const, texture, buffer, data];
+  }, [image, props.initialDrawingData, props.segmentBuffer]);
 
   // on the server render initialize a zoom of 1, which will render the image
   // at its native resolution

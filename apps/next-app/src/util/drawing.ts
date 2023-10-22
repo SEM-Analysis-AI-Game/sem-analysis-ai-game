@@ -46,7 +46,7 @@ export function smoothPaint(
   segmentData: {
     color: THREE.Color;
   }[],
-  drawing: THREE.DataTexture | null,
+  drawing: THREE.DataTexture | Uint8Array,
   resolution: readonly [number, number]
 ): void {
   // get the segment where the brush stroke starts
@@ -162,7 +162,7 @@ function draw(
   segmentBuffer: Int32Array,
   activeSegment: number,
   segmentData: readonly { color: THREE.Color }[],
-  drawing: THREE.DataTexture | null,
+  drawing: THREE.DataTexture | Uint8Array,
   pos: readonly [number, number],
   resolution: readonly [number, number]
 ): void {
@@ -177,50 +177,47 @@ function draw(
       segmentBuffer[pixelPos[1] * resolution[0] + pixelPos[0]] = activeSegment;
 
       const isBoundary =
-        (drawing &&
-          point.boundaryEdges.filter((offset) => {
-            const pos = [
-              offset[0] + pixelPos[0],
-              offset[1] + pixelPos[1],
-            ] as const;
-            if (
-              pos[0] < 0 ||
-              pos[1] < 0 ||
-              pos[0] >= resolution[0] ||
-              pos[1] >= resolution[1]
-            ) {
-              return true;
-            } else {
-              const segment = getSegment(segmentBuffer, resolution, pos);
-              if (segment !== activeSegment) {
-                if (segment !== -1) {
-                  fillPixel(
-                    drawing,
-                    pos,
-                    resolution,
-                    kDrawAlpha + kBorderAlphaBoost,
-                    segmentData[segment].color
-                  );
-                }
-                return true;
+        point.boundaryEdges.filter((offset) => {
+          const pos = [
+            offset[0] + pixelPos[0],
+            offset[1] + pixelPos[1],
+          ] as const;
+          if (
+            pos[0] < 0 ||
+            pos[1] < 0 ||
+            pos[0] >= resolution[0] ||
+            pos[1] >= resolution[1]
+          ) {
+            return true;
+          } else {
+            const segment = getSegment(segmentBuffer, resolution, pos);
+            if (segment !== activeSegment) {
+              if (segment !== -1) {
+                fillPixel(
+                  drawing,
+                  pos,
+                  resolution,
+                  kDrawAlpha + kBorderAlphaBoost,
+                  segmentData[segment].color
+                );
               }
+              return true;
             }
-            return false;
-          }).length > 0) ||
+          }
+          return false;
+        }).length > 0 ||
         pixelPos[0] === 0 ||
         pixelPos[1] === 0 ||
         pixelPos[0] === resolution[0] - 1 ||
         pixelPos[1] === resolution[1] - 1;
 
-      if (drawing) {
-        fillPixel(
-          drawing,
-          pixelPos,
-          resolution,
-          kDrawAlpha + (isBoundary ? kBorderAlphaBoost : 0),
-          segmentData[activeSegment].color
-        );
-      }
+      fillPixel(
+        drawing,
+        pixelPos,
+        resolution,
+        kDrawAlpha + (isBoundary ? kBorderAlphaBoost : 0),
+        segmentData[activeSegment].color
+      );
     }
   }
 }
@@ -229,17 +226,20 @@ function draw(
  * fills a pixel in the drawing uniform.
  */
 function fillPixel(
-  drawing: THREE.DataTexture,
+  drawing: THREE.DataTexture | Uint8Array,
   pos: readonly [number, number],
   resolution: readonly [number, number],
   alpha: number,
   color: THREE.Color
 ): void {
   const pixelIndex = (pos[1] * resolution[0] + pos[0]) * 4;
-  const data = drawing.image.data;
+  const data =
+    drawing instanceof THREE.DataTexture ? drawing.image.data : drawing;
   data[pixelIndex] = color.r * 255;
   data[pixelIndex + 1] = color.g * 255;
   data[pixelIndex + 2] = color.b * 255;
   data[pixelIndex + 3] = alpha * 255;
-  drawing.needsUpdate = true;
+  if (drawing instanceof THREE.DataTexture) {
+    drawing.needsUpdate = true;
+  }
 }

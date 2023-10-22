@@ -1,4 +1,4 @@
-import { kImages } from "@/util";
+import { DrawEvent, kImages, smoothPaint } from "@/util";
 import { Painter } from "@/components";
 
 export function generateStaticParams() {
@@ -6,6 +6,17 @@ export function generateStaticParams() {
     imageIndex: index.toString(),
   }));
 }
+
+let previousState: DrawEvent[][] = [];
+const imageDrawingStates: {
+  segmentBuffer: Int32Array;
+  segmentData: { color: THREE.Color }[];
+  textureData: Uint8Array;
+}[] = kImages.map((image) => ({
+  segmentBuffer: new Int32Array(image.width * image.height).fill(-1),
+  segmentData: [],
+  textureData: new Uint8Array(image.width * image.height * 4),
+}));
 
 export default async function Paint(props: {
   params: { imageIndex: string };
@@ -24,6 +35,29 @@ export default async function Paint(props: {
     }));
 
   const index = parseInt(props.params.imageIndex);
+  const image = kImages[index];
 
-  return <Painter imageIndex={index} initialState={response.state} />;
+  for (let i = previousState.length; i < response.state.length; i++) {
+    const event = response.state[i];
+    smoothPaint(
+      event,
+      imageDrawingStates[index].segmentBuffer,
+      imageDrawingStates[index].segmentData,
+      imageDrawingStates[index].textureData,
+      [image.width, image.height]
+    );
+  }
+
+  previousState = response.state;
+
+  return (
+    <Painter
+      imageIndex={index}
+      segmentBuffer={imageDrawingStates[index].segmentBuffer}
+      segmentData={imageDrawingStates[index].segmentData.map((data) => ({
+        color: data.color.getHexString(),
+      }))}
+      initialDrawingData={imageDrawingStates[index].textureData}
+    />
+  );
 }
