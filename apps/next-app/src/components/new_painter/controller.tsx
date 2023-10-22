@@ -34,6 +34,7 @@ export function PainterController(props: {
 
   // controls whether or not reconcilliation of our local state with the server state is complete.
   // user input should be disabled until this is true.
+  const [reconciling, setReconciling] = useState(false);
   const [reconciled, setReconciled] = useState(false);
 
   // listen for draw events from the server
@@ -51,6 +52,7 @@ export function PainterController(props: {
       socket.emit("join", {
         room: props.imageIndex.toString(),
       });
+      setReconciling(true);
       return () => socket.off("draw");
     }
   }, [
@@ -60,10 +62,11 @@ export function PainterController(props: {
     props.drawing,
     props.resolution,
     props.imageIndex,
+    setReconciling,
   ]);
 
   useEffect(() => {
-    if (socket && !reconciled) {
+    if (socket && reconciling && !reconciled) {
       fetch(
         `/api/state?imageIndex=${props.imageIndex}&timestamp=${props.timestamp}`,
         { method: "GET" }
@@ -81,9 +84,17 @@ export function PainterController(props: {
             );
           }
           setReconciled(true);
+          setReconciling(false);
         });
     }
-  }, [socket, props.timestamp, setReconciled, reconciled]);
+  }, [
+    socket,
+    props.timestamp,
+    reconciling,
+    setReconciling,
+    setReconciled,
+    reconciled,
+  ]);
 
   // handle updates on each frame
   return useFrame(() => {
