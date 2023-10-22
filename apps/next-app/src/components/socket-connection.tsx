@@ -1,5 +1,6 @@
 "use client";
 
+import SocketIOClient, { Socket } from "socket.io-client";
 import {
   PropsWithChildren,
   createContext,
@@ -7,12 +8,11 @@ import {
   useEffect,
   useState,
 } from "react";
-import SocketIOClient, { Socket } from "socket.io-client";
 
-const SocketConnectionContext = createContext<Socket | null>(null);
+const SocketContext = createContext<Socket | null>(null);
 
 export function useSocket(): Socket | null {
-  return useContext(SocketConnectionContext);
+  return useContext(SocketContext);
 }
 
 /**
@@ -46,9 +46,9 @@ export function SocketConnectionProvider(
           <h1>Connecting...</h1>
         </div>
       )}
-      <SocketConnectionContext.Provider value={socket}>
+      <SocketContext.Provider value={socket}>
         {props.children}
-      </SocketConnectionContext.Provider>
+      </SocketContext.Provider>
     </>
   );
 }

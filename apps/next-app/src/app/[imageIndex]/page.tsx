@@ -7,7 +7,10 @@ export function generateStaticParams() {
   }));
 }
 
-let previousState: DrawEvent[][] = [];
+// cache the state of the drawing each time it is updated
+let previousState: DrawEvent[] = [];
+
+// the state of the drawing is computed and stored in-memory here on the SSR worker
 const imageDrawingStates: {
   segmentBuffer: Int32Array;
   segmentData: { color: THREE.Color }[];
@@ -37,6 +40,7 @@ export default async function Paint(props: {
   const index = parseInt(props.params.imageIndex);
   const image = kImages[index];
 
+  // update the server-side drawing state with any new events
   for (let i = previousState.length; i < response.state.length; i++) {
     const event = response.state[i];
     smoothPaint(
@@ -48,6 +52,7 @@ export default async function Paint(props: {
     );
   }
 
+  // cache the state for the next render
   previousState = response.state;
 
   return (

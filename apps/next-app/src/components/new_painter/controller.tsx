@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { useEffect, useState } from "react";
+import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { clamp } from "three/src/math/MathUtils.js";
 import { DrawEvent, getSegment, smoothPaint } from "@/util";
@@ -10,6 +10,7 @@ import { useSocket } from "../socket-connection";
  * emits draw events to the server.
  */
 export function PainterController(props: {
+  imageIndex: number;
   zoom: number;
   pan: readonly [number, number];
   cursorDown: boolean;
@@ -17,6 +18,8 @@ export function PainterController(props: {
   drawing: THREE.DataTexture;
   segmentBuffer: Int32Array;
   segmentData: { color: THREE.Color }[];
+  reconciled: boolean;
+  setReconciled: Dispatch<SetStateAction<boolean>>;
 }): null {
   // current mouse position in screen coordinate system ([-1, -1] to [1, 1] with the origin
   // at the center of the screen)
@@ -33,16 +36,23 @@ export function PainterController(props: {
   // listen for draw events from the server
   useEffect((): any => {
     if (socket) {
-      socket.on("draw", (data: DrawEvent) =>
-        smoothPaint(
-          data,
-          props.segmentBuffer,
-          props.segmentData,
-          props.drawing,
-          props.resolution
+      socket.emit("join", {
+        room: props.imageIndex.toString(),
+      });
+      socket
+        .on("draw", (data: DrawEvent) =>
+          smoothPaint(
+            data,
+            props.segmentBuffer,
+            props.segmentData,
+            props.drawing,
+            props.resolution
+          )
         )
-      );
-      return () => socket.off("draw");
+        .on("reconcile", (data: { text: string }) => {
+          props.setReconciled(true);
+        });
+      return () => socket.off("draw").off("reconcile");
     }
   }, [
     socket,
@@ -54,8 +64,8 @@ export function PainterController(props: {
 
   // handle updates on each frame
   return useFrame(() => {
-    // if the cursor is down and the user has a socket connection, allow drawing
-    if (props.cursorDown && socket) {
+    // if the cursor is down and reconcilliation is done, allow drawing
+    if (props.cursorDown && socket && props.reconciled) {
       // gets the pixel position of the cursor in texture coordinates ([0, 0] at the bottom left corner and,
       // and [resolution[0], resolution[1]] at the top right corner)
       const getPixelPos = (

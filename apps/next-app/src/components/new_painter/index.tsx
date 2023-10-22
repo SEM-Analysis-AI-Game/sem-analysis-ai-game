@@ -62,18 +62,10 @@ export function Painter(props: {
   // at its native resolution
   const [zoom, setZoom] = useState(1);
 
-  // the socket connection, or null if the user is not connected to the server.
-  const socket = useSocket();
-
   // once the client loads, set the zoom to fit the image to the screen
   useEffect(() => {
     setZoom(scale(image));
-    return () => {
-      if (socket) {
-        socket.emit("leave", { room: props.imageIndex.toString() });
-      }
-    };
-  }, [image, socket]);
+  }, [image]);
 
   // the pan offset in screen pixels. the image is centered on [0, 0]. Moving 1 pixel in any
   // direction will result in the image moving 1 pixel in that direction on the screen. this
@@ -150,6 +142,13 @@ export function Painter(props: {
   // right corner. this is used solely for panning.
   const [, setPanAnchor] = useState<readonly [number, number] | null>(null);
 
+  // the socket connection, or null if the user is not connected to the server.
+  const socket = useSocket();
+
+  // controls whether or not we have reconciled our local state with the server state.
+  // user input should be disabled until this is true.
+  const [reconciled, setReconciled] = useState(false);
+
   // this triggers when the mouse is pressed/released and when the number
   // of fingers touching the screen changes.
   useDrag(
@@ -179,10 +178,10 @@ export function Painter(props: {
           return e.xy;
         });
       } else {
-        // if the user is not panning and is connected to the websocket, then
-        // update the cursor down state to start/stop drawing in the controller
-        // frame loop.
-        if (socket) {
+        // if the user is not panning and we have already reconciled with the server
+        // update the cursor down state to start/stop drawing in the controller frame
+        // loop.
+        if (reconciled) {
           setCursorDown(e.down);
         }
         setPanAnchor(null);
@@ -218,6 +217,7 @@ export function Painter(props: {
       </div>
       <Canvas>
         <PainterController
+          imageIndex={props.imageIndex}
           resolution={resolution}
           zoom={zoom}
           pan={pan}
@@ -225,6 +225,8 @@ export function Painter(props: {
           drawing={drawing}
           segmentBuffer={segmentBuffer}
           segmentData={segmentData}
+          reconciled={reconciled}
+          setReconciled={setReconciled}
         />
         <PainterRenderer
           canvasSize={[resolution[0] * zoom, resolution[1] * zoom]}

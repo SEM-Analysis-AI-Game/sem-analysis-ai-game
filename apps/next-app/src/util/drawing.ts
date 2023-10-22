@@ -54,13 +54,8 @@ export function smoothPaint(
 
   // if the segment is -1, the brush stroke starts in an empty area.
   if (segment === -1) {
-    if (!event.color) {
-      throw new Error(
-        "Brush stroke starts in empty area but no color provided"
-      );
-    }
     segmentData.push({
-      color: new THREE.Color(`#${event.color}`),
+      color: new THREE.Color(`#${event.color!}`),
     });
     segment = segmentData.length - 1;
   }
