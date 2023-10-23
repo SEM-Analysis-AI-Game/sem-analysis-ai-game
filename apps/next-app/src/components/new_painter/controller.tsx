@@ -153,6 +153,7 @@ export function PainterController(props: {
         const drawEvent: DrawEvent = {
           from: lastCursor ?? pixelPos,
           to: pixelPos,
+          size: 10,
           color: color?.getHexString(),
         };
 

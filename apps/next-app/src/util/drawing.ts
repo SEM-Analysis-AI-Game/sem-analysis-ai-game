@@ -20,12 +20,15 @@ type BrushPoints = readonly {
 /**
  * the points in the brush. the brush is a circle with a diameter of 20 pixels.
  */
-export const kBrushPoints = createCirclePoints(20);
+const brushes: BrushPoints[] = [];
+for (let i = 5; i <= 100; i += 5) {
+  brushes.push(createCirclePoints(i));
+}
 
 /**
- * the number of pixels to move for each interpolation step when drawing a line.
+ * the factor to divide the brush size when interpolating across a segment
  */
-const kDrawingSmoothStep = 8;
+const kDrawingSmoothStep = 4;
 
 /**
  * the alpha value to use when drawing.
@@ -47,7 +50,7 @@ export function smoothPaint(
     color: THREE.Color;
   }[],
   drawing: THREE.DataTexture | Uint8Array,
-  resolution: readonly [number, number]
+  resolution: readonly [number, number],
 ): void {
   // get the segment where the brush stroke starts
   let segment = getSegment(segmentBuffer, resolution, event.from);
@@ -60,8 +63,10 @@ export function smoothPaint(
     segment = segmentData.length - 1;
   }
 
+  const brushSize = event.size;
+
   // draw the starting point of the brush stroke
-  draw(segmentBuffer, segment, segmentData, drawing, event.from, resolution);
+  draw(segmentBuffer, segment, segmentData, drawing, event.from, resolution, brushSize);
 
   // current interpolation point
   const current: [number, number] = [event.to[0], event.to[1]];
@@ -74,19 +79,19 @@ export function smoothPaint(
 
   // the step to take for each interpolation
   const step = [
-    (kDrawingSmoothStep * (event.from[0] - current[0])) / length,
-    (kDrawingSmoothStep * (event.from[1] - current[1])) / length,
+    (event.size / kDrawingSmoothStep * (event.from[0] - current[0])) / length,
+    (event.size / kDrawingSmoothStep * (event.from[1] - current[1])) / length,
   ];
 
   // interpolate between the end and start point of the brush stroke
-  for (let i = 0; i < Math.floor(length / kDrawingSmoothStep); i++) {
+  for (let i = 0; i < Math.floor(length / (event.size / kDrawingSmoothStep)); i++) {
     const currentPos = [
       Math.floor(current[0]),
       Math.floor(current[1]),
     ] as const;
 
     // draw at the current interpolation point
-    draw(segmentBuffer, segment, segmentData, drawing, currentPos, resolution);
+    draw(segmentBuffer, segment, segmentData, drawing, currentPos, resolution, brushSize);
 
     current[0] += step[0];
     current[1] += step[1];
@@ -159,8 +164,11 @@ function draw(
   segmentData: readonly { color: THREE.Color }[],
   drawing: THREE.DataTexture | Uint8Array,
   pos: readonly [number, number],
-  resolution: readonly [number, number]
+  resolution: readonly [number, number],
+  size: number
 ): void {
+  const kBrushPoints = brushes[Math.max(Math.min(Math.floor(size / 5 - 1), 19), 0)];
+
   for (const point of kBrushPoints) {
     const pixelPos = [pos[0] + point.pos[0], pos[1] + point.pos[1]] as const;
     if (
