@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { DrawEvent } from "./socket-events";
 import { breadthFirstTraversal } from "./bft";
 import { StaticImageData } from "next/image";
+import { getRandomColor } from ".";
 
 /**
  * the points that make up a brush. pos is the position of the point relative
@@ -202,11 +203,7 @@ export function smoothPaint(
         });
         if (visited.size < boundarySize) {
           boundarySize -= visited.size;
-          const newColor = new THREE.Color(
-            Math.random(),
-            Math.random(),
-            Math.random()
-          );
+          const newColor = getRandomColor();
           const newSegment = createSegment(newColor);
           splits.push({
             newSegment,

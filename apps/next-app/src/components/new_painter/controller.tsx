@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { useEffect, useState } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { clamp } from "three/src/math/MathUtils.js";
-import { DrawEvent, getSegment, kImages, smoothPaintClient } from "@/util";
+import { DrawEvent, getSegment, kImages, smoothPaintClient, getRandomColor } from "@/util";
 import { useSocket } from "../socket-connection";
 
 /**
@@ -164,7 +164,7 @@ export function PainterController(props: {
         // emit the new color to the server.
         const color: THREE.Color | undefined =
           segment === -1
-            ? new THREE.Color(Math.random(), Math.random(), Math.random())
+            ? getRandomColor()
             : props.segmentData[segment]!.color;
 
         // representation used for the smoothPaint method, and for emitting to the server.
