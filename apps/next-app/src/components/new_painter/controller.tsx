@@ -43,7 +43,7 @@ export function PainterController(props: {
       socket.on("draw", (data: DrawEvent) => {
         smoothPaintClient(
           props.segmentBuffer,
-          kImages[props.imageIndex],
+          kImages[props.imageIndex].image,
           props.drawing,
           props.segmentData,
           data,
@@ -82,7 +82,7 @@ export function PainterController(props: {
           for (const event of res.events as DrawEvent[]) {
             smoothPaintClient(
               props.segmentBuffer,
-              kImages[props.imageIndex],
+              kImages[props.imageIndex].image,
               props.drawing,
               props.segmentData,
               event,
@@ -180,7 +180,7 @@ export function PainterController(props: {
         // paint locally
         drawEvent.splitInfo = smoothPaintClient(
           props.segmentBuffer,
-          kImages[props.imageIndex],
+          kImages[props.imageIndex].image,
           props.drawing,
           props.segmentData,
           drawEvent,

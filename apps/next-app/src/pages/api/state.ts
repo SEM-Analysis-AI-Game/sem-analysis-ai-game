@@ -26,7 +26,7 @@ export const serverState: ServerState = kImages.map((image) => {
       tail: head,
       length: 0,
       segments: [],
-      segmentBuffer: new Array(image.width * image.height),
+      segmentBuffer: new Array(image.image.width * image.image.height),
     },
   };
 });
@@ -91,14 +91,14 @@ export function addCondensedStateEntry(imageIndex: number, event: DrawEvent) {
         return event.segment;
       } else {
         return (
-          state.condensedState.segmentBuffer[pos[1] * image.width + pos[0]]
+          state.condensedState.segmentBuffer[pos[1] * image.image.width + pos[0]]
             ?.data?.event.segment ?? -1
         );
       }
     },
     (pos, segment) => {
       const oldSegmentNode =
-        state.condensedState.segmentBuffer[pos[1] * image.width + pos[0]];
+        state.condensedState.segmentBuffer[pos[1] * image.image.width + pos[0]];
       if (!oldSegmentNode || oldSegmentNode.data!.event.segment !== segment) {
         if (oldSegmentNode) {
           oldSegmentNode.data!.numPixels--;
@@ -117,7 +117,7 @@ export function addCondensedStateEntry(imageIndex: number, event: DrawEvent) {
           }
         }
         node.data!.numPixels++;
-        state.condensedState.segmentBuffer[pos[1] * image.width + pos[0]] =
+        state.condensedState.segmentBuffer[pos[1] * image.image.width + pos[0]] =
           node;
       }
     },
@@ -140,7 +140,7 @@ export function addCondensedStateEntry(imageIndex: number, event: DrawEvent) {
       state.condensedState.segments.pop();
     },
     event,
-    [image.width, image.height],
+    [image.image.width, image.image.height],
     []
   );
 }

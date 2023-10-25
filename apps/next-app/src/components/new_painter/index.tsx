@@ -30,7 +30,7 @@ export function Painter(props: {
   initialState: { event: Omit<DrawEvent, "splitInfo">; historyIndex: number }[];
 }): JSX.Element {
   // the image to draw on
-  const image = useMemo(() => kImages[props.imageIndex], [props.imageIndex]);
+  const image = useMemo(() => kImages[props.imageIndex].image, [props.imageIndex]);
 
   // initialize client-side state
   const [resolution, drawing, segmentBuffer, segmentData] = useMemo(() => {
