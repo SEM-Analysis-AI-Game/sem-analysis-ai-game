@@ -1,5 +1,7 @@
 import * as THREE from "three";
 import { DrawEvent } from "./socket-events";
+import { breadthFirstTraversal } from "./bft";
+import { StaticImageData } from "next/image";
 
 /**
  * the points that make up a brush. pos is the position of the point relative
@@ -40,33 +42,94 @@ const kDrawAlpha = 0.5;
  */
 const kBorderAlphaBoost = 0.5;
 
+type SplitInfo = {
+  color: THREE.Color;
+  oldSegment: number;
+  newSegment: number;
+  pos: readonly [number, number];
+};
+
+export function smoothPaintClient(
+  segmentBuffer: Int32Array,
+  image: StaticImageData,
+  drawing: THREE.DataTexture,
+  segmentData: {
+    color: THREE.Color;
+  }[],
+  event: Omit<DrawEvent, "splitInfo">,
+  splitInfo: readonly SplitInfo[] | null
+): SplitInfo[] | undefined {
+  return smoothPaint(
+    (pos) => getSegment(segmentBuffer, [image.width, image.height], pos),
+    (pos, segment) => (segmentBuffer[pos[1] * image.width + pos[0]] = segment),
+    (pos, boundary, segment) => {
+      fillPixel(
+        drawing,
+        pos,
+        [image.width, image.height],
+        boundary ??
+          drawing.image.data[(pos[1] * image.width + pos[0]) * 4 + 3] / 255,
+        segmentData[segment].color
+      );
+    },
+    (color) => {
+      segmentData.push({
+        color,
+      });
+      return segmentData.length - 1;
+    },
+    () => segmentData.pop(),
+    event,
+    [image.width, image.height],
+    splitInfo
+  );
+}
+
 /**
  * draws a smooth brush stroke between two points.
  */
 export function smoothPaint(
-  event: DrawEvent,
-  segmentBuffer: Int32Array,
-  segmentData: {
-    color: THREE.Color;
-  }[],
-  drawing: THREE.DataTexture | Uint8Array,
+  getSegment: (pos: readonly [number, number]) => number,
+  setSegment: (pos: readonly [number, number], segment: number) => void,
+  fill: (
+    pos: readonly [number, number],
+    alpha: number | undefined,
+    segment: number
+  ) => void,
+  createSegment: (color: THREE.Color) => number,
+  popSegment: () => void,
+  event: Omit<DrawEvent, "splitInfo">,
   resolution: readonly [number, number],
-): void {
+  splitInfo: readonly SplitInfo[] | null
+): SplitInfo[] | undefined {
   // get the segment where the brush stroke starts
-  let segment = getSegment(segmentBuffer, resolution, event.from);
+  let segment = getSegment(event.from);
 
   // if the segment is -1, the brush stroke starts in an empty area.
   if (segment === -1) {
-    segmentData.push({
-      color: new THREE.Color(`#${event.color!}`),
-    });
-    segment = segmentData.length - 1;
+    segment = createSegment(new THREE.Color(`#${event.segmentColor}`));
   }
 
   const brushSize = event.size;
 
+  const effectedSegments: Map<
+    number,
+    { newBoundaryPoints: Set<string> }
+  > | null = splitInfo
+    ? null
+    : new Map<number, { newBoundaryPoints: Set<string> }>();
+
   // draw the starting point of the brush stroke
-  draw(segmentBuffer, segment, segmentData, drawing, event.from, resolution, brushSize);
+  draw(
+    getSegment,
+    setSegment,
+    fill,
+    segment,
+    event.from,
+    resolution,
+    brushSize,
+    effectedSegments
+  );
 
   // current interpolation point
   const current: [number, number] = [event.to[0], event.to[1]];
@@ -79,22 +142,136 @@ export function smoothPaint(
 
   // the step to take for each interpolation
   const step = [
-    (event.size / kDrawingSmoothStep * (event.from[0] - current[0])) / length,
-    (event.size / kDrawingSmoothStep * (event.from[1] - current[1])) / length,
+    ((event.size / kDrawingSmoothStep) * (event.from[0] - current[0])) / length,
+    ((event.size / kDrawingSmoothStep) * (event.from[1] - current[1])) / length,
   ];
 
   // interpolate between the end and start point of the brush stroke
-  for (let i = 0; i < Math.floor(length / (event.size / kDrawingSmoothStep)); i++) {
+  for (
+    let i = 0;
+    i < Math.floor(length / (event.size / kDrawingSmoothStep));
+    i++
+  ) {
     const currentPos = [
       Math.floor(current[0]),
       Math.floor(current[1]),
     ] as const;
 
     // draw at the current interpolation point
-    draw(segmentBuffer, segment, segmentData, drawing, currentPos, resolution, brushSize);
+    draw(
+      getSegment,
+      setSegment,
+      fill,
+      segment,
+      currentPos,
+      resolution,
+      brushSize,
+      effectedSegments
+    );
 
     current[0] += step[0];
     current[1] += step[1];
+  }
+
+  if (effectedSegments) {
+    const splits: SplitInfo[] = [];
+    for (const effectedSegment of effectedSegments) {
+      const segment = effectedSegment[0];
+      const { newBoundaryPoints } = effectedSegment[1];
+      while (newBoundaryPoints.size > 0) {
+        let boundarySize = newBoundaryPoints.size;
+        const bfsStart = newBoundaryPoints
+          .values()
+          .next()
+          .value.split(",")
+          .map((str: string) => parseInt(str)) as [number, number];
+        newBoundaryPoints.delete(`${bfsStart[0]},${bfsStart[1]}`);
+        const visited = breadthFirstTraversal(bfsStart, (pos) => {
+          const stringify = `${pos[0]},${pos[1]}`;
+          if (
+            pos[0] >= 0 &&
+            pos[1] >= 0 &&
+            pos[0] < resolution[0] &&
+            pos[1] < resolution[1] &&
+            newBoundaryPoints.has(stringify)
+          ) {
+            newBoundaryPoints.delete(stringify);
+            return true;
+          }
+          return false;
+        });
+        if (visited.size < boundarySize) {
+          boundarySize -= visited.size;
+          const newColor = new THREE.Color(
+            Math.random(),
+            Math.random(),
+            Math.random()
+          );
+          const newSegment = createSegment(newColor);
+          splits.push({
+            newSegment,
+            oldSegment: segment,
+            color: newColor,
+            pos: bfsStart,
+          });
+          breadthFirstTraversal(bfsStart, (pos, exitLoop) => {
+            if (
+              pos[0] >= 0 &&
+              pos[1] >= 0 &&
+              pos[0] < resolution[0] &&
+              pos[1] < resolution[1] &&
+              getSegment(pos) === segment
+            ) {
+              const stringify = `${pos[0]},${pos[1]}`;
+              if (newBoundaryPoints.has(stringify)) {
+                boundarySize--;
+                if (boundarySize === 0) {
+                  exitLoop();
+                }
+              }
+              setSegment(pos, newSegment);
+              fill(pos, undefined, newSegment);
+              return true;
+            }
+            return false;
+          });
+          if (boundarySize === 0) {
+            breadthFirstTraversal(bfsStart, (pos) => {
+              if (getSegment(pos) === newSegment) {
+                setSegment(pos, segment);
+                fill(pos, undefined, segment);
+                return true;
+              }
+              return false;
+            });
+            popSegment();
+            splits.pop();
+          }
+        }
+      }
+    }
+    return splits;
+  } else if (splitInfo) {
+    for (const info of splitInfo) {
+      const oldSegment = getSegment(info.pos);
+      const newSegment = createSegment(info.color);
+      breadthFirstTraversal(info.pos, (pos) => {
+        if (
+          pos[0] >= 0 &&
+          pos[1] >= 0 &&
+          pos[0] < resolution[0] &&
+          pos[1] < resolution[1] &&
+          getSegment(pos) === oldSegment
+        ) {
+          setSegment(pos, newSegment);
+          fill(pos, undefined, newSegment);
+          return true;
+        }
+        return false;
+      });
+    }
+  } else {
+    throw new Error("effectedSegments and splitInfo are both undefined");
   }
 }
 
@@ -159,15 +336,21 @@ function createCirclePoints(diameter: number): BrushPoints {
  * draws a brush stroke at a given position.
  */
 function draw(
-  segmentBuffer: Int32Array,
+  getSegment: (pos: readonly [number, number]) => number,
+  setSegment: (pos: readonly [number, number], segment: number) => void,
+  fill: (
+    pos: readonly [number, number],
+    boundary: number | undefined,
+    segment: number
+  ) => void,
   activeSegment: number,
-  segmentData: readonly { color: THREE.Color }[],
-  drawing: THREE.DataTexture | Uint8Array,
   pos: readonly [number, number],
   resolution: readonly [number, number],
-  size: number
+  size: number,
+  effectedSegments: Map<number, { newBoundaryPoints: Set<string> }> | null
 ): void {
-  const kBrushPoints = brushes[Math.max(Math.min(Math.floor(size / 5 - 1), 19), 0)];
+  const kBrushPoints =
+    brushes[Math.max(Math.min(Math.floor(size / 5 - 1), 19), 0)];
 
   for (const point of kBrushPoints) {
     const pixelPos = [pos[0] + point.pos[0], pos[1] + point.pos[1]] as const;
@@ -177,7 +360,11 @@ function draw(
       pixelPos[0] < resolution[0] &&
       pixelPos[1] < resolution[1]
     ) {
-      segmentBuffer[pixelPos[1] * resolution[0] + pixelPos[0]] = activeSegment;
+      const oldSegment = getSegment(pixelPos);
+      effectedSegments
+        ?.get(oldSegment)
+        ?.newBoundaryPoints.delete(`${pixelPos[0]},${pixelPos[1]}`);
+      setSegment(pixelPos, activeSegment);
 
       const isBoundary =
         point.boundaryEdges.filter((offset) => {
@@ -193,16 +380,20 @@ function draw(
           ) {
             return true;
           } else {
-            const segment = getSegment(segmentBuffer, resolution, pos);
+            const segment = getSegment(pos);
             if (segment !== activeSegment) {
               if (segment !== -1) {
-                fillPixel(
-                  drawing,
-                  pos,
-                  resolution,
-                  kDrawAlpha + kBorderAlphaBoost,
-                  segmentData[segment].color
-                );
+                if (effectedSegments) {
+                  let segmentEntry = effectedSegments.get(segment);
+                  if (!segmentEntry) {
+                    segmentEntry = {
+                      newBoundaryPoints: new Set<string>(),
+                    };
+                    effectedSegments.set(segment, segmentEntry);
+                  }
+                  segmentEntry.newBoundaryPoints.add(`${pos[0]},${pos[1]}`);
+                }
+                fill(pos, kDrawAlpha + kBorderAlphaBoost, segment);
               }
               return true;
             }
@@ -214,12 +405,10 @@ function draw(
         pixelPos[0] === resolution[0] - 1 ||
         pixelPos[1] === resolution[1] - 1;
 
-      fillPixel(
-        drawing,
+      fill(
         pixelPos,
-        resolution,
         kDrawAlpha + (isBoundary ? kBorderAlphaBoost : 0),
-        segmentData[activeSegment].color
+        activeSegment
       );
     }
   }
@@ -228,21 +417,18 @@ function draw(
 /**
  * fills a pixel in the drawing uniform.
  */
-function fillPixel(
-  drawing: THREE.DataTexture | Uint8Array,
+export function fillPixel(
+  drawing: THREE.DataTexture,
   pos: readonly [number, number],
   resolution: readonly [number, number],
   alpha: number,
   color: THREE.Color
 ): void {
   const pixelIndex = (pos[1] * resolution[0] + pos[0]) * 4;
-  const data =
-    drawing instanceof THREE.DataTexture ? drawing.image.data : drawing;
+  const data = drawing.image.data;
   data[pixelIndex] = color.r * 255;
   data[pixelIndex + 1] = color.g * 255;
   data[pixelIndex + 2] = color.b * 255;
   data[pixelIndex + 3] = alpha * 255;
-  if (drawing instanceof THREE.DataTexture) {
-    drawing.needsUpdate = true;
-  }
+  drawing.needsUpdate = true;
 }

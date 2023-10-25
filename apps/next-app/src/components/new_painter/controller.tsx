@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { useEffect, useState } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { clamp } from "three/src/math/MathUtils.js";
-import { DrawEvent, getSegment, smoothPaint } from "@/util";
+import { DrawEvent, getSegment, kImages, smoothPaintClient } from "@/util";
 import { useSocket } from "../socket-connection";
 
 /**
@@ -10,7 +10,7 @@ import { useSocket } from "../socket-connection";
  * emits draw events to the server.
  */
 export function PainterController(props: {
-  timestamp: number;
+  historyIndex: number;
   imageIndex: number;
   zoom: number;
   pan: readonly [number, number];
@@ -39,16 +39,22 @@ export function PainterController(props: {
 
   // listen for draw events from the server
   useEffect((): any => {
-    if (socket) {
-      socket.on("draw", (data: DrawEvent) =>
-        smoothPaint(
-          data,
+    if (socket && socket.connected) {
+      socket.on("draw", (data: DrawEvent) => {
+        smoothPaintClient(
           props.segmentBuffer,
-          props.segmentData,
+          kImages[props.imageIndex],
           props.drawing,
-          props.resolution
-        )
-      );
+          props.segmentData,
+          data,
+          data.splitInfo.map((info) => ({
+            color: new THREE.Color(`#${info.color}`),
+            newSegment: info.newSegment,
+            oldSegment: info.oldSegment,
+            pos: info.pos,
+          }))
+        );
+      });
       socket.emit("join", {
         room: props.imageIndex.toString(),
       });
@@ -66,21 +72,26 @@ export function PainterController(props: {
   ]);
 
   useEffect(() => {
-    if (socket && reconciling && !reconciled) {
+    if (socket && socket.connected && reconciling && !reconciled) {
       fetch(
-        `/api/state?imageIndex=${props.imageIndex}&timestamp=${props.timestamp}`,
+        `/api/state?imageIndex=${props.imageIndex}&historyIndex=${props.historyIndex}`,
         { method: "GET" }
       )
         .then((res) => res.json())
         .then((res) => {
-          console.log(res.state.length);
-          for (const event of res.state) {
-            smoothPaint(
-              event,
+          for (const event of res.events as DrawEvent[]) {
+            smoothPaintClient(
               props.segmentBuffer,
-              props.segmentData,
+              kImages[props.imageIndex],
               props.drawing,
-              props.resolution
+              props.segmentData,
+              event,
+              event.splitInfo.map((info) => ({
+                color: new THREE.Color(`#${info.color}`),
+                newSegment: info.newSegment,
+                oldSegment: info.oldSegment,
+                pos: info.pos,
+              }))
             );
           }
           setReconciled(true);
@@ -89,7 +100,7 @@ export function PainterController(props: {
     }
   }, [
     socket,
-    props.timestamp,
+    props.historyIndex,
     reconciling,
     setReconciling,
     setReconciled,
@@ -134,6 +145,13 @@ export function PainterController(props: {
 
       // update the last cursor position
       setLastCursorPos((lastCursor) => {
+        if (lastCursor) {
+          if (lastCursor[0] === pixelPos[0] && lastCursor[1] === pixelPos[1]) {
+            // if the cursor has not moved, do nothing
+            return lastCursor;
+          }
+        }
+
         // get the segment that the cursor is in
         const segment = getSegment(
           props.segmentBuffer,
@@ -147,27 +165,35 @@ export function PainterController(props: {
         const color: THREE.Color | undefined =
           segment === -1
             ? new THREE.Color(Math.random(), Math.random(), Math.random())
-            : undefined;
+            : props.segmentData[segment]!.color;
 
         // representation used for the smoothPaint method, and for emitting to the server.
         const drawEvent: DrawEvent = {
           from: lastCursor ?? pixelPos,
           to: pixelPos,
           size: 10,
-          color: color?.getHexString(),
+          segment: segment === -1 ? props.segmentData.length : segment,
+          segmentColor: color.getHexString(),
+          splitInfo: [],
         };
+
+        // paint locally
+        drawEvent.splitInfo = smoothPaintClient(
+          props.segmentBuffer,
+          kImages[props.imageIndex],
+          props.drawing,
+          props.segmentData,
+          drawEvent,
+          null
+        )!.map((info) => ({
+          color: info.color.getHexString(),
+          newSegment: info.newSegment,
+          oldSegment: info.oldSegment,
+          pos: info.pos,
+        }));
 
         // emit the draw event to the server
         socket.emit("draw", drawEvent);
-
-        // paint locally
-        smoothPaint(
-          drawEvent,
-          props.segmentBuffer,
-          props.segmentData,
-          props.drawing,
-          props.resolution
-        );
 
         // update the last cursor position
         return pixelPos;

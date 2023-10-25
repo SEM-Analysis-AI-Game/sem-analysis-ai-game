@@ -5,7 +5,7 @@ import { Server as NetServer, Socket } from "net";
 import { NextApiResponse } from "next";
 import { Server as SocketIOServer } from "socket.io";
 import { DrawEvent } from "@/util";
-import { serverState } from "./state";
+import { addCondensedStateEntry, serverState } from "./state";
 
 export const config = {
   api: {
@@ -61,10 +61,53 @@ export default async function socket(
           // save the draw event to the server state
           if (room) {
             connection.broadcast.to(room).emit("draw", data);
-            serverState[parseInt(room)].push({
-              ...data,
-              timestamp: Date.now(),
-            });
+            const imageIndex = parseInt(room);
+            const state = serverState[imageIndex];
+            state.events.push(data);
+            if (state.condensedState.length > 0) {
+              const previousStateEntry = state.condensedState.tail!.data!;
+              const lastEvent = previousStateEntry.event;
+              if (
+                lastEvent.to[0] === data.from[0] &&
+                lastEvent.to[1] === data.from[1]
+              ) {
+                const diff = [
+                  data.to[0] - lastEvent.from[0],
+                  data.to[1] - lastEvent.from[1],
+                ];
+                const lastDiff = [
+                  lastEvent.to[0] - lastEvent.from[0],
+                  lastEvent.to[1] - lastEvent.from[1],
+                ];
+                const lengthDiff = Math.sqrt(
+                  diff[0] * diff[0] + diff[1] * diff[1]
+                );
+                const lastLengthDiff = Math.sqrt(
+                  lastDiff[0] * lastDiff[0] + lastDiff[1] * lastDiff[1]
+                );
+                const diffNormalized = [
+                  diff[0] / lengthDiff,
+                  diff[1] / lengthDiff,
+                ];
+                const lastDiffNormalized = [
+                  lastDiff[0] / lastLengthDiff,
+                  lastDiff[1] / lastLengthDiff,
+                ];
+                const dotProduct =
+                  diffNormalized[0] * lastDiffNormalized[0] +
+                  diffNormalized[1] * lastDiffNormalized[1];
+                if (dotProduct === 1) {
+                  lastEvent.to = data.to;
+                  previousStateEntry.historyIndex = state.events.length - 1;
+                } else {
+                  addCondensedStateEntry(imageIndex, data);
+                }
+              } else {
+                addCondensedStateEntry(imageIndex, data);
+              }
+            } else {
+              addCondensedStateEntry(imageIndex, data);
+            }
           } else {
             throw new Error("Draw event from user not in a room");
           }

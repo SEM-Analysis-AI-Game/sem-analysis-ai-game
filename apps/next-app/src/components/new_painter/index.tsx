@@ -6,7 +6,7 @@ import Image, { StaticImageData } from "next/image";
 import { useDrag, usePinch } from "@use-gesture/react";
 import { Canvas } from "@react-three/fiber";
 import { clamp } from "three/src/math/MathUtils.js";
-import { DrawEvent, kImages, smoothPaint } from "@/util";
+import { DrawEvent, kImages, smoothPaintClient } from "@/util";
 import { PainterRenderer } from "./renderer";
 import { PainterController } from "./controller";
 
@@ -26,9 +26,8 @@ function scale(image: StaticImageData): number {
 }
 
 export function Painter(props: {
-  timestamp: number;
   imageIndex: number;
-  initialState: DrawEvent[];
+  initialState: { event: Omit<DrawEvent, "splitInfo">; historyIndex: number }[];
 }): JSX.Element {
   // the image to draw on
   const image = useMemo(() => kImages[props.imageIndex], [props.imageIndex]);
@@ -51,8 +50,8 @@ export function Painter(props: {
 
     const data: { color: THREE.Color }[] = [];
 
-    for (const event of props.initialState) {
-      smoothPaint(event, buffer, data, texture, [image.width, image.height]);
+    for (const eventData of props.initialState) {
+      smoothPaintClient(buffer, image, texture, data, eventData.event, []);
     }
 
     return [[image.width, image.height] as const, texture, buffer, data];
@@ -207,7 +206,11 @@ export function Painter(props: {
       </div>
       <Canvas>
         <PainterController
-          timestamp={props.timestamp}
+          historyIndex={
+            props.initialState.length > 0
+              ? props.initialState[props.initialState.length - 1].historyIndex
+              : -1
+          }
           imageIndex={props.imageIndex}
           resolution={resolution}
           zoom={zoom}

@@ -41,7 +41,7 @@ export function SocketConnectionProvider(
 
   return (
     <>
-      {socket ? null : (
+      {socket && socket.connected ? null : (
         <div className="absolute top-0 right-0">
           <h1>Connecting...</h1>
         </div>
