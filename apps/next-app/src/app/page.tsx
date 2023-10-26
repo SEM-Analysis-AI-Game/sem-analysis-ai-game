@@ -7,10 +7,10 @@ import { Gradient } from "@/components/Gradient";
 import { useEffect } from "react";
 
 export default async function Home(): Promise<JSX.Element> {
-  useEffect(() => {
-    const gradient = new Gradient();
-    gradient.initGradient("#gradient-canvas");
-  }, []);
+  // useEffect(() => {
+  //   const gradient = new Gradient();
+  //   gradient.initGradient("#gradient-canvas");
+  // }, []);
   return (
     <>
       <div>

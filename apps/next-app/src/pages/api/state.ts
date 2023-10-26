@@ -1,7 +1,10 @@
+import * as THREE from "three";
 import {
   CondensedStateNode,
   DrawEvent,
+  GraveyardNode,
   ServerState,
+  SplitNode,
   kImages,
   smoothPaint,
 } from "@/util";
@@ -13,19 +16,19 @@ import { NextApiRequest, NextApiResponse } from "next";
  */
 export const serverState: ServerState = kImages.map((image) => {
   const head = {
+    type: "CondensedStateNode" as const,
     data: null,
     next: null,
     prev: null,
-    nextInSegment: null,
-    prevInSegment: null,
   };
   return {
     events: [],
     condensedState: {
       head,
       tail: head,
+      segmentSizes: [],
+      numSegments: 0,
       length: 0,
-      segments: [],
       segmentBuffer: new Array(image.image.width * image.image.height),
     },
   };
@@ -36,6 +39,7 @@ export function addCondensedStateEntry(imageIndex: number, event: DrawEvent) {
   const image = kImages[imageIndex];
 
   const node: CondensedStateNode = {
+    type: "CondensedStateNode",
     data: {
       event: {
         from: event.from,
@@ -49,39 +53,45 @@ export function addCondensedStateEntry(imageIndex: number, event: DrawEvent) {
     },
     next: null,
     prev: null,
-    nextInSegment: null,
-    prevInSegment: null,
   };
 
-  while (state.condensedState.segments.length < event.segment) {
-    const head = {
-      data: null,
+  const splitNodes: SplitNode[] = event.splitInfo.map((splitInfo) => {
+    return {
+      type: "SplitNode",
+      data: {
+        event: {
+          segment: splitInfo.newSegment,
+        },
+        historyIndex: state.events.length - 1,
+        numPixels: 0,
+      },
       next: null,
-      prev: null,
-      nextInSegment: null,
-      prevInSegment: null,
+      prev: node,
     };
-    state.condensedState.segments.push({
-      head,
-      tail: head,
-    });
-  }
-
-  if (state.condensedState.segments.length === event.segment) {
-    state.condensedState.segments.push({
-      head: node,
-      tail: node,
-    });
-  }
-
-  const segmentTail = state.condensedState.segments[event.segment].tail;
-  segmentTail.nextInSegment = node;
-  node.prevInSegment = segmentTail;
-  state.condensedState.segments[event.segment].tail = node;
+  });
 
   state.condensedState.tail.next = node;
   node.prev = state.condensedState.tail;
   state.condensedState.tail = node;
+
+  if (state.condensedState.segmentSizes.length <= event.segment) {
+  }
+
+  for (const splitNode of splitNodes) {
+    state.condensedState.tail.next = splitNode;
+    splitNode.prev = state.condensedState.tail;
+    state.condensedState.tail = splitNode;
+    while (
+      state.condensedState.segmentSizes.length <= splitNode.data!.event.segment
+    ) {
+      state.condensedState.segmentSizes.push(0);
+    }
+  }
+
+  if (state.condensedState.numSegments <= event.segment) {
+    state.condensedState.segmentSizes.push(0);
+    state.condensedState.numSegments = event.segment + 1;
+  }
 
   state.condensedState.length++;
 
@@ -91,57 +101,98 @@ export function addCondensedStateEntry(imageIndex: number, event: DrawEvent) {
         return event.segment;
       } else {
         return (
-          state.condensedState.segmentBuffer[pos[1] * image.image.width + pos[0]]
-            ?.data?.event.segment ?? -1
+          state.condensedState.segmentBuffer[
+            pos[1] * image.image.width + pos[0]
+          ]?.node.data?.event.segment ?? -1
         );
       }
     },
     (pos, segment) => {
       const oldSegmentNode =
         state.condensedState.segmentBuffer[pos[1] * image.image.width + pos[0]];
-      if (!oldSegmentNode || oldSegmentNode.data!.event.segment !== segment) {
+      if (
+        !oldSegmentNode ||
+        oldSegmentNode.node.data!.event.segment !== segment
+      ) {
         if (oldSegmentNode) {
-          oldSegmentNode.data!.numPixels--;
-          if (oldSegmentNode.data!.numPixels === 0) {
-            oldSegmentNode!.prev!.next = oldSegmentNode.next;
-            if (oldSegmentNode.next) {
-              oldSegmentNode.next.prev = oldSegmentNode.prev;
+          oldSegmentNode.node.data!.numPixels--;
+          state.condensedState.segmentSizes[
+            oldSegmentNode.node.data!.event.segment
+          ]--;
+          if (oldSegmentNode.node.data!.numPixels === 0) {
+            if (
+              state.condensedState.segmentSizes[
+                oldSegmentNode.node.data!.event.segment
+              ] === 0
+            ) {
+              const graveyard: GraveyardNode = {
+                type: "GraveyardNode",
+                data: {
+                  event: {
+                    segment: oldSegmentNode.node.data!.event.segment,
+                  },
+                  historyIndex: oldSegmentNode.node.data!.historyIndex,
+                },
+                next: oldSegmentNode.node.next,
+                prev: oldSegmentNode.node.prev!,
+              };
+              oldSegmentNode.node.prev!.next = graveyard;
+              if (oldSegmentNode.node.next) {
+                oldSegmentNode.node.next.prev = graveyard;
+              }
+            } else {
+              oldSegmentNode!.node.prev!.next = oldSegmentNode.node.next;
+              if (oldSegmentNode.node.next) {
+                oldSegmentNode.node.next.prev = oldSegmentNode.node.prev;
+              }
+              state.condensedState.length--;
             }
-            oldSegmentNode.prevInSegment!.nextInSegment =
-              oldSegmentNode.nextInSegment;
-            if (oldSegmentNode.nextInSegment) {
-              oldSegmentNode.nextInSegment.prevInSegment =
-                oldSegmentNode.prevInSegment;
-            }
-            state.condensedState.length--;
           }
         }
-        node.data!.numPixels++;
-        state.condensedState.segmentBuffer[pos[1] * image.image.width + pos[0]] =
-          node;
+        if (segment === event.segment) {
+          node.data!.numPixels++;
+          state.condensedState.segmentBuffer[
+            pos[1] * image.image.width + pos[0]
+          ] = {
+            node,
+            boundary: false,
+          };
+        } else {
+          const splitNode = splitNodes.find(
+            (node) => node.data!.event.segment === segment
+          )!;
+          splitNode.data!.numPixels++;
+          state.condensedState.segmentBuffer[
+            pos[1] * image.image.width + pos[0]
+          ] = {
+            node,
+            boundary: false,
+          };
+        }
       }
     },
-    () => {},
-    () => {
-      const head = {
-        data: null,
-        next: null,
-        prev: null,
-        nextInSegment: null,
-        prevInSegment: null,
-      };
-      state.condensedState.segments.push({
-        head,
-        tail: head,
-      });
-      return state.condensedState.segments.length - 1;
+    (pos, alpha) => {
+      if (alpha) {
+        state.condensedState.segmentBuffer[
+          pos[1] * image.image.width + pos[0]
+        ]!.boundary = alpha === 1.0;
+      }
     },
+    (pos) =>
+      state.condensedState.segmentBuffer[pos[1] * image.image.width + pos[0]]
+        ?.boundary ?? false,
     () => {
-      state.condensedState.segments.pop();
+      state.condensedState.numSegments++;
+      return state.condensedState.numSegments - 1;
     },
     event,
     [image.image.width, image.image.height],
-    []
+    event.splitInfo.map((splitInfo) => ({
+      pos: splitInfo.pos,
+      color: new THREE.Color(`#${splitInfo.color}`),
+      oldSegment: splitInfo.oldSegment,
+      newSegment: splitInfo.newSegment,
+    }))
   );
 }
 
@@ -161,7 +212,11 @@ export default async function handler(
     const initialState = [];
     let current = state.condensedState.head.next;
     while (current) {
-      initialState.push(current.data!);
+      if (current.type === "CondensedStateNode") {
+        initialState.push(current.data!);
+      } else {
+        console.log(current);
+      }
       current = current.next;
     }
     return response.status(200).json({ initialState });

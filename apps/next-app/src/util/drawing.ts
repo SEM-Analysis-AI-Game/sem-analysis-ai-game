@@ -63,23 +63,24 @@ export function smoothPaintClient(
   return smoothPaint(
     (pos) => getSegment(segmentBuffer, [image.width, image.height], pos),
     (pos, segment) => (segmentBuffer[pos[1] * image.width + pos[0]] = segment),
-    (pos, boundary, segment) => {
+    (pos, alpha, segment) => {
       fillPixel(
         drawing,
         pos,
         [image.width, image.height],
-        boundary ??
+        alpha ??
           drawing.image.data[(pos[1] * image.width + pos[0]) * 4 + 3] / 255,
         segmentData[segment].color
       );
     },
+    (pos) =>
+      drawing.image.data[(pos[1] * image.width + pos[0]) * 4 + 3] === 255,
     (color) => {
       segmentData.push({
         color,
       });
       return segmentData.length - 1;
     },
-    () => segmentData.pop(),
     event,
     [image.width, image.height],
     splitInfo
@@ -97,8 +98,8 @@ export function smoothPaint(
     alpha: number | undefined,
     segment: number
   ) => void,
+  isBoundary: (pos: readonly [number, number]) => boolean,
   createSegment: (color: THREE.Color) => number,
-  popSegment: () => void,
   event: Omit<DrawEvent, "splitInfo">,
   resolution: readonly [number, number],
   splitInfo: readonly SplitInfo[] | null
@@ -203,21 +204,19 @@ export function smoothPaint(
         });
         if (visited.size < boundarySize) {
           boundarySize -= visited.size;
-          const newColor = getRandomColor();
-          const newSegment = createSegment(newColor);
-          splits.push({
-            newSegment,
-            oldSegment: segment,
-            color: newColor,
-            pos: bfsStart,
-          });
+          const newColor = new THREE.Color(
+            Math.random(),
+            Math.random(),
+            Math.random()
+          );
           breadthFirstTraversal(bfsStart, (pos, exitLoop) => {
             if (
               pos[0] >= 0 &&
               pos[1] >= 0 &&
               pos[0] < resolution[0] &&
               pos[1] < resolution[1] &&
-              getSegment(pos) === segment
+              getSegment(pos) === segment &&
+              isBoundary(pos)
             ) {
               const stringify = `${pos[0]},${pos[1]}`;
               if (newBoundaryPoints.has(stringify)) {
@@ -226,23 +225,32 @@ export function smoothPaint(
                   exitLoop();
                 }
               }
-              setSegment(pos, newSegment);
-              fill(pos, undefined, newSegment);
               return true;
             }
             return false;
           });
-          if (boundarySize === 0) {
+          if (boundarySize !== 0) {
+            const newSegment = createSegment(newColor);
+            splits.push({
+              newSegment,
+              oldSegment: segment,
+              color: newColor,
+              pos: bfsStart,
+            });
             breadthFirstTraversal(bfsStart, (pos) => {
-              if (getSegment(pos) === newSegment) {
-                setSegment(pos, segment);
-                fill(pos, undefined, segment);
+              if (
+                pos[0] >= 0 &&
+                pos[1] >= 0 &&
+                pos[0] < resolution[0] &&
+                pos[1] < resolution[1] &&
+                getSegment(pos) === segment
+              ) {
+                setSegment(pos, newSegment);
+                fill(pos, undefined, newSegment);
                 return true;
               }
               return false;
             });
-            popSegment();
-            splits.pop();
           }
         }
       }
@@ -250,22 +258,24 @@ export function smoothPaint(
     return splits;
   } else if (splitInfo) {
     for (const info of splitInfo) {
-      const oldSegment = getSegment(info.pos);
-      const newSegment = createSegment(info.color);
-      breadthFirstTraversal(info.pos, (pos) => {
-        if (
-          pos[0] >= 0 &&
-          pos[1] >= 0 &&
-          pos[0] < resolution[0] &&
-          pos[1] < resolution[1] &&
-          getSegment(pos) === oldSegment
-        ) {
-          setSegment(pos, newSegment);
-          fill(pos, undefined, newSegment);
-          return true;
-        }
-        return false;
-      });
+      if (info.oldSegment !== info.newSegment) {
+        const oldSegment = getSegment(info.pos);
+        const newSegment = createSegment(info.color);
+        breadthFirstTraversal(info.pos, (pos) => {
+          if (
+            pos[0] >= 0 &&
+            pos[1] >= 0 &&
+            pos[0] < resolution[0] &&
+            pos[1] < resolution[1] &&
+            getSegment(pos) === oldSegment
+          ) {
+            setSegment(pos, newSegment);
+            fill(pos, undefined, newSegment);
+            return true;
+          }
+          return false;
+        });
+      }
     }
   } else {
     throw new Error("effectedSegments and splitInfo are both undefined");
@@ -337,7 +347,7 @@ function draw(
   setSegment: (pos: readonly [number, number], segment: number) => void,
   fill: (
     pos: readonly [number, number],
-    boundary: number | undefined,
+    alpha: number | undefined,
     segment: number
   ) => void,
   activeSegment: number,
