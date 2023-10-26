@@ -4,7 +4,7 @@ import { Server as HttpServer } from "http";
 import { Server as NetServer, Socket } from "net";
 import { NextApiResponse } from "next";
 import { Server as SocketIOServer } from "socket.io";
-import { DrawEvent } from "@/util";
+import { CondensedStateNode, DrawEvent, kImages, smoothPaint } from "@/util";
 import { addCondensedStateEntry, serverState } from "./state";
 
 export const config = {
@@ -64,10 +64,28 @@ export default async function socket(
             const imageIndex = parseInt(room);
             const state = serverState[imageIndex];
             state.events.push(data);
+
+            const node: CondensedStateNode = {
+              type: "CondensedStateNode",
+              data: {
+                event: {
+                  from: data.from,
+                  to: data.to,
+                  segment: data.segment,
+                  color: data.color,
+                  size: data.size,
+                },
+                historyIndex: state.events.length - 1,
+                numPixels: 0,
+              },
+              next: null,
+              prev: null,
+            };
+
             if (state.condensedState.length > 0) {
               if (state.condensedState.tail!.type === "CondensedStateNode") {
-                const previousStateEntry = state.condensedState.tail!.data!;
-                const lastEvent = previousStateEntry.event;
+                const previousNode = state.condensedState.tail!;
+                const lastEvent = previousNode.data!.event;
                 if (
                   lastEvent.to[0] === data.from[0] &&
                   lastEvent.to[1] === data.from[1]
@@ -94,24 +112,33 @@ export default async function socket(
                     lastDiff[0] / lastLengthDiff,
                     lastDiff[1] / lastLengthDiff,
                   ];
-                  const dotProduct =
-                    diffNormalized[0] * lastDiffNormalized[0] +
-                    diffNormalized[1] * lastDiffNormalized[1];
-                  if (dotProduct === 1) {
-                    lastEvent.to = data.to;
-                    previousStateEntry.historyIndex = state.events.length - 1;
-                  } else {
-                    addCondensedStateEntry(imageIndex, data);
-                  }
-                } else {
-                  addCondensedStateEntry(imageIndex, data);
+                  // const dotProduct =
+                  //   diffNormalized[0] * lastDiffNormalized[0] +
+                  //   diffNormalized[1] * lastDiffNormalized[1];
+                  // if (dotProduct === 1) {
+                  //   node.data!.event.from = lastEvent.from;
+                  //   previousNode.prev!.next = null;
+                  //   state.condensedState.length--;
+                  //   state.condensedState.segmentSizes[
+                  //     previousNode.data!.event.segment
+                  //   ]--;
+                  //   state.condensedState.tail = previousNode.prev!;
+                  // }
                 }
-              } else {
-                addCondensedStateEntry(imageIndex, data);
               }
-            } else {
-              addCondensedStateEntry(imageIndex, data);
             }
+
+            state.condensedState.tail.next = node;
+            node.prev = state.condensedState.tail;
+            state.condensedState.tail = node;
+            state.condensedState.length++;
+            if (state.condensedState.segmentSizes.length > data.segment) {
+              state.condensedState.segmentSizes[data.segment]++;
+            } else {
+              state.condensedState.segmentSizes.push(1);
+            }
+
+            addCondensedStateEntry(imageIndex, node);
           } else {
             throw new Error("Draw event from user not in a room");
           }

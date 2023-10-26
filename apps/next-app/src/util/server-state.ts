@@ -18,6 +18,7 @@ export type GraveyardNode = {
   data: {
     event: {
       segment: number;
+      color: string;
     };
     historyIndex: number;
   };
@@ -30,6 +31,8 @@ export type SplitNode = {
   data: {
     event: {
       segment: number;
+      color: string;
+      boundary: Set<string>;
     };
     historyIndex: number;
     numPixels: number;
@@ -43,7 +46,6 @@ export type ServerState = {
   condensedState: {
     segmentSizes: number[];
     length: number;
-    numSegments: number;
     tail: CondensedNode;
     head: CondensedStateNode;
     segmentBuffer: ({

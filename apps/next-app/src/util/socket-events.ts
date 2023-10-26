@@ -2,7 +2,7 @@ export type DrawEvent = {
   from: readonly [number, number];
   to: readonly [number, number];
   size: number;
-  segmentColor: string;
+  color: string;
   segment: number;
   splitInfo: {
     oldSegment: number;

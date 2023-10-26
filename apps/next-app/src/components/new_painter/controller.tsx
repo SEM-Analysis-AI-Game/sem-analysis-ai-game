@@ -20,9 +20,9 @@ export function PainterController(props: {
   segmentBuffer: Int32Array;
   segmentData: { color: THREE.Color }[];
 }): null {
-  // current mouse position in screen coordinate system ([-1, -1] to [1, 1] with the origin
+  // current pointer position in screen coordinate system ([-1, -1] to [1, 1] with the origin
   // at the center of the screen)
-  const { mouse } = useThree();
+  const { pointer } = useThree();
 
   // the last cursor position in texture coordinates ([0, 0] at the bottom left corner and,
   // and [resolution[0], resolution[1]] at the top right corner), or null if the cursor is
@@ -114,14 +114,15 @@ export function PainterController(props: {
       // gets the pixel position of the cursor in texture coordinates ([0, 0] at the bottom left corner and,
       // and [resolution[0], resolution[1]] at the top right corner)
       const getPixelPos = (
-        mousePos: number,
+        pointerPos: number,
         pan: number,
         resolutionDim: number,
         windowDim: number
       ) =>
         Math.floor(
           clamp(
-            ((mousePos * windowDim) / 2 - pan) / props.zoom + resolutionDim / 2,
+            ((pointerPos * windowDim) / 2 - pan) / props.zoom +
+              resolutionDim / 2,
             0,
             resolutionDim - 1
           )
@@ -130,13 +131,13 @@ export function PainterController(props: {
       // the pixel position of the cursor in texture coordinates
       const pixelPos = [
         getPixelPos(
-          mouse.x,
+          pointer.x,
           props.pan[0],
           props.resolution[0],
           window.innerWidth
         ),
         getPixelPos(
-          mouse.y,
+          pointer.y,
           -props.pan[1],
           props.resolution[1],
           window.innerHeight
@@ -173,7 +174,7 @@ export function PainterController(props: {
           to: pixelPos,
           size: 10,
           segment: segment === -1 ? props.segmentData.length : segment,
-          segmentColor: color.getHexString(),
+          color: color.getHexString(),
           splitInfo: [],
         };
 

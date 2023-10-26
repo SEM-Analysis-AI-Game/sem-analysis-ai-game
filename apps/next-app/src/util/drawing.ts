@@ -63,7 +63,7 @@ export function smoothPaintClient(
   return smoothPaint(
     (pos) => getSegment(segmentBuffer, [image.width, image.height], pos),
     (pos, segment) => (segmentBuffer[pos[1] * image.width + pos[0]] = segment),
-    (pos, alpha, segment) => {
+    (pos, alpha, segment) =>
       fillPixel(
         drawing,
         pos,
@@ -71,8 +71,7 @@ export function smoothPaintClient(
         alpha ??
           drawing.image.data[(pos[1] * image.width + pos[0]) * 4 + 3] / 255,
         segmentData[segment].color
-      );
-    },
+      ),
     (pos) =>
       drawing.image.data[(pos[1] * image.width + pos[0]) * 4 + 3] === 255,
     (color) => {
@@ -109,7 +108,7 @@ export function smoothPaint(
 
   // if the segment is -1, the brush stroke starts in an empty area.
   if (segment === -1) {
-    segment = createSegment(new THREE.Color(`#${event.segmentColor}`));
+    segment = createSegment(new THREE.Color(`#${event.color}`));
   }
 
   const brushSize = event.size;
