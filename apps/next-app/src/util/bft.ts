@@ -10,7 +10,8 @@ type BFTNode = {
  */
 export function breadthFirstTraversal(
   start: readonly [number, number],
-  test: (pos: readonly [number, number], exitLoop: () => void) => boolean
+  test: (pos: readonly [number, number], exitLoop: () => void) => boolean,
+  allowDiagonal: boolean = true
 ): Set<string> {
   const visited = new Set<string>();
   let queue: BFTNode | null = {
@@ -32,10 +33,14 @@ export function breadthFirstTraversal(
         [0, -1],
         [1, 0],
         [-1, 0],
-        [1, 1],
-        [1, -1],
-        [-1, 1],
-        [-1, -1],
+        ...(allowDiagonal
+          ? [
+              [1, 1],
+              [1, -1],
+              [-1, 1],
+              [-1, -1],
+            ]
+          : []),
       ]) {
         const neighborPos = [
           current[0] + neighbor[0],

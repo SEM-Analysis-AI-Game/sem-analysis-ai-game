@@ -30,6 +30,7 @@ export type SplitNode = {
   type: "SplitNode";
   data: {
     event: {
+      fillStart: readonly [number, number];
       segment: number;
       color: string;
       boundary: Set<string>;

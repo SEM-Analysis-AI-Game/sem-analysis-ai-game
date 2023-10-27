@@ -6,9 +6,16 @@ import Image, { StaticImageData } from "next/image";
 import { useDrag, usePinch } from "@use-gesture/react";
 import { Canvas } from "@react-three/fiber";
 import { clamp } from "three/src/math/MathUtils.js";
-import { kImages, smoothPaintClient } from "@/util";
+import {
+  fillPixel,
+  kBorderAlphaBoost,
+  kDrawAlpha,
+  kImages,
+  smoothPaintClient,
+} from "@/util";
 import { PainterRenderer } from "./renderer";
 import { PainterController } from "./controller";
+import { breadthFirstTraversal } from "@/util/bft";
 
 /**
  * The max zoom multiplier
@@ -30,7 +37,10 @@ export function Painter(props: {
   initialState: any;
 }): JSX.Element {
   // the image to draw on
-  const image = useMemo(() => kImages[props.imageIndex].image, [props.imageIndex]);
+  const image = useMemo(
+    () => kImages[props.imageIndex].image,
+    [props.imageIndex]
+  );
 
   // initialize client-side state
   const [resolution, drawing, segmentBuffer, segmentData] = useMemo(() => {
@@ -50,12 +60,88 @@ export function Painter(props: {
 
     const data: { color: THREE.Color }[] = [];
 
+    let previousSplit: {
+      fillStart: readonly [number, number];
+      color: string;
+      segment: number;
+    } | null = null;
     for (const eventData of props.initialState) {
       switch (eventData.type) {
         case "Draw":
+          if (previousSplit) {
+            breadthFirstTraversal(
+              previousSplit.fillStart,
+              (pos) => {
+                if (
+                  pos[0] >= 0 &&
+                  pos[1] >= 0 &&
+                  pos[0] < image.width &&
+                  pos[1] < image.height &&
+                  buffer[pos[1] * image.width + pos[0]] !==
+                    previousSplit!.segment
+                ) {
+                  buffer[pos[1] * image.width + pos[0]] =
+                    previousSplit!.segment;
+                  fillPixel(
+                    texture,
+                    pos,
+                    [image.width, image.height],
+                    kDrawAlpha,
+                    new THREE.Color(`#${previousSplit!.color}`)
+                  );
+                  return true;
+                }
+                return false;
+              },
+              false
+            );
+            previousSplit = null;
+          }
           smoothPaintClient(buffer, image, texture, data, eventData, []);
           break;
         case "Split":
+          if (previousSplit && eventData.segment !== previousSplit.segment) {
+            breadthFirstTraversal(
+              previousSplit.fillStart,
+              (pos) => {
+                if (
+                  pos[0] >= 0 &&
+                  pos[1] >= 0 &&
+                  pos[0] < image.width &&
+                  pos[1] < image.height &&
+                  buffer[pos[1] * image.width + pos[0]] !==
+                    previousSplit!.segment
+                ) {
+                  buffer[pos[1] * image.width + pos[0]] =
+                    previousSplit!.segment;
+                  fillPixel(
+                    texture,
+                    pos,
+                    [image.width, image.height],
+                    kDrawAlpha,
+                    new THREE.Color(`#${previousSplit!.color}`)
+                  );
+                  return true;
+                }
+                return false;
+              },
+              false
+            );
+            previousSplit = null;
+          }
+          previousSplit = eventData;
+          data.push({
+            color: new THREE.Color(`#${eventData.color}`),
+          });
+          buffer[eventData.position[1] * image.width + eventData.position[0]] =
+            eventData.segment;
+          fillPixel(
+            texture,
+            eventData.position,
+            [image.width, image.height],
+            kDrawAlpha + kBorderAlphaBoost,
+            new THREE.Color(`#${eventData.color}`)
+          );
           break;
         case "Graveyard":
           data.push({
@@ -63,6 +149,33 @@ export function Painter(props: {
           });
           break;
       }
+    }
+
+    if (previousSplit) {
+      breadthFirstTraversal(
+        previousSplit.fillStart,
+        (pos) => {
+          if (
+            pos[0] >= 0 &&
+            pos[1] >= 0 &&
+            pos[0] < image.width &&
+            pos[1] < image.height &&
+            buffer[pos[1] * image.width + pos[0]] !== previousSplit!.segment
+          ) {
+            buffer[pos[1] * image.width + pos[0]] = previousSplit!.segment;
+            fillPixel(
+              texture,
+              pos,
+              [image.width, image.height],
+              kDrawAlpha,
+              new THREE.Color(`#${previousSplit!.color}`)
+            );
+            return true;
+          }
+          return false;
+        },
+        false
+      );
     }
 
     return [[image.width, image.height] as const, texture, buffer, data];

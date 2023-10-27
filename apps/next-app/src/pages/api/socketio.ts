@@ -1,10 +1,11 @@
+import * as THREE from "three";
 import { NextApiRequest } from "next";
 import { Server as ServerIO } from "socket.io";
 import { Server as HttpServer } from "http";
 import { Server as NetServer, Socket } from "net";
 import { NextApiResponse } from "next";
 import { Server as SocketIOServer } from "socket.io";
-import { CondensedStateNode, DrawEvent, kImages, smoothPaint } from "@/util";
+import { CondensedStateNode, DrawEvent, SplitNode } from "@/util";
 import { addCondensedStateEntry, serverState } from "./state";
 
 export const config = {
@@ -82,52 +83,6 @@ export default async function socket(
               prev: null,
             };
 
-            if (state.condensedState.length > 0) {
-              if (state.condensedState.tail!.type === "CondensedStateNode") {
-                const previousNode = state.condensedState.tail!;
-                const lastEvent = previousNode.data!.event;
-                if (
-                  lastEvent.to[0] === data.from[0] &&
-                  lastEvent.to[1] === data.from[1]
-                ) {
-                  const diff = [
-                    data.to[0] - lastEvent.from[0],
-                    data.to[1] - lastEvent.from[1],
-                  ];
-                  const lastDiff = [
-                    lastEvent.to[0] - lastEvent.from[0],
-                    lastEvent.to[1] - lastEvent.from[1],
-                  ];
-                  const lengthDiff = Math.sqrt(
-                    diff[0] * diff[0] + diff[1] * diff[1]
-                  );
-                  const lastLengthDiff = Math.sqrt(
-                    lastDiff[0] * lastDiff[0] + lastDiff[1] * lastDiff[1]
-                  );
-                  const diffNormalized = [
-                    diff[0] / lengthDiff,
-                    diff[1] / lengthDiff,
-                  ];
-                  const lastDiffNormalized = [
-                    lastDiff[0] / lastLengthDiff,
-                    lastDiff[1] / lastLengthDiff,
-                  ];
-                  // const dotProduct =
-                  //   diffNormalized[0] * lastDiffNormalized[0] +
-                  //   diffNormalized[1] * lastDiffNormalized[1];
-                  // if (dotProduct === 1) {
-                  //   node.data!.event.from = lastEvent.from;
-                  //   previousNode.prev!.next = null;
-                  //   state.condensedState.length--;
-                  //   state.condensedState.segmentSizes[
-                  //     previousNode.data!.event.segment
-                  //   ]--;
-                  //   state.condensedState.tail = previousNode.prev!;
-                  // }
-                }
-              }
-            }
-
             state.condensedState.tail.next = node;
             node.prev = state.condensedState.tail;
             state.condensedState.tail = node;
@@ -138,7 +93,7 @@ export default async function socket(
               state.condensedState.segmentSizes.push(1);
             }
 
-            addCondensedStateEntry(imageIndex, node);
+            addCondensedStateEntry(imageIndex, node, data.splitInfo);
           } else {
             throw new Error("Draw event from user not in a room");
           }
