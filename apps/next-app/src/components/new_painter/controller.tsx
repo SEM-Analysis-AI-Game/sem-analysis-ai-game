@@ -5,8 +5,8 @@ import { useSocket } from "../socket-connection";
 import { DrawEvent, kImages } from "@/common";
 import {
   ClientState,
+  applyDrawEventClient,
   fillUpdatedSegment,
-  getSegment,
   recomputeSegmentsClient,
   smoothPaintClient,
 } from "@/client";
@@ -58,7 +58,7 @@ export function PainterController(props: {
             props.state.nextSegmentIndex,
             data.segment + 1
           );
-          smoothPaintClient(props.state, data.draw, data.segment, false);
+          applyDrawEventClient(props.state, data.draw, data.segment);
           for (const fill of data.fill) {
             props.state.nextSegmentIndex = Math.max(
               props.state.nextSegmentIndex,
@@ -88,18 +88,21 @@ export function PainterController(props: {
         .then((res) => res.json())
         .then((res) => {
           for (const eventData of res.initialState) {
-            props.state.nextSegmentIndex = Math.max(
-              props.state.nextSegmentIndex,
-              eventData.segment + 1
-            );
             if (eventData.type === "DrawNode") {
-              smoothPaintClient(
+              props.state.nextSegmentIndex = Math.max(
+                props.state.nextSegmentIndex,
+                eventData.segment + 1
+              );
+              applyDrawEventClient(
                 props.state,
                 eventData.event,
-                eventData.segment,
-                false
+                eventData.segment
               );
             } else {
+              props.state.nextSegmentIndex = Math.max(
+                props.state.nextSegmentIndex,
+                eventData.segment + 1
+              );
               fillUpdatedSegment(
                 props.state,
                 eventData.event,
@@ -177,23 +180,7 @@ export function PainterController(props: {
           size: 10,
         };
 
-        let segment = getSegment(
-          props.state.segmentBuffer,
-          kImages[props.imageIndex].width,
-          drawEvent.from
-        );
-
-        if (segment === -1) {
-          segment = props.state.nextSegmentIndex;
-          props.state.nextSegmentIndex++;
-        }
-
-        const effectedSegments = smoothPaintClient(
-          props.state,
-          drawEvent,
-          segment,
-          true
-        );
+        const effectedSegments = smoothPaintClient(props.state, drawEvent);
         recomputeSegmentsClient(props.state, effectedSegments);
 
         // emit the draw event to the server

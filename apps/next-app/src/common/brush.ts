@@ -22,59 +22,58 @@ const kMinBrushSize = 5;
 const kBrushSizeInterval = 5;
 
 /**
- * the points in the brush. the brush is a circle with a diameter of 20 pixels.
+ * The points in the brush. The brush is a circle.
  */
-const kBrushes: BrushPoints[] = [];
-for (let i = kMinBrushSize; i <= kMaxBrushSize; i += kBrushSizeInterval) {
-  kBrushes.push(createCirclePoints(i));
-}
+const kBrushes: readonly BrushPoints[] = (() => {
+  const brushes = [];
+  for (let i = kMinBrushSize; i <= kMaxBrushSize; i += kBrushSizeInterval) {
+    const points: {
+      pos: readonly [number, number];
+      boundaryEdges: readonly (readonly [number, number])[];
+    }[] = [];
+    const radius = Math.ceil(i / 2);
+    for (let x = -radius; x < radius; x++) {
+      for (let y = -radius; y < radius; y++) {
+        const lengthSquared = x * x + y * y;
+        const radiusSquared = radius * radius;
+        if (lengthSquared < radiusSquared) {
+          const boundaryEdges: (readonly [number, number])[] = [];
 
-/**
- * creates the points for a brush with the given diameter.
- */
-function createCirclePoints(diameter: number): BrushPoints {
-  const points: {
-    pos: readonly [number, number];
-    boundaryEdges: readonly (readonly [number, number])[];
-  }[] = [];
-  const radius = Math.ceil(diameter / 2);
-  for (let x = -radius; x < radius; x++) {
-    for (let y = -radius; y < radius; y++) {
-      const lengthSquared = x * x + y * y;
-      const radiusSquared = radius * radius;
-      if (lengthSquared < radiusSquared) {
-        const boundaryEdges: (readonly [number, number])[] = [];
-
-        function checkOffset(offset: readonly [number, number]) {
-          const lengthSquared =
-            (offset[0] + x) * (offset[0] + x) +
-            (offset[1] + y) * (offset[1] + y);
-          if (lengthSquared >= radiusSquared) {
-            boundaryEdges.push(offset);
+          function checkOffset(offset: readonly [number, number]) {
+            const lengthSquared =
+              (offset[0] + x) * (offset[0] + x) +
+              (offset[1] + y) * (offset[1] + y);
+            if (lengthSquared >= radiusSquared) {
+              boundaryEdges.push(offset);
+            }
           }
-        }
-        if (x < 0) {
-          checkOffset([-1, 0]);
-        } else if (x > 0) {
-          checkOffset([1, 0]);
-        }
+          if (x < 0) {
+            checkOffset([-1, 0]);
+          } else if (x > 0) {
+            checkOffset([1, 0]);
+          }
 
-        if (y < 0) {
-          checkOffset([0, -1]);
-        } else if (y > 0) {
-          checkOffset([0, 1]);
-        }
+          if (y < 0) {
+            checkOffset([0, -1]);
+          } else if (y > 0) {
+            checkOffset([0, 1]);
+          }
 
-        points.push({
-          boundaryEdges,
-          pos: [x, y],
-        });
+          points.push({
+            boundaryEdges,
+            pos: [x, y],
+          });
+        }
       }
     }
+    brushes.push(points);
   }
-  return points;
-}
+  return brushes;
+})();
 
+/**
+ * Gets the points that make up a brush of a given size.
+ */
 export function getBrush(size: number): BrushPoints {
   return kBrushes[Math.floor((size - kMinBrushSize) / kBrushSizeInterval)];
 }

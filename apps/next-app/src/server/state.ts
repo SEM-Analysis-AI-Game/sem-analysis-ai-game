@@ -1,4 +1,4 @@
-import { DrawEvent, FillEvent, kImages } from "@/common";
+import { DrawEvent, kImages } from "@/common";
 
 // The following nodes are used in a doubly-linked list to represent the room state.
 // The nodes of the linked list are also used as elements in a 2D-array to represent
@@ -18,7 +18,11 @@ type HeadNode = {
  */
 export type FillNode = {
   type: "FillNode";
-  event: FillEvent;
+
+  /**
+   * Tracks the points in the segment buffer that are linked with this node.
+   */
+  points: Map<string, { boundary: boolean }>;
 
   /**
    * The segment to use for the fill.
@@ -27,6 +31,7 @@ export type FillNode = {
 
   /**
    * The number of pixels tied to this node that will be shown in the final drawing.
+   * When this reaches 0, we can remove this node from the shortlog.
    */
   numPixels: number;
 

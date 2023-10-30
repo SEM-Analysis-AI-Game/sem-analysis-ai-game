@@ -38,17 +38,16 @@ function setSegment(
     entry = { node, boundary: false };
     segmentBuffer[pos[1] * width + pos[0]] = entry;
   }
-  // remove the point from points if the node is a fill node
-  if (entry.node.type === "FillNode") {
-    entry.node.event.points.delete(`${pos[0]},${pos[1]}`);
+
+  if (entry.node.segment !== node.segment) {
+    // update the fill node boundary if the node is a fill node
+    if (node.type === "FillNode") {
+      node.points.set(`${pos[0]},${pos[1]}`, {
+        boundary: entry.boundary,
+      });
+    }
+    entry.node = node;
   }
-  // update the fill node boundary if the node is a fill node
-  if (node.type === "FillNode") {
-    node.event.points.set(`${pos[0]},${pos[1]}`, {
-      boundary: entry.boundary,
-    });
-  }
-  entry.node = node;
 }
 
 /**
@@ -67,7 +66,7 @@ function fill(
     const oldNode = segmentBuffer[pos[1] * width + pos[0]]!;
     // update the boundary map if the node is a fill node
     if (oldNode.node.type === "FillNode") {
-      oldNode.node.event.points.set(`${pos[0]},${pos[1]}`, {
+      oldNode.node.points.set(`${pos[0]},${pos[1]}`, {
         boundary: type === FillBoundaryType.boundary,
       });
     }
@@ -91,7 +90,6 @@ export function smoothPaintServer(
   // if the segment is -1, the brush stroke starts in an empty area.
   if (segment === -1) {
     segment = state.nextSegmentIndex;
-    state.nextSegmentIndex++;
   }
 
   const node: DrawNode = {
@@ -113,10 +111,9 @@ export function smoothPaintServer(
     (pos) => getSegment(state.segmentBuffer, state.dimensions[0], pos),
     (pos) => setSegment(state.segmentBuffer, state.dimensions[0], pos, node),
     (pos, type) => fill(state.segmentBuffer, state.dimensions[0], pos, type),
-    segment,
+    state,
     event,
-    state.dimensions,
-    true
+    state.dimensions
   );
 }
 
@@ -125,7 +122,6 @@ export function recomputeSegmentsServer(
   effectedSegments: Map<number, { newBoundaryPoints: Set<string> }>
 ): Map<number, FillNode> {
   const fillNodes = new Map<number, FillNode>();
-  const indexTracker = { index: state.nextSegmentIndex };
   recomputeSegments(
     (pos) => getSegment(state.segmentBuffer, state.dimensions[0], pos),
     (pos, segment) => {
@@ -133,9 +129,7 @@ export function recomputeSegmentsServer(
       if (!node) {
         node = {
           type: "FillNode",
-          event: {
-            points: new Map(),
-          },
+          points: new Map(),
           segment,
           numPixels: 0,
           prev: state.shortLog.tail as LogEventNode,
@@ -152,10 +146,9 @@ export function recomputeSegmentsServer(
     (pos) =>
       state.segmentBuffer[pos[1] * state.dimensions[0] + pos[0]]?.boundary ??
       false,
-    indexTracker,
+    state,
     state.dimensions,
     effectedSegments
   );
-  state.nextSegmentIndex = indexTracker.index;
   return fillNodes;
 }

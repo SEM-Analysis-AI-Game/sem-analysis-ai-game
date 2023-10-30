@@ -2,6 +2,11 @@ import * as THREE from "three";
 
 const colorCache: THREE.Color[] = [];
 
+/**
+ * Pseudo-randomly generates a color for a segment.
+ *
+ * This is deterministic, so the same segment will always have the same color.
+ */
 export function getColor(segment: number): THREE.Color {
   if (colorCache.length > segment) {
     return colorCache[segment];

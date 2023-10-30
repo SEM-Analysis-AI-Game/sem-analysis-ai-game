@@ -22,12 +22,10 @@ export default async function handler(
           historyIndex: current.historyIndex,
         });
       } else {
-        const points = [...current.event.points.entries()].map(
-          ([key, value]) => ({
-            pos: key.split(",").map((x) => parseInt(x)) as [number, number],
-            boundary: value.boundary,
-          })
-        );
+        const points = [...current.points.entries()].map(([key, value]) => ({
+          pos: key.split(",").map((x) => parseInt(x)) as [number, number],
+          boundary: value.boundary,
+        }));
         initialState.unshift({
           type: current.type,
           event: {

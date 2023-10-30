@@ -73,7 +73,7 @@ export default async function socket(
               fill: [...fills.entries()]
                 .sort((a, b) => a[0] - b[0])
                 .map(([, node]) => {
-                  const points = [...node.event.points.entries()].map(
+                  const points = [...node.points.entries()].map(
                     ([key, value]) => ({
                       pos: key.split(",").map((x) => parseInt(x)) as [
                         number,

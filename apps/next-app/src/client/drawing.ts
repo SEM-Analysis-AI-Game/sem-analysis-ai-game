@@ -1,6 +1,7 @@
 import {
   DrawEvent,
   FillBoundaryType,
+  applyDrawEvent,
   breadthFirstTraversal,
   getColor,
   recomputeSegments,
@@ -80,59 +81,65 @@ export function fillUpdatedSegment(
     );
   }
   if (initialSegment !== null) {
-    breadthFirstTraversal(
-      event.fillStart!,
-      (pos) => {
-        if (
-          pos[0] < 0 ||
-          pos[1] < 0 ||
-          pos[0] >= dimensions[0] ||
-          pos[1] >= dimensions[1]
-        ) {
-          return false;
-        }
-        if (state.segmentBuffer[pos[1] * dimensions[0] + pos[0]] === segment) {
-          return true;
-        }
-        if (
-          state.segmentBuffer[pos[1] * dimensions[0] + pos[0]] ===
-          initialSegment
-        ) {
-          state.segmentBuffer[pos[1] * dimensions[0] + pos[0]] = segment;
-          fillPixel(
-            state.drawing,
-            pos,
-            dimensions,
-            kDrawAlpha,
-            getColor(segment)
-          );
-          return true;
-        } else {
-          return false;
-        }
-      },
-      true
-    );
+    breadthFirstTraversal(event.fillStart!, (pos) => {
+      if (
+        pos[0] < 0 ||
+        pos[1] < 0 ||
+        pos[0] >= dimensions[0] ||
+        pos[1] >= dimensions[1]
+      ) {
+        return false;
+      }
+      if (state.segmentBuffer[pos[1] * dimensions[0] + pos[0]] === segment) {
+        return true;
+      }
+      if (
+        state.segmentBuffer[pos[1] * dimensions[0] + pos[0]] === initialSegment
+      ) {
+        state.segmentBuffer[pos[1] * dimensions[0] + pos[0]] = segment;
+        fillPixel(
+          state.drawing,
+          pos,
+          dimensions,
+          kDrawAlpha,
+          getColor(segment)
+        );
+        return true;
+      } else {
+        return false;
+      }
+    });
   }
 }
 
-export function smoothPaintClient<RecomputeSegments extends boolean>(
+export function smoothPaintClient(
+  state: ClientState,
+  event: DrawEvent
+): Map<number, { newBoundaryPoints: Set<string> }> {
+  return smoothPaint(
+    (pos) => getSegment(state.segmentBuffer, state.drawing.image.width, pos),
+    (pos, segment) =>
+      setSegment(state.segmentBuffer, state.drawing.image.width, pos, segment),
+    (pos, type) => fill(state.segmentBuffer, state.drawing, pos, type),
+    state,
+    event,
+    [state.drawing.image.width, state.drawing.image.height]
+  );
+}
+
+export function applyDrawEventClient(
   state: ClientState,
   event: DrawEvent,
-  segment: number,
-  recomputeSegments: RecomputeSegments
-): RecomputeSegments extends true
-  ? Map<number, { newBoundaryPoints: Set<string> }>
-  : void {
-  return smoothPaint(
+  segment: number
+): void {
+  applyDrawEvent(
     (pos) => getSegment(state.segmentBuffer, state.drawing.image.width, pos),
     (pos) =>
       setSegment(state.segmentBuffer, state.drawing.image.width, pos, segment),
     (pos, type) => fill(state.segmentBuffer, state.drawing, pos, type),
     segment,
     event,
-    [state.drawing.image.width, state.drawing.image.height],
-    recomputeSegments
+    [state.drawing.image.width, state.drawing.image.height]
   );
 }
 
@@ -140,7 +147,6 @@ export function recomputeSegmentsClient(
   state: ClientState,
   effectedSegments: Map<number, { newBoundaryPoints: Set<string> }>
 ): void {
-  const indexTracker = { index: state.nextSegmentIndex };
   recomputeSegments(
     (pos) => getSegment(state.segmentBuffer, state.drawing.image.width, pos),
     (pos, segment) =>
@@ -150,11 +156,10 @@ export function recomputeSegmentsClient(
       state.drawing.image.data[
         (pos[1] * state.drawing.image.width + pos[0]) * 4 + 3
       ] === 255,
-    indexTracker,
+    state,
     [state.drawing.image.width, state.drawing.image.height],
     effectedSegments
   );
-  state.nextSegmentIndex = indexTracker.index;
 }
 
 /**

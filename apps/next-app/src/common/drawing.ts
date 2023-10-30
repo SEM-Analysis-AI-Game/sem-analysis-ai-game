@@ -1,14 +1,15 @@
+import { ClientState } from "@/client";
 import { breadthFirstTraversal } from "./bft";
 import { getBrush } from "./brush";
 
+/**
+ * This is emitted by the client to the socket.io server, and then broadcasted
+ * to all other clients in the same room. This is also stored in the raw log.
+ */
 export type DrawEvent = {
   from: readonly [number, number];
   to: readonly [number, number];
   size: number;
-};
-
-export type FillEvent = {
-  points: Map<string, { boundary: boolean }>;
 };
 
 /**
@@ -23,9 +24,10 @@ export enum FillBoundaryType {
 /**
  * Draws the brush shape at a given position.
  *
- * By passing in a Map<number, { newBoundaryPoints: Set<string> }> for
- * effectedSegments, the function will fill in the new boundary points for each
- * segment that is effected by the drawing.
+ * @param getSegment a function that returns the segment at a given position
+ * @param setSegment a function that sets the segment at a given position
+ * @param fill a function that performs some side-effect for each segment or
+ *             boundary update.
  */
 function draw(
   getSegment: (pos: readonly [number, number]) => number,
@@ -34,8 +36,7 @@ function draw(
   activeSegment: number,
   pos: readonly [number, number],
   resolution: readonly [number, number],
-  brushSize: number,
-  effectedSegments: Map<number, { newBoundaryPoints: Set<string> }> | null
+  brushSize: number
 ): void {
   for (const point of getBrush(brushSize)) {
     const pixelPos = [pos[0] + point.pos[0], pos[1] + point.pos[1]] as const;
@@ -45,18 +46,16 @@ function draw(
       pixelPos[0] < resolution[0] &&
       pixelPos[1] < resolution[1]
     ) {
-      const oldSegment = getSegment(pixelPos);
-      effectedSegments
-        ?.get(oldSegment)
-        ?.newBoundaryPoints.delete(`${pixelPos[0]},${pixelPos[1]}`);
       setSegment(pixelPos);
 
       const isBoundary =
+        // check each boundary edge of the brush point
         point.boundaryEdges.filter((offset) => {
           const pos = [
             offset[0] + pixelPos[0],
             offset[1] + pixelPos[1],
           ] as const;
+          // if the boundary edge is out of bounds, then it is a boundary
           if (
             pos[0] < 0 ||
             pos[1] < 0 ||
@@ -66,18 +65,11 @@ function draw(
             return true;
           } else {
             const segment = getSegment(pos);
+            // if the point boundary edge is not the same segment as the active segment
+            // then it is a boundary point of the segment it belongs to.
             if (segment !== activeSegment) {
+              // if the point is not a part of a segment we do not need to run fill
               if (segment !== -1) {
-                if (effectedSegments) {
-                  let segmentEntry = effectedSegments.get(segment);
-                  if (!segmentEntry) {
-                    segmentEntry = {
-                      newBoundaryPoints: new Set<string>(),
-                    };
-                    effectedSegments.set(segment, segmentEntry);
-                  }
-                  segmentEntry.newBoundaryPoints.add(`${pos[0]},${pos[1]}`);
-                }
                 fill(pos, FillBoundaryType.boundary);
               }
               return true;
@@ -85,11 +77,13 @@ function draw(
           }
           return false;
         }).length > 0 ||
+        // if the point is on the edge of the canvas, then it is a boundary
         pixelPos[0] === 0 ||
         pixelPos[1] === 0 ||
         pixelPos[0] === resolution[0] - 1 ||
         pixelPos[1] === resolution[1] - 1;
 
+      // update boundary and color
       fill(
         pixelPos,
         isBoundary ? FillBoundaryType.boundary : FillBoundaryType.notBoundary
@@ -99,28 +93,21 @@ function draw(
 }
 
 /**
- * the factor to divide the brush size when interpolating across a segment
+ * The factor to divide the brush size when interpolating across a segment
  */
 const kDrawingSmoothStep = 4;
 
 /**
- * Draws a smooth brush stroke between two points.
+ * Applies a draw event.
  */
-export function smoothPaint<RecomputeSegments extends boolean>(
+export function applyDrawEvent(
   getSegment: (pos: readonly [number, number]) => number,
   setSegment: (pos: readonly [number, number]) => void,
   fill: (pos: readonly [number, number], type: FillBoundaryType) => void,
   activeSegment: number,
   event: DrawEvent,
-  resolution: readonly [number, number],
-  recomputeSegments: RecomputeSegments
-): RecomputeSegments extends true
-  ? Map<number, { newBoundaryPoints: Set<string> }>
-  : void {
-  const effectedSegments = recomputeSegments
-    ? new Map<number, { newBoundaryPoints: Set<string> }>()
-    : null;
-
+  resolution: readonly [number, number]
+): void {
   // draw the starting point of the brush stroke
   draw(
     getSegment,
@@ -129,8 +116,7 @@ export function smoothPaint<RecomputeSegments extends boolean>(
     activeSegment,
     event.from,
     resolution,
-    event.size,
-    effectedSegments
+    event.size
   );
 
   // current interpolation point
@@ -167,25 +153,80 @@ export function smoothPaint<RecomputeSegments extends boolean>(
       activeSegment,
       currentPos,
       resolution,
-      event.size,
-      effectedSegments
+      event.size
     );
 
     current[0] += step[0];
     current[1] += step[1];
   }
-
-  return effectedSegments as RecomputeSegments extends true
-    ? Map<number, { newBoundaryPoints: Set<string> }>
-    : void;
 }
 
+/**
+ * Draws a smooth brush stroke between two points and tracks newly created
+ * boundary points on old segments.
+ */
+export function smoothPaint(
+  getSegment: (pos: readonly [number, number]) => number,
+  setSegment: (pos: readonly [number, number], segment: number) => void,
+  fill: (pos: readonly [number, number], type: FillBoundaryType) => void,
+  state: { nextSegmentIndex: number },
+  event: DrawEvent,
+  resolution: readonly [number, number]
+): Map<number, { newBoundaryPoints: Set<string> }> {
+  const effectedSegments = new Map<
+    number,
+    { newBoundaryPoints: Set<string> }
+  >();
+
+  let activeSegment = getSegment(event.from);
+
+  if (activeSegment === -1) {
+    activeSegment = state.nextSegmentIndex;
+    state.nextSegmentIndex++;
+  }
+
+  applyDrawEvent(
+    getSegment,
+    (pos) => {
+      const oldSegment = getSegment(pos);
+      let oldSegmentEntry = effectedSegments.get(oldSegment);
+      if (oldSegmentEntry) {
+        oldSegmentEntry.newBoundaryPoints.delete(`${pos[0]},${pos[1]}`);
+      }
+      setSegment(pos, activeSegment);
+    },
+    (pos, type) => {
+      const segment = getSegment(pos);
+      if (segment !== activeSegment) {
+        let entry = effectedSegments.get(segment);
+        if (!entry) {
+          entry = { newBoundaryPoints: new Set<string>() };
+          effectedSegments.set(segment, entry);
+        }
+        if (type === FillBoundaryType.boundary) {
+          entry.newBoundaryPoints.add(`${pos[0]},${pos[1]}`);
+        }
+      }
+      fill(pos, type);
+    },
+    activeSegment,
+    event,
+    resolution
+  );
+
+  return effectedSegments;
+}
+
+/**
+ * Finds and fills new segment splits given a set of effected segments and
+ * their new boundary points that were created by the last draw.
+ */
 export function recomputeSegments(
   getSegment: (pos: readonly [number, number]) => number,
   setSegment: (pos: readonly [number, number], segment: number) => void,
   fill: (pos: readonly [number, number], type: FillBoundaryType) => void,
   isBoundary: (pos: readonly [number, number]) => boolean,
-  nextSegmentIndex: { index: number },
+  state: { nextSegmentIndex: number },
   resolution: readonly [number, number],
   effectedSegments: Map<number, { newBoundaryPoints: Set<string> }>
 ): void {
@@ -247,14 +288,14 @@ export function recomputeSegments(
               getSegment(pos) === segment
             ) {
               set = true;
-              setSegment(pos, nextSegmentIndex.index);
+              setSegment(pos, state.nextSegmentIndex);
               fill(pos, FillBoundaryType.retain);
               return true;
             }
             return false;
           });
           if (set) {
-            nextSegmentIndex.index++;
+            state.nextSegmentIndex++;
           }
         }
       }

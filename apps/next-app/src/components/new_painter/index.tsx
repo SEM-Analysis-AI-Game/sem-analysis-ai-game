@@ -9,7 +9,11 @@ import { clamp } from "three/src/math/MathUtils.js";
 import { PainterRenderer } from "./renderer";
 import { PainterController } from "./controller";
 import { kImages } from "@/common";
-import { ClientState, fillUpdatedSegment, smoothPaintClient } from "@/client";
+import {
+  ClientState,
+  applyDrawEventClient,
+  fillUpdatedSegment,
+} from "@/client";
 
 /**
  * The max zoom multiplier
@@ -60,13 +64,17 @@ export function Painter(props: {
     };
 
     for (const eventData of props.initialState) {
-      state.nextSegmentIndex = Math.max(
-        state.nextSegmentIndex,
-        eventData.segment + 1
-      );
       if (eventData.type === "DrawNode") {
-        smoothPaintClient(state, eventData.event, eventData.segment, false);
+        state.nextSegmentIndex = Math.max(
+          state.nextSegmentIndex,
+          eventData.segment + 1
+        );
+        applyDrawEventClient(state, eventData.event, eventData.segment);
       } else {
+        state.nextSegmentIndex = Math.max(
+          state.nextSegmentIndex,
+          eventData.segment + 1
+        );
         fillUpdatedSegment(state, eventData.event, eventData.segment, [
           kImages[props.imageIndex].width,
           kImages[props.imageIndex].height,
