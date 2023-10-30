@@ -6,16 +6,10 @@ import Image, { StaticImageData } from "next/image";
 import { useDrag, usePinch } from "@use-gesture/react";
 import { Canvas } from "@react-three/fiber";
 import { clamp } from "three/src/math/MathUtils.js";
-import {
-  fillPixel,
-  kBorderAlphaBoost,
-  kDrawAlpha,
-  kImages,
-  smoothPaintClient,
-} from "@/util";
 import { PainterRenderer } from "./renderer";
 import { PainterController } from "./controller";
-import { breadthFirstTraversal } from "@/util/bft";
+import { kImages } from "@/common";
+import { ClientState, fillUpdatedSegment, smoothPaintClient } from "@/client";
 
 /**
  * The max zoom multiplier
@@ -34,16 +28,13 @@ function scale(image: StaticImageData): number {
 
 export function Painter(props: {
   imageIndex: number;
-  initialState: any;
+  initialState: any[];
 }): JSX.Element {
   // the image to draw on
-  const image = useMemo(
-    () => kImages[props.imageIndex].image,
-    [props.imageIndex]
-  );
+  const image = useMemo(() => kImages[props.imageIndex], [props.imageIndex]);
 
   // initialize client-side state
-  const [resolution, drawing, segmentBuffer, segmentData] = useMemo(() => {
+  const state: ClientState = useMemo(() => {
     // the texture to use for drawing
     const textureData = new Uint8Array(image.width * image.height * 4);
     const texture = new THREE.DataTexture(
@@ -58,127 +49,24 @@ export function Painter(props: {
     // const buffer = new Int32Array(props.segmentBuffer);
     const buffer = new Int32Array(image.width * image.height).fill(-1);
 
-    const data: { color: THREE.Color }[] = [];
+    const state = {
+      drawing: texture,
+      segmentBuffer: buffer,
+      nextSegmentIndex: 0,
+    };
 
-    let previousSplit: {
-      fillStart: readonly [number, number];
-      color: string;
-      segment: number;
-    } | null = null;
     for (const eventData of props.initialState) {
-      switch (eventData.type) {
-        case "Draw":
-          if (previousSplit) {
-            breadthFirstTraversal(
-              previousSplit.fillStart,
-              (pos) => {
-                if (
-                  pos[0] >= 0 &&
-                  pos[1] >= 0 &&
-                  pos[0] < image.width &&
-                  pos[1] < image.height &&
-                  buffer[pos[1] * image.width + pos[0]] !==
-                    previousSplit!.segment
-                ) {
-                  buffer[pos[1] * image.width + pos[0]] =
-                    previousSplit!.segment;
-                  fillPixel(
-                    texture,
-                    pos,
-                    [image.width, image.height],
-                    kDrawAlpha,
-                    new THREE.Color(`#${previousSplit!.color}`)
-                  );
-                  return true;
-                }
-                return false;
-              },
-              false
-            );
-            previousSplit = null;
-          }
-          smoothPaintClient(buffer, image, texture, data, eventData, []);
-          break;
-        case "Split":
-          if (previousSplit && eventData.segment !== previousSplit.segment) {
-            breadthFirstTraversal(
-              previousSplit.fillStart,
-              (pos) => {
-                if (
-                  pos[0] >= 0 &&
-                  pos[1] >= 0 &&
-                  pos[0] < image.width &&
-                  pos[1] < image.height &&
-                  buffer[pos[1] * image.width + pos[0]] !==
-                    previousSplit!.segment
-                ) {
-                  buffer[pos[1] * image.width + pos[0]] =
-                    previousSplit!.segment;
-                  fillPixel(
-                    texture,
-                    pos,
-                    [image.width, image.height],
-                    kDrawAlpha,
-                    new THREE.Color(`#${previousSplit!.color}`)
-                  );
-                  return true;
-                }
-                return false;
-              },
-              false
-            );
-            previousSplit = null;
-          }
-          previousSplit = eventData;
-          data.push({
-            color: new THREE.Color(`#${eventData.color}`),
-          });
-          buffer[eventData.position[1] * image.width + eventData.position[0]] =
-            eventData.segment;
-          fillPixel(
-            texture,
-            eventData.position,
-            [image.width, image.height],
-            kDrawAlpha + kBorderAlphaBoost,
-            new THREE.Color(`#${eventData.color}`)
-          );
-          break;
-        case "Graveyard":
-          data.push({
-            color: new THREE.Color(`#${eventData.color}`),
-          });
-          break;
+      if (eventData.type === "DrawNode") {
+        smoothPaintClient(state, eventData.event, false);
+      } else {
+        fillUpdatedSegment(state, eventData.event, [
+          kImages[props.imageIndex].width,
+          kImages[props.imageIndex].height,
+        ]);
       }
     }
 
-    if (previousSplit) {
-      breadthFirstTraversal(
-        previousSplit.fillStart,
-        (pos) => {
-          if (
-            pos[0] >= 0 &&
-            pos[1] >= 0 &&
-            pos[0] < image.width &&
-            pos[1] < image.height &&
-            buffer[pos[1] * image.width + pos[0]] !== previousSplit!.segment
-          ) {
-            buffer[pos[1] * image.width + pos[0]] = previousSplit!.segment;
-            fillPixel(
-              texture,
-              pos,
-              [image.width, image.height],
-              kDrawAlpha,
-              new THREE.Color(`#${previousSplit!.color}`)
-            );
-            return true;
-          }
-          return false;
-        },
-        false
-      );
-    }
-
-    return [[image.width, image.height] as const, texture, buffer, data];
+    return state;
   }, [image, props.initialState]);
 
   // on the server render initialize a zoom of 1, which will render the image
@@ -211,8 +99,8 @@ export function Painter(props: {
       ];
 
       const size = [
-        (resolution[0] * e.offset[0]) / 2,
-        (resolution[1] * e.offset[0]) / 2,
+        (image.width * e.offset[0]) / 2,
+        (image.height * e.offset[0]) / 2,
       ] as const;
 
       // copies the previous zoom level so the previous zoom level is referenced when the
@@ -275,8 +163,8 @@ export function Painter(props: {
         setPanAnchor((lastCursor) => {
           if (lastCursor) {
             const currentSize = [
-              (resolution[0] * zoom) / 2,
-              (resolution[1] * zoom) / 2,
+              (image.width * zoom) / 2,
+              (image.height * zoom) / 2,
             ];
             setPan((pan) => {
               const delta = [e.xy[0] - lastCursor[0], e.xy[1] - lastCursor[1]];
@@ -336,17 +224,14 @@ export function Painter(props: {
               : -1
           }
           imageIndex={props.imageIndex}
-          resolution={resolution}
           zoom={zoom}
           pan={pan}
           cursorDown={cursorDown}
-          drawing={drawing}
-          segmentBuffer={segmentBuffer}
-          segmentData={segmentData}
+          state={state}
         />
         <PainterRenderer
-          canvasSize={[resolution[0] * zoom, resolution[1] * zoom]}
-          drawing={drawing}
+          canvasSize={[image.width * zoom, image.height * zoom]}
+          drawing={state.drawing}
           pan={pan}
         />
       </Canvas>

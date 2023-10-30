@@ -1,12 +1,15 @@
-import * as THREE from "three";
 import { NextApiRequest } from "next";
 import { Server as ServerIO } from "socket.io";
 import { Server as HttpServer } from "http";
 import { Server as NetServer, Socket } from "net";
 import { NextApiResponse } from "next";
 import { Server as SocketIOServer } from "socket.io";
-import { CondensedStateNode, DrawEvent, SplitNode } from "@/util";
-import { addCondensedStateEntry, serverState } from "./state";
+import {
+  recomputeSegmentsServer,
+  serverState,
+  smoothPaintServer,
+} from "@/server";
+import { DrawEvent } from "@/common";
 
 export const config = {
   api: {
@@ -61,39 +64,32 @@ export default async function socket(
           // if the user is in a room, broadcast the draw event to the room and
           // save the draw event to the server state
           if (room) {
-            connection.broadcast.to(room).emit("draw", data);
             const imageIndex = parseInt(room);
             const state = serverState[imageIndex];
-            state.events.push(data);
-
-            const node: CondensedStateNode = {
-              type: "CondensedStateNode",
-              data: {
-                event: {
-                  from: data.from,
-                  to: data.to,
-                  segment: data.segment,
-                  color: data.color,
-                  size: data.size,
-                },
-                historyIndex: state.events.length - 1,
-                numPixels: 0,
-              },
-              next: null,
-              prev: null,
-            };
-
-            state.condensedState.tail.next = node;
-            node.prev = state.condensedState.tail;
-            state.condensedState.tail = node;
-            state.condensedState.length++;
-            if (state.condensedState.segmentSizes.length > data.segment) {
-              state.condensedState.segmentSizes[data.segment]++;
-            } else {
-              state.condensedState.segmentSizes.push(1);
-            }
-
-            addCondensedStateEntry(imageIndex, node, data.splitInfo);
+            const effectedSegments = smoothPaintServer(state, data);
+            const fills = recomputeSegmentsServer(state, effectedSegments);
+            connection.broadcast.to(room).emit("draw", {
+              draw: data,
+              fill: [...fills.entries()]
+                .sort((a, b) => a[0] - b[0])
+                .map(([, node]) => {
+                  const points = [...node.event.points.entries()].map(
+                    ([key, value]) => ({
+                      pos: key.split(",").map((x) => parseInt(x)) as [
+                        number,
+                        number
+                      ],
+                      boundary: value.boundary,
+                    })
+                  );
+                  return {
+                    boundary: points
+                      .filter(({ boundary }) => boundary)
+                      .map(({ pos }) => pos),
+                    fillStart: points.find(({ boundary }) => !boundary)?.pos,
+                  };
+                }),
+            });
           } else {
             throw new Error("Draw event from user not in a room");
           }

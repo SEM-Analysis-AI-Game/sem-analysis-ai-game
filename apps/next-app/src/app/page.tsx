@@ -2,15 +2,17 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { kImages, SEMImageData } from "@/util";
 import { Gradient } from "@/components/Gradient";
+import { kImages } from "@/common";
 import { useEffect } from "react";
 
-export default async function Home(): Promise<JSX.Element> {
-  // useEffect(() => {
-  //   const gradient = new Gradient();
-  //   gradient.initGradient("#gradient-canvas");
-  // }, []);
+export default function Home(): JSX.Element {
+  useEffect(() => {
+    const gradient = new Gradient();
+    (
+      gradient as unknown as { initGradient: (str: string) => void }
+    ).initGradient("#gradient-canvas");
+  }, []);
   return (
     <>
       <div>
@@ -28,7 +30,7 @@ export default async function Home(): Promise<JSX.Element> {
           Choose one of the images below to start collaboratively segmenting:
         </p>
         <div className="grid grid-cols-[repeat(auto-fit,minmax(20rem,1fr))] gap-4 bg-slate-50 p-4 rounded-md">
-          {kImages.map((data: SEMImageData, index: number) => (
+          {kImages.map((data, index) => (
             <Link
               href={`/${index}`}
               key={index}
@@ -37,7 +39,7 @@ export default async function Home(): Promise<JSX.Element> {
               <div className="w-full relative pt-[100%]">
                 <Image
                   fill
-                  src={data.image.src}
+                  src={data.src}
                   alt=""
                   className="rounded w-full h-full object-cover top-0 left-0"
                 />
