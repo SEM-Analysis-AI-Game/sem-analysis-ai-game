@@ -33,6 +33,10 @@ export function Painter(props: {
   // the image to draw on
   const image = useMemo(() => kImages[props.imageIndex], [props.imageIndex]);
 
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+  }, []);
+
   // initialize client-side state
   const state: ClientState = useMemo(() => {
     // the texture to use for drawing

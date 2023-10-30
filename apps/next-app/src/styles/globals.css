@@ -2,10 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* html, body {
-  overflow: hidden;
-} */
-
 Canvas {
   background: transparent;
   position: absolute;
