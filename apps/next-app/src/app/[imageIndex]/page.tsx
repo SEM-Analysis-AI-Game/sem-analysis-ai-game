@@ -10,8 +10,6 @@ export function generateStaticParams() {
 export default async function Paint(props: {
   params: { imageIndex: string };
 }): Promise<JSX.Element> {
-  // fetch the current state from the server (this component is being rendered on a worker
-  // so it does not have direct access to the server's state)
   const response = await fetch(
     `http://localhost${
       process.env.PORT ? `:${process.env.PORT}` : ""

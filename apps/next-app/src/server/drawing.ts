@@ -12,6 +12,9 @@ import {
   ServerSegmentBuffer,
 } from "./state";
 
+/**
+ * Gets the segment at a given position.
+ */
 function getSegment(
   segmentBuffer: ServerSegmentBuffer,
   width: number,
@@ -20,6 +23,10 @@ function getSegment(
   return segmentBuffer[pos[1] * width + pos[0]]?.node.segment ?? -1;
 }
 
+/**
+ * Sets the segment at a given position. If the node is a fill node,
+ * it also updates the boundary map for that node.
+ */
 function setSegment(
   segmentBuffer: ServerSegmentBuffer,
   width: number,
@@ -31,9 +38,11 @@ function setSegment(
     entry = { node, boundary: false };
     segmentBuffer[pos[1] * width + pos[0]] = entry;
   }
+  // remove the point from points if the node is a fill node
   if (entry.node.type === "FillNode") {
     entry.node.event.points.delete(`${pos[0]},${pos[1]}`);
   }
+  // update the fill node boundary if the node is a fill node
   if (node.type === "FillNode") {
     node.event.points.set(`${pos[0]},${pos[1]}`, {
       boundary: entry.boundary,
@@ -42,19 +51,27 @@ function setSegment(
   entry.node = node;
 }
 
+/**
+ * Updates the boundary status of a given position in the segment buffer,
+ * and updates the boundary map of the node at that position if it is a
+ * fill node.
+ */
 function fill(
   segmentBuffer: ServerSegmentBuffer,
   width: number,
   pos: readonly [number, number],
   type: FillBoundaryType
 ): void {
+  // retain means do nothing to the boundary
   if (type !== FillBoundaryType.retain) {
     const oldNode = segmentBuffer[pos[1] * width + pos[0]]!;
+    // update the boundary map if the node is a fill node
     if (oldNode.node.type === "FillNode") {
       oldNode.node.event.points.set(`${pos[0]},${pos[1]}`, {
         boundary: type === FillBoundaryType.boundary,
       });
     }
+    // update the boundary status of the position
     segmentBuffer[pos[1] * width + pos[0]].boundary =
       type === FillBoundaryType.boundary;
   }

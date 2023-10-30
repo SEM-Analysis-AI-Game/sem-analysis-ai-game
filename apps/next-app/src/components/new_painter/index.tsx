@@ -60,10 +60,14 @@ export function Painter(props: {
     };
 
     for (const eventData of props.initialState) {
+      state.nextSegmentIndex = Math.max(
+        state.nextSegmentIndex,
+        eventData.segment + 1
+      );
       if (eventData.type === "DrawNode") {
-        smoothPaintClient(state, eventData.event, false);
+        smoothPaintClient(state, eventData.event, eventData.segment, false);
       } else {
-        fillUpdatedSegment(state, eventData.event, [
+        fillUpdatedSegment(state, eventData.event, eventData.segment, [
           kImages[props.imageIndex].width,
           kImages[props.imageIndex].height,
         ]);

@@ -1,12 +1,14 @@
-import { NextApiRequest, NextApiResponse } from "next";
 import { serverState } from "@/server";
+import { NextApiRequest, NextApiResponse } from "next";
 
 export default async function handler(
   request: NextApiRequest,
   response: NextApiResponse
 ) {
+  // get the room state
   const state = serverState[parseInt(request.query.imageIndex as string)];
   if (request.query.historyIndex) {
+    // the raw log index of the last draw event a client received.
     const historyIndex = parseInt(request.query.historyIndex as string);
     const initialState = [];
     let current = state.shortLog.tail;
@@ -35,7 +37,6 @@ export default async function handler(
             fillStart: points.find(({ boundary }) => !boundary)?.pos,
           },
           segment: current.segment,
-          historyIndex: current.historyIndex,
         });
         maxSegment = Math.max(maxSegment, current.segment);
       }

@@ -4,7 +4,7 @@ import { useFrame, useThree } from "@react-three/fiber";
 import { EffectComposer, TexturePass } from "three-stdlib";
 
 /**
- * renders the drawing texture to the screen.
+ * Renders the drawing texture to the screen.
  */
 export function PainterRenderer(props: {
   drawing: THREE.DataTexture;

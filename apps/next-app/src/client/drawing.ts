@@ -9,12 +9,12 @@ import {
 import { ClientState } from "./state";
 
 /**
- * the alpha value to use when drawing.
+ * The alpha value to use when drawing.
  */
 const kDrawAlpha = 0.5;
 
 /**
- * the alpha value to add to kDrawAlpha when drawing the border of a segment.
+ * The alpha value to add to kDrawAlpha when drawing the border of a segment.
  */
 const kBorderAlphaBoost = 0.5;
 
@@ -61,6 +61,7 @@ export function fillUpdatedSegment(
     boundary: [number, number][];
     fillStart: [number, number] | undefined;
   },
+  segment: number,
   dimensions: readonly [number, number]
 ): void {
   const initialSegment = event.fillStart
@@ -69,14 +70,13 @@ export function fillUpdatedSegment(
       ]
     : null;
   for (const point of event.boundary as [number, number][]) {
-    state.segmentBuffer[point[1] * dimensions[0] + point[0]] =
-      state.nextSegmentIndex;
+    state.segmentBuffer[point[1] * dimensions[0] + point[0]] = segment;
     fillPixel(
       state.drawing,
       point,
       dimensions,
       kDrawAlpha + kBorderAlphaBoost,
-      getColor(state.nextSegmentIndex)
+      getColor(segment)
     );
   }
   if (initialSegment !== null) {
@@ -91,24 +91,20 @@ export function fillUpdatedSegment(
         ) {
           return false;
         }
-        if (
-          state.segmentBuffer[pos[1] * dimensions[0] + pos[0]] ===
-          state.nextSegmentIndex
-        ) {
+        if (state.segmentBuffer[pos[1] * dimensions[0] + pos[0]] === segment) {
           return true;
         }
         if (
           state.segmentBuffer[pos[1] * dimensions[0] + pos[0]] ===
           initialSegment
         ) {
-          state.segmentBuffer[pos[1] * dimensions[0] + pos[0]] =
-            state.nextSegmentIndex;
+          state.segmentBuffer[pos[1] * dimensions[0] + pos[0]] = segment;
           fillPixel(
             state.drawing,
             pos,
             dimensions,
             kDrawAlpha,
-            getColor(state.nextSegmentIndex)
+            getColor(segment)
           );
           return true;
         } else {
@@ -118,29 +114,16 @@ export function fillUpdatedSegment(
       true
     );
   }
-  state.nextSegmentIndex++;
 }
 
 export function smoothPaintClient<RecomputeSegments extends boolean>(
   state: ClientState,
   event: DrawEvent,
+  segment: number,
   recomputeSegments: RecomputeSegments
 ): RecomputeSegments extends true
   ? Map<number, { newBoundaryPoints: Set<string> }>
   : void {
-  // get the segment where the brush stroke starts
-  let segment = getSegment(
-    state.segmentBuffer,
-    state.drawing.image.width,
-    event.from
-  );
-
-  // if the segment is -1, the brush stroke starts in an empty area.
-  if (segment === -1) {
-    segment = state.nextSegmentIndex;
-    state.nextSegmentIndex++;
-  }
-
   return smoothPaint(
     (pos) => getSegment(state.segmentBuffer, state.drawing.image.width, pos),
     (pos) =>

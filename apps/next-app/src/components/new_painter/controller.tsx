@@ -6,13 +6,14 @@ import { DrawEvent, kImages } from "@/common";
 import {
   ClientState,
   fillUpdatedSegment,
+  getSegment,
   recomputeSegmentsClient,
   smoothPaintClient,
 } from "@/client";
 
 /**
- * processes user input, updates the drawing texture uniforms and
- * emits draw events to the server.
+ * Processes user input, updates the drawing texture uniforms and emits draw events to
+ * the server.
  */
 export function PainterController(props: {
   historyIndex: number;
@@ -46,14 +47,24 @@ export function PainterController(props: {
         "draw",
         (data: {
           draw: DrawEvent;
+          segment: number;
           fill: {
+            segment: number;
             boundary: [number, number][];
             fillStart: [number, number] | undefined;
           }[];
         }) => {
-          smoothPaintClient(props.state, data.draw, false);
+          props.state.nextSegmentIndex = Math.max(
+            props.state.nextSegmentIndex,
+            data.segment + 1
+          );
+          smoothPaintClient(props.state, data.draw, data.segment, false);
           for (const fill of data.fill) {
-            fillUpdatedSegment(props.state, fill, [
+            props.state.nextSegmentIndex = Math.max(
+              props.state.nextSegmentIndex,
+              fill.segment + 1
+            );
+            fillUpdatedSegment(props.state, fill, fill.segment, [
               kImages[props.imageIndex].width,
               kImages[props.imageIndex].height,
             ]);
@@ -71,18 +82,33 @@ export function PainterController(props: {
   useEffect(() => {
     if (socket && socket.connected && reconciling && !reconciled) {
       fetch(
-        `/api/state?imageIndex=${props.imageIndex}&historyIndex=${props.historyIndex}`
+        `/api/state?imageIndex=${props.imageIndex}&historyIndex=${props.historyIndex}`,
+        { cache: "no-cache" }
       )
         .then((res) => res.json())
         .then((res) => {
           for (const eventData of res.initialState) {
+            props.state.nextSegmentIndex = Math.max(
+              props.state.nextSegmentIndex,
+              eventData.segment + 1
+            );
             if (eventData.type === "DrawNode") {
-              smoothPaintClient(props.state, eventData.event, false);
+              smoothPaintClient(
+                props.state,
+                eventData.event,
+                eventData.segment,
+                false
+              );
             } else {
-              fillUpdatedSegment(props.state, eventData.event, [
-                kImages[props.imageIndex].width,
-                kImages[props.imageIndex].height,
-              ]);
+              fillUpdatedSegment(
+                props.state,
+                eventData.event,
+                eventData.segment,
+                [
+                  kImages[props.imageIndex].width,
+                  kImages[props.imageIndex].height,
+                ]
+              );
             }
           }
 
@@ -151,9 +177,21 @@ export function PainterController(props: {
           size: 10,
         };
 
+        let segment = getSegment(
+          props.state.segmentBuffer,
+          kImages[props.imageIndex].width,
+          drawEvent.from
+        );
+
+        if (segment === -1) {
+          segment = props.state.nextSegmentIndex;
+          props.state.nextSegmentIndex++;
+        }
+
         const effectedSegments = smoothPaintClient(
           props.state,
           drawEvent,
+          segment,
           true
         );
         recomputeSegmentsClient(props.state, effectedSegments);
