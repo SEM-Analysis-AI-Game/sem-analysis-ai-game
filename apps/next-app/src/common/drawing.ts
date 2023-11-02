@@ -306,7 +306,6 @@ export function smoothDraw<StateType extends State>(
   const cuts: { effectedSegment: number; points: Set<string> }[] = [];
   for (const [effectedSegment, { newBoundaryPoints }] of effectedSegments) {
     while (newBoundaryPoints.size > 0) {
-      let boundarySize = newBoundaryPoints.size;
       const bfsStart = Object.freeze(
         (newBoundaryPoints.values().next().value as string)
           .split(",")
@@ -314,24 +313,15 @@ export function smoothDraw<StateType extends State>(
       );
       const visited = breadthFirstTraversal(
         bfsStart,
-        (pos) => {
-          const stringify = `${pos[0]},${pos[1]}`;
-          if (
-            pos[0] >= 0 &&
-            pos[1] >= 0 &&
-            pos[0] < state.resolution[0] &&
-            pos[1] < state.resolution[1] &&
-            newBoundaryPoints.has(stringify)
-          ) {
-            newBoundaryPoints.delete(stringify);
-            return true;
-          }
-          return false;
-        },
+        (pos) =>
+          pos[0] >= 0 &&
+          pos[1] >= 0 &&
+          pos[0] < state.resolution[0] &&
+          pos[1] < state.resolution[1] &&
+          newBoundaryPoints.delete(`${pos[0]},${pos[1]}`),
         true
       );
-      if (visited.size < boundarySize) {
-        boundarySize -= visited.size;
+      if (newBoundaryPoints.size > 0) {
         breadthFirstTraversal(
           bfsStart,
           (pos, exitLoop) => {
@@ -348,10 +338,9 @@ export function smoothDraw<StateType extends State>(
                 entry.inSegmentNeighbors < 4
               ) {
                 const stringify = `${pos[0]},${pos[1]}`;
-                if (newBoundaryPoints.has(stringify)) {
+                if (newBoundaryPoints.delete(stringify)) {
                   visited.add(stringify);
-                  boundarySize--;
-                  if (boundarySize === 0) {
+                  if (newBoundaryPoints.size === 0) {
                     exitLoop();
                   }
                 }
