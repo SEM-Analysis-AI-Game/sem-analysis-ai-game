@@ -9,11 +9,7 @@ import { clamp } from "three/src/math/MathUtils.js";
 import { PainterRenderer } from "./renderer";
 import { PainterController } from "./controller";
 import { kImages } from "@/common";
-import {
-  ClientState,
-  applyDrawEventClient,
-  fillUpdatedSegment,
-} from "@/client";
+import { ClientState, applyDrawEventClient } from "@/client";
 
 /**
  * The max zoom multiplier
@@ -54,36 +50,24 @@ export function Painter(props: {
     // this is necessary for the texture to use transparency
     texture.premultiplyAlpha = true;
 
-    // const buffer = new Int32Array(props.segmentBuffer);
-    const buffer = new Int32Array(image.width * image.height).fill(-1);
-
     const state = {
       drawing: texture,
-      segmentBuffer: buffer,
+      segmentBuffer: new Array(image.width * image.height),
       nextSegmentIndex: 0,
+      imageIndex: props.imageIndex,
+      resolution: [image.width, image.height] as const,
     };
 
     for (const eventData of props.initialState) {
-      if (eventData.type === "DrawNode") {
-        state.nextSegmentIndex = Math.max(
-          state.nextSegmentIndex,
-          eventData.segment + 1
-        );
-        applyDrawEventClient(state, eventData.event, eventData.segment);
-      } else {
-        state.nextSegmentIndex = Math.max(
-          state.nextSegmentIndex,
-          eventData.segment + 1
-        );
-        fillUpdatedSegment(state, eventData.event, eventData.segment, [
-          kImages[props.imageIndex].width,
-          kImages[props.imageIndex].height,
-        ]);
-      }
+      state.nextSegmentIndex = Math.max(
+        state.nextSegmentIndex,
+        eventData.segment + 1
+      );
+      applyDrawEventClient(state, eventData.segment, eventData.event);
     }
 
     return state;
-  }, [image, props.initialState]);
+  }, [image, props.initialState, props.imageIndex]);
 
   // on the server render initialize a zoom of 1, which will render the image
   // at its native resolution

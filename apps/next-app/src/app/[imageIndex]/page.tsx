@@ -13,7 +13,7 @@ export default async function Paint(props: {
   const response = await fetch(
     `http://localhost${
       process.env.PORT ? `:${process.env.PORT}` : ""
-    }/api/state?imageIndex=${props.params.imageIndex}&historyIndex=-1`,
+    }/api/state?imageIndex=${props.params.imageIndex}`,
     { next: { revalidate: 1 } }
   )
     .then((res) => res.json())

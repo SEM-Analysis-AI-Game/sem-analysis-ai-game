@@ -2,14 +2,8 @@ import { useEffect, useState } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { clamp } from "three/src/math/MathUtils.js";
 import { useSocket } from "../socket-connection";
-import { DrawEvent, kImages } from "@/common";
-import {
-  ClientState,
-  applyDrawEventClient,
-  fillUpdatedSegment,
-  recomputeSegmentsClient,
-  smoothPaintClient,
-} from "@/client";
+import { DrawEvent } from "@/common";
+import { ClientState, applyDrawEventClient, smoothDrawClient } from "@/client";
 
 /**
  * Processes user input, updates the drawing texture uniforms and emits draw events to
@@ -43,34 +37,13 @@ export function PainterController(props: {
   // listen for draw events from the server
   useEffect((): any => {
     if (socket && socket.connected) {
-      socket.on(
-        "draw",
-        (data: {
-          draw: DrawEvent;
-          segment: number;
-          fill: {
-            segment: number;
-            boundary: [number, number][];
-            fillStart: [number, number] | undefined;
-          }[];
-        }) => {
-          props.state.nextSegmentIndex = Math.max(
-            props.state.nextSegmentIndex,
-            data.segment + 1
-          );
-          applyDrawEventClient(props.state, data.draw, data.segment);
-          for (const fill of data.fill) {
-            props.state.nextSegmentIndex = Math.max(
-              props.state.nextSegmentIndex,
-              fill.segment + 1
-            );
-            fillUpdatedSegment(props.state, fill, fill.segment, [
-              kImages[props.imageIndex].width,
-              kImages[props.imageIndex].height,
-            ]);
-          }
-        }
-      );
+      socket.on("draw", (data: { draw: DrawEvent; segment: number }) => {
+        props.state.nextSegmentIndex = Math.max(
+          props.state.nextSegmentIndex,
+          data.segment + 1
+        );
+        applyDrawEventClient(props.state, data.segment, data.draw);
+      });
       socket.emit("join", {
         room: props.imageIndex.toString(),
       });
@@ -82,39 +55,14 @@ export function PainterController(props: {
   useEffect(() => {
     if (socket && socket.connected && reconciling && !reconciled) {
       fetch(
-        `/api/state?imageIndex=${props.imageIndex}&historyIndex=${props.historyIndex}`,
+        `/api/log?imageIndex=${props.imageIndex}&historyIndex=${props.historyIndex}`,
         { cache: "no-cache" }
       )
         .then((res) => res.json())
         .then((res) => {
           for (const eventData of res.initialState) {
-            if (eventData.type === "DrawNode") {
-              props.state.nextSegmentIndex = Math.max(
-                props.state.nextSegmentIndex,
-                eventData.segment + 1
-              );
-              applyDrawEventClient(
-                props.state,
-                eventData.event,
-                eventData.segment
-              );
-            } else {
-              props.state.nextSegmentIndex = Math.max(
-                props.state.nextSegmentIndex,
-                eventData.segment + 1
-              );
-              fillUpdatedSegment(
-                props.state,
-                eventData.event,
-                eventData.segment,
-                [
-                  kImages[props.imageIndex].width,
-                  kImages[props.imageIndex].height,
-                ]
-              );
-            }
+            smoothDrawClient(props.state, eventData);
           }
-
           setReconciled(true);
           setReconciling(false);
         });
@@ -122,6 +70,8 @@ export function PainterController(props: {
   }, [
     socket,
     props.historyIndex,
+    props.imageIndex,
+    props.state,
     reconciling,
     setReconciling,
     setReconciled,
@@ -141,12 +91,7 @@ export function PainterController(props: {
         windowDim: number
       ) =>
         Math.floor(
-          clamp(
-            ((pointerPos * windowDim) / 2 - pan) / props.zoom +
-              resolutionDim / 2,
-            0,
-            resolutionDim - 1
-          )
+          ((pointerPos * windowDim) / 2 - pan) / props.zoom + resolutionDim / 2
         );
 
       // the pixel position of the cursor in texture coordinates
@@ -154,13 +99,13 @@ export function PainterController(props: {
         getPixelPos(
           pointer.x,
           props.pan[0],
-          kImages[props.imageIndex].width,
+          props.state.resolution[0],
           window.innerWidth
         ),
         getPixelPos(
           pointer.y,
           -props.pan[1],
-          kImages[props.imageIndex].height,
+          props.state.resolution[1],
           window.innerHeight
         ),
       ] as const;
@@ -168,20 +113,36 @@ export function PainterController(props: {
       // update the last cursor position
       setLastCursorPos((lastCursor) => {
         if (lastCursor) {
-          if (lastCursor[0] === pixelPos[0] && lastCursor[1] === pixelPos[1]) {
-            // if the cursor has not moved, do nothing
+          if (
+            (lastCursor[0] === pixelPos[0] && lastCursor[1] === pixelPos[1]) ||
+            ((lastCursor[0] < 0 ||
+              lastCursor[1] < 0 ||
+              lastCursor[0] >= props.state.resolution[0] ||
+              lastCursor[1] >= props.state.resolution[1]) &&
+              (pixelPos[0] < 0 ||
+                pixelPos[1] < 0 ||
+                pixelPos[0] >= props.state.resolution[0] ||
+                pixelPos[1] >= props.state.resolution[1]))
+          ) {
+            // if the cursor has not moved or it moved off-screen, do nothing
             return lastCursor;
           }
         }
 
+        function clampPos(pos: readonly [number, number]) {
+          return [
+            clamp(pos[0], 0, props.state.resolution[0] - 1),
+            clamp(pos[1], 0, props.state.resolution[1] - 1),
+          ] as const;
+        }
+
         const drawEvent: DrawEvent = {
-          from: lastCursor ?? pixelPos,
-          to: pixelPos,
+          from: clampPos(lastCursor ?? pixelPos),
+          to: clampPos(pixelPos),
           size: 10,
         };
 
-        const effectedSegments = smoothPaintClient(props.state, drawEvent);
-        recomputeSegmentsClient(props.state, effectedSegments);
+        smoothDrawClient(props.state, drawEvent);
 
         // emit the draw event to the server
         socket.emit("draw", drawEvent);

@@ -18,7 +18,7 @@ export function PainterRenderer(props: {
     const drawingComposer = new EffectComposer(gl);
     drawingComposer.addPass(new TexturePass(props.drawing));
     return drawingComposer;
-  }, []);
+  }, [gl, props.drawing]);
 
   return useFrame(() => {
     gl.clear();

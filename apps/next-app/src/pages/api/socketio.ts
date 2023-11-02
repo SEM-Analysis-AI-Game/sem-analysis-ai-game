@@ -4,11 +4,7 @@ import { Server as HttpServer } from "http";
 import { Server as NetServer, Socket } from "net";
 import { NextApiResponse } from "next";
 import { Server as SocketIOServer } from "socket.io";
-import {
-  recomputeSegmentsServer,
-  serverState,
-  smoothPaintServer,
-} from "@/server";
+import { serverState, smoothDrawServer } from "@/server";
 import { DrawEvent } from "@/common";
 
 export const config = {
@@ -66,30 +62,13 @@ export default async function socket(
           if (room) {
             const imageIndex = parseInt(room);
             const state = serverState[imageIndex];
-            const effectedSegments = smoothPaintServer(state, data);
-            const fills = recomputeSegmentsServer(state, effectedSegments);
-            connection.broadcast.to(room).emit("draw", {
-              draw: data,
-              fill: [...fills.entries()]
-                .sort((a, b) => a[0] - b[0])
-                .map(([, node]) => {
-                  const points = [...node.points.entries()].map(
-                    ([key, value]) => ({
-                      pos: key.split(",").map((x) => parseInt(x)) as [
-                        number,
-                        number
-                      ],
-                      boundary: value.boundary,
-                    })
-                  );
-                  return {
-                    boundary: points
-                      .filter(({ boundary }) => boundary)
-                      .map(({ pos }) => pos),
-                    fillStart: points.find(({ boundary }) => !boundary)?.pos,
-                  };
-                }),
-            });
+            const result = smoothDrawServer(state, data);
+            if (result) {
+              connection.broadcast.to(room).emit("draw", {
+                draw: data,
+                segment: result.activeSegment,
+              });
+            }
           } else {
             throw new Error("Draw event from user not in a room");
           }

@@ -1,304 +1,374 @@
-import { ClientState } from "@/client";
-import { breadthFirstTraversal } from "./bft";
+import { breadthFirstTraversal, kAdjacency } from "./bft";
 import { getBrush } from "./brush";
+import { DrawEvent, State } from "./state";
 
-/**
- * This is emitted by the client to the socket.io server, and then broadcasted
- * to all other clients in the same room. This is also stored in the raw log.
- */
-export type DrawEvent = {
-  from: readonly [number, number];
-  to: readonly [number, number];
-  size: number;
-};
-
-/**
- * The settings for filling a pixel in the draw function.
- */
-export enum FillBoundaryType {
-  boundary,
-  notBoundary,
-  retain,
+export function getSegmentEntry<StateType extends State>(
+  state: StateType,
+  pos: readonly [number, number]
+): StateType["segmentBuffer"][number] {
+  return state.segmentBuffer[pos[1] * state.resolution[0] + pos[0]];
 }
 
-/**
- * Draws the brush shape at a given position.
- *
- * @param getSegment a function that returns the segment at a given position
- * @param setSegment a function that sets the segment at a given position
- * @param fill a function that performs some side-effect for each segment or
- *             boundary update.
- */
-function draw(
-  getSegment: (pos: readonly [number, number]) => number,
-  setSegment: (pos: readonly [number, number]) => void,
-  fill: (pos: readonly [number, number], type: FillBoundaryType) => void,
+export function applyDrawEvent<StateType extends State>(
+  onUpdateSegment: (
+    pos: readonly [number, number],
+    oldSegment: number,
+    newEntry: StateType["segmentBuffer"][number]
+  ) => void,
+  state: StateType,
   activeSegment: number,
-  pos: readonly [number, number],
-  resolution: readonly [number, number],
-  brushSize: number
+  event: DrawEvent
 ): void {
-  for (const point of getBrush(brushSize)) {
-    const pixelPos = [pos[0] + point.pos[0], pos[1] + point.pos[1]] as const;
+  function setSegment(
+    pos: readonly [number, number],
+    numNeighbors: 0 | 1 | 2 | 3 | 4
+  ) {
+    let entry = state.segmentBuffer[pos[1] * state.resolution[0] + pos[0]];
+    if (!entry) {
+      entry = { id: activeSegment, inSegmentNeighbors: numNeighbors };
+      state.segmentBuffer[pos[1] * state.resolution[0] + pos[0]] = entry;
+    }
+    entry.id = activeSegment;
+    entry.inSegmentNeighbors = numNeighbors;
+    return entry;
+  }
+
+  function setNonBoundarySegment(pos: readonly [number, number]) {
+    const oldSegmentEntry = getSegmentEntry(state, pos);
+    const oldSegmentId = oldSegmentEntry ? oldSegmentEntry.id : -1;
     if (
-      pixelPos[0] >= 0 &&
-      pixelPos[1] >= 0 &&
-      pixelPos[0] < resolution[0] &&
-      pixelPos[1] < resolution[1]
+      !oldSegmentEntry ||
+      oldSegmentEntry.id !== activeSegment ||
+      oldSegmentEntry.inSegmentNeighbors < 4
     ) {
-      setSegment(pixelPos);
-
-      const isBoundary =
-        // check each boundary edge of the brush point
-        point.boundaryEdges.filter((offset) => {
-          const pos = [
-            offset[0] + pixelPos[0],
-            offset[1] + pixelPos[1],
-          ] as const;
-          // if the boundary edge is out of bounds, then it is a boundary
-          if (
-            pos[0] < 0 ||
-            pos[1] < 0 ||
-            pos[0] >= resolution[0] ||
-            pos[1] >= resolution[1]
-          ) {
-            return true;
-          } else {
-            const segment = getSegment(pos);
-            // if the point boundary edge is not the same segment as the active segment
-            // then it is a boundary point of the segment it belongs to.
-            if (segment !== activeSegment) {
-              // if the point is not a part of a segment we do not need to run fill
-              if (segment !== -1) {
-                fill(pos, FillBoundaryType.boundary);
-              }
-              return true;
-            }
-          }
-          return false;
-        }).length > 0 ||
-        // if the point is on the edge of the canvas, then it is a boundary
-        pixelPos[0] === 0 ||
-        pixelPos[1] === 0 ||
-        pixelPos[0] === resolution[0] - 1 ||
-        pixelPos[1] === resolution[1] - 1;
-
-      // update boundary and color
-      fill(
-        pixelPos,
-        isBoundary ? FillBoundaryType.boundary : FillBoundaryType.notBoundary
-      );
+      const entry = setSegment(pos, 4);
+      onUpdateSegment(pos, oldSegmentId, entry);
     }
   }
-}
 
-/**
- * The factor to divide the brush size when interpolating across a segment
- */
-const kDrawingSmoothStep = 4;
-
-/**
- * Applies a draw event.
- */
-export function applyDrawEvent(
-  getSegment: (pos: readonly [number, number]) => number,
-  setSegment: (pos: readonly [number, number]) => void,
-  fill: (pos: readonly [number, number], type: FillBoundaryType) => void,
-  activeSegment: number,
-  event: DrawEvent,
-  resolution: readonly [number, number]
-): void {
-  // draw the starting point of the brush stroke
-  draw(
-    getSegment,
-    setSegment,
-    fill,
-    activeSegment,
-    event.from,
-    resolution,
-    event.size
-  );
-
-  // current interpolation point
-  const current: [number, number] = [event.to[0], event.to[1]];
-
-  // distance between the start and end points of the brush stroke
-  const length = Math.sqrt(
-    Math.pow(current[0] - event.from[0], 2) +
-      Math.pow(current[1] - event.from[1], 2)
-  );
-
-  // the step to take for each interpolation
-  const step = [
-    ((event.size / kDrawingSmoothStep) * (event.from[0] - current[0])) / length,
-    ((event.size / kDrawingSmoothStep) * (event.from[1] - current[1])) / length,
-  ];
-
-  // interpolate between the end and start point of the brush stroke
-  for (
-    let i = 0;
-    i < Math.floor(length / (event.size / kDrawingSmoothStep));
-    i++
-  ) {
-    const currentPos = [
-      Math.floor(current[0]),
-      Math.floor(current[1]),
-    ] as const;
-
-    // draw at the current interpolation point
-    draw(
-      getSegment,
-      setSegment,
-      fill,
-      activeSegment,
-      currentPos,
-      resolution,
-      event.size
-    );
-
-    current[0] += step[0];
-    current[1] += step[1];
+  function setBoundarySegment(pos: readonly [number, number]) {
+    let numNeighbors: 0 | 1 | 2 | 3 | 4 = 0;
+    const segmentEntry = getSegmentEntry(state, pos);
+    const oldSegmentId = segmentEntry ? segmentEntry.id : -1;
+    for (const neighbor of kAdjacency) {
+      const neighborPos = [pos[0] + neighbor[0], pos[1] + neighbor[1]] as const;
+      if (
+        neighborPos[0] >= 0 &&
+        neighborPos[1] >= 0 &&
+        neighborPos[0] < state.resolution[0] &&
+        neighborPos[1] < state.resolution[1]
+      ) {
+        const neighborSegmentEntry = getSegmentEntry(state, neighborPos);
+        const neighborSegmentId = neighborSegmentEntry
+          ? neighborSegmentEntry.id
+          : -1;
+        if (neighborSegmentId === activeSegment) {
+          // using switch here instead of increment operator to retain type info
+          switch (numNeighbors) {
+            case 0:
+              numNeighbors = 1;
+              break;
+            case 1:
+              numNeighbors = 2;
+              break;
+            case 2:
+              numNeighbors = 3;
+              break;
+            case 3:
+              numNeighbors = 4;
+              break;
+          }
+          if (
+            oldSegmentId !== activeSegment &&
+            neighborSegmentEntry.inSegmentNeighbors < 4
+          ) {
+            switch (neighborSegmentEntry.inSegmentNeighbors) {
+              case 0:
+                neighborSegmentEntry.inSegmentNeighbors = 1;
+                break;
+              case 1:
+                neighborSegmentEntry.inSegmentNeighbors = 2;
+                break;
+              case 2:
+                neighborSegmentEntry.inSegmentNeighbors = 3;
+                break;
+              case 3:
+                neighborSegmentEntry.inSegmentNeighbors = 4;
+                break;
+            }
+            onUpdateSegment(
+              neighborPos,
+              neighborSegmentEntry.id,
+              neighborSegmentEntry
+            );
+          }
+        } else if (
+          neighborSegmentId !== -1 &&
+          neighborSegmentId === oldSegmentId
+        ) {
+          switch (neighborSegmentEntry.inSegmentNeighbors) {
+            case 1:
+              neighborSegmentEntry.inSegmentNeighbors = 0;
+              break;
+            case 2:
+              neighborSegmentEntry.inSegmentNeighbors = 1;
+              break;
+            case 3:
+              neighborSegmentEntry.inSegmentNeighbors = 2;
+              break;
+            case 4:
+              neighborSegmentEntry.inSegmentNeighbors = 3;
+              break;
+          }
+          onUpdateSegment(
+            neighborPos,
+            neighborSegmentEntry.id,
+            neighborSegmentEntry
+          );
+        }
+      }
+    }
+    const entry = setSegment(pos, numNeighbors);
+    onUpdateSegment(pos, oldSegmentId, entry);
   }
+
+  const rectangleBoundary = new Set<string>();
+
+  function drawLine(
+    from: readonly [number, number],
+    to: readonly [number, number]
+  ) {
+    const diff = [to[0] - from[0], to[1] - from[1]];
+    const distance = Math.sqrt(diff[0] ** 2 + diff[1] ** 2);
+    if (distance === 0) {
+      return;
+    }
+    const step = [diff[0] / distance, diff[1] / distance];
+    for (let x = 0; x < distance; x++) {
+      const pos = [
+        Math.ceil(from[0] + step[0] * x),
+        Math.ceil(from[1] + step[1] * x),
+      ] as const;
+      if (
+        pos[0] >= 0 &&
+        pos[1] >= 0 &&
+        pos[0] < state.resolution[0] &&
+        pos[1] < state.resolution[1]
+      ) {
+        rectangleBoundary.add(`${pos[0]},${pos[1]}`);
+      }
+    }
+  }
+
+  const diff = [event.to[0] - event.from[0], event.to[1] - event.from[1]];
+  const slope =
+    diff[0] !== 0
+      ? diff[1] / diff[0]
+      : Infinity * (diff[1] !== 0 ? Math.sign(diff[1]) : 0);
+  const perpendicularDistance = event.size / 2 - 1;
+
+  const angle = Math.atan(-1 / slope);
+
+  const xDistance = Math.cos(angle) * perpendicularDistance;
+  const yDistance = Math.sin(angle) * perpendicularDistance;
+
+  const rightEdgeStart = [
+    Math.floor(event.from[0] + xDistance),
+    Math.floor(event.from[1] + yDistance),
+  ] as const;
+
+  const leftEdgeStart = [
+    Math.floor(event.from[0] - xDistance),
+    Math.floor(event.from[1] - yDistance),
+  ] as const;
+
+  const rightEdgeEnd = [
+    Math.floor(event.to[0] + xDistance),
+    Math.floor(event.to[1] + yDistance),
+  ] as const;
+
+  const leftEdgeEnd = [
+    Math.floor(event.to[0] - xDistance),
+    Math.floor(event.to[1] - yDistance),
+  ] as const;
+
+  drawLine(rightEdgeStart, rightEdgeEnd);
+  drawLine(leftEdgeStart, leftEdgeEnd);
+  drawLine(rightEdgeEnd, leftEdgeEnd);
+  drawLine(rightEdgeStart, leftEdgeStart);
+
+  if (rectangleBoundary.size > 0) {
+    breadthFirstTraversal(
+      [
+        Math.floor((event.from[0] + event.to[0]) / 2),
+        Math.floor((event.from[1] + event.to[1]) / 2),
+      ],
+      (pos) => {
+        if (
+          pos[0] >= 0 &&
+          pos[1] >= 0 &&
+          pos[0] < state.resolution[0] &&
+          pos[1] < state.resolution[1]
+        ) {
+          if (rectangleBoundary.has(`${pos[0]},${pos[1]}`)) {
+            setBoundarySegment(pos);
+            return false;
+          } else {
+            if (
+              pos[0] === 0 ||
+              pos[1] === 0 ||
+              pos[0] === state.resolution[0] - 1 ||
+              pos[1] === state.resolution[1] - 1
+            ) {
+              setBoundarySegment(pos);
+            } else {
+              setNonBoundarySegment(pos);
+            }
+            return true;
+          }
+        } else {
+          return false;
+        }
+      },
+      false
+    );
+  }
+
+  function drawCircle(pos: readonly [number, number]): void {
+    for (const { offset, boundary } of getBrush(event.size)) {
+      const pixelPos = [pos[0] + offset[0], pos[1] + offset[1]] as const;
+      if (
+        pixelPos[0] >= 0 &&
+        pixelPos[1] >= 0 &&
+        pixelPos[0] < state.resolution[0] &&
+        pixelPos[1] < state.resolution[1]
+      ) {
+        if (
+          pixelPos[0] === 0 ||
+          pixelPos[1] === 0 ||
+          pixelPos[0] === state.resolution[0] - 1 ||
+          pixelPos[1] === state.resolution[1] - 1 ||
+          boundary
+        ) {
+          setBoundarySegment(pixelPos);
+        } else {
+          setNonBoundarySegment(pixelPos);
+        }
+      }
+    }
+  }
+
+  drawCircle(event.to);
+
+  drawCircle(event.from);
 }
 
-/**
- * Draws a smooth brush stroke between two points and tracks newly created
- * boundary points on old segments.
- */
-export function smoothPaint(
-  getSegment: (pos: readonly [number, number]) => number,
-  setSegment: (pos: readonly [number, number], segment: number) => void,
-  fill: (pos: readonly [number, number], type: FillBoundaryType) => void,
-  state: { nextSegmentIndex: number },
-  event: DrawEvent,
-  resolution: readonly [number, number]
-): Map<number, { newBoundaryPoints: Set<string> }> {
+export function smoothDraw<StateType extends State>(
+  onUpdateSegment: (
+    pos: readonly [number, number],
+    oldSegment: number,
+    newEntry: StateType["segmentBuffer"][number]
+  ) => void,
+  state: StateType,
+  event: DrawEvent
+): { effectedSegment: number; points: Set<string> }[] {
+  const segmentEntry = getSegmentEntry(state, event.from);
+  const segment = segmentEntry ? segmentEntry.id : state.nextSegmentIndex++;
+
   const effectedSegments = new Map<
     number,
     { newBoundaryPoints: Set<string> }
   >();
 
-  let activeSegment = getSegment(event.from);
-
-  if (activeSegment === -1) {
-    activeSegment = state.nextSegmentIndex;
-    state.nextSegmentIndex++;
-  }
-
   applyDrawEvent(
-    getSegment,
-    (pos) => {
-      const oldSegment = getSegment(pos);
-      let oldSegmentEntry = effectedSegments.get(oldSegment);
-      if (oldSegmentEntry) {
-        oldSegmentEntry.newBoundaryPoints.delete(`${pos[0]},${pos[1]}`);
-      }
-      setSegment(pos, activeSegment);
-    },
-    (pos, type) => {
-      const segment = getSegment(pos);
-      if (segment !== activeSegment) {
-        let entry = effectedSegments.get(segment);
-        if (!entry) {
-          entry = { newBoundaryPoints: new Set<string>() };
-          effectedSegments.set(segment, entry);
+    (pos, oldSegment, newEntry) => {
+      if (oldSegment !== -1) {
+        let oldSegmentEntry = effectedSegments.get(oldSegment);
+        if (oldSegmentEntry) {
+          oldSegmentEntry.newBoundaryPoints.delete(`${pos[0]},${pos[1]}`);
+        } else {
+          oldSegmentEntry = { newBoundaryPoints: new Set() };
+          effectedSegments.set(oldSegment, oldSegmentEntry);
         }
-        if (type === FillBoundaryType.boundary) {
-          entry.newBoundaryPoints.add(`${pos[0]},${pos[1]}`);
+        if (oldSegment === newEntry.id) {
+          if (newEntry.inSegmentNeighbors === 4) {
+            oldSegmentEntry.newBoundaryPoints.add(`${pos[0]},${pos[1]}`);
+          }
         }
       }
-      fill(pos, type);
+      onUpdateSegment(pos, oldSegment, newEntry);
     },
-    activeSegment,
-    event,
-    resolution
+    state,
+    segment,
+    event
   );
 
-  return effectedSegments;
-}
-
-/**
- * Finds and fills new segment splits given a set of effected segments and
- * their new boundary points that were created by the last draw.
- */
-export function recomputeSegments(
-  getSegment: (pos: readonly [number, number]) => number,
-  setSegment: (pos: readonly [number, number], segment: number) => void,
-  fill: (pos: readonly [number, number], type: FillBoundaryType) => void,
-  isBoundary: (pos: readonly [number, number]) => boolean,
-  state: { nextSegmentIndex: number },
-  resolution: readonly [number, number],
-  effectedSegments: Map<number, { newBoundaryPoints: Set<string> }>
-): void {
-  for (const effectedSegment of effectedSegments) {
-    const segment = effectedSegment[0];
-    const { newBoundaryPoints } = effectedSegment[1];
+  const cuts: { effectedSegment: number; points: Set<string> }[] = [];
+  for (const [effectedSegment, { newBoundaryPoints }] of effectedSegments) {
     while (newBoundaryPoints.size > 0) {
       let boundarySize = newBoundaryPoints.size;
-      const bfsStart = newBoundaryPoints
-        .values()
-        .next()
-        .value.split(",")
-        .map((str: string) => parseInt(str)) as [number, number];
-      newBoundaryPoints.delete(`${bfsStart[0]},${bfsStart[1]}`);
-      const visited = breadthFirstTraversal(bfsStart, (pos) => {
-        const stringify = `${pos[0]},${pos[1]}`;
-        if (
-          pos[0] >= 0 &&
-          pos[1] >= 0 &&
-          pos[0] < resolution[0] &&
-          pos[1] < resolution[1] &&
-          newBoundaryPoints.has(stringify)
-        ) {
-          newBoundaryPoints.delete(stringify);
-          return true;
-        }
-        return false;
-      });
-      if (visited.size < boundarySize) {
-        boundarySize -= visited.size;
-        breadthFirstTraversal(bfsStart, (pos, exitLoop) => {
+      const bfsStart = Object.freeze(
+        (newBoundaryPoints.values().next().value as string)
+          .split(",")
+          .map((value) => parseInt(value)) as [number, number]
+      );
+      const visited = breadthFirstTraversal(
+        bfsStart,
+        (pos) => {
+          const stringify = `${pos[0]},${pos[1]}`;
           if (
             pos[0] >= 0 &&
             pos[1] >= 0 &&
-            pos[0] < resolution[0] &&
-            pos[1] < resolution[1] &&
-            getSegment(pos) === segment &&
-            isBoundary(pos)
+            pos[0] < state.resolution[0] &&
+            pos[1] < state.resolution[1] &&
+            newBoundaryPoints.has(stringify)
           ) {
-            const stringify = `${pos[0]},${pos[1]}`;
-            if (newBoundaryPoints.has(stringify)) {
-              boundarySize--;
-              if (boundarySize === 0) {
-                exitLoop();
-              }
-            }
+            newBoundaryPoints.delete(stringify);
             return true;
           }
           return false;
-        });
-        if (boundarySize !== 0) {
-          let set = false;
-          breadthFirstTraversal(bfsStart, (pos) => {
+        },
+        true
+      );
+      if (visited.size < boundarySize) {
+        boundarySize -= visited.size;
+        breadthFirstTraversal(
+          bfsStart,
+          (pos, exitLoop) => {
             if (
               pos[0] >= 0 &&
               pos[1] >= 0 &&
-              pos[0] < resolution[0] &&
-              pos[1] < resolution[1] &&
-              getSegment(pos) === segment
+              pos[0] < state.resolution[0] &&
+              pos[1] < state.resolution[1]
             ) {
-              set = true;
-              setSegment(pos, state.nextSegmentIndex);
-              fill(pos, FillBoundaryType.retain);
-              return true;
+              const entry = getSegmentEntry(state, pos);
+              if (
+                entry &&
+                entry.id === effectedSegment &&
+                entry.inSegmentNeighbors < 4
+              ) {
+                const stringify = `${pos[0]},${pos[1]}`;
+                if (newBoundaryPoints.has(stringify)) {
+                  visited.add(stringify);
+                  boundarySize--;
+                  if (boundarySize === 0) {
+                    exitLoop();
+                  }
+                }
+                return true;
+              }
             }
             return false;
-          });
-          if (set) {
-            state.nextSegmentIndex++;
-          }
-        }
+          },
+          true
+        );
+        cuts.push({
+          effectedSegment,
+          points: visited,
+        });
       }
     }
   }
+
+  return cuts;
 }

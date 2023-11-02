@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { Gradient } from "@/components/Gradient";
+import { Gradient } from "@/components";
 import { kImages } from "@/common";
 import { useEffect } from "react";
 

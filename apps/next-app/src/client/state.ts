@@ -1,5 +1,5 @@
-export type ClientState = {
+import { State } from "@/common";
+
+export type ClientState = State & {
   drawing: THREE.DataTexture;
-  segmentBuffer: Int32Array;
-  nextSegmentIndex: number;
 };
