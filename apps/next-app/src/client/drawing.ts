@@ -1,4 +1,10 @@
-import { DrawEvent, applyDrawEvent, getColor, smoothDraw } from "@/common";
+import {
+  DrawEvent,
+  applyDrawEvent,
+  fillCuts,
+  getColor,
+  smoothDraw,
+} from "@/common";
 import { ClientState } from "./state";
 
 /**
@@ -28,15 +34,17 @@ function fill(
   state.drawing.needsUpdate = true;
 }
 
-export function smoothDrawClient(
-  state: ClientState,
-  event: DrawEvent
-): { effectedSegment: number; points: Set<string> }[] {
-  return smoothDraw(
+export function smoothDrawClient(state: ClientState, event: DrawEvent): void {
+  const cuts = smoothDraw(
     (pos, _, newEntry) =>
       fill(state, pos, newEntry.id, newEntry.inSegmentNeighbors < 4),
     state,
     event
+  );
+  fillCuts(
+    (pos, entry) => fill(state, pos, entry.id, entry.inSegmentNeighbors < 4),
+    state,
+    cuts
   );
 }
 

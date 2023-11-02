@@ -7,7 +7,7 @@ export default async function handler(
 ) {
   const state = serverState[parseInt(request.query.imageIndex as string)];
   const initialState = [];
-  let current = state.shortLog.head.next;
+  let current = state.shortLog.draws.head.next;
   while (current !== null) {
     initialState.push({
       event: current.event,

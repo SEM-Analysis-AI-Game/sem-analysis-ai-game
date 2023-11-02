@@ -50,6 +50,7 @@ export function applyDrawEvent<StateType extends State>(
     let numNeighbors: 0 | 1 | 2 | 3 | 4 = 0;
     const segmentEntry = getSegmentEntry(state, pos);
     const oldSegmentId = segmentEntry ? segmentEntry.id : -1;
+    const oldNumNeighbors = segmentEntry ? segmentEntry.inSegmentNeighbors : -1;
     for (const neighbor of kAdjacency) {
       const neighborPos = [pos[0] + neighbor[0], pos[1] + neighbor[1]] as const;
       if (
@@ -129,7 +130,12 @@ export function applyDrawEvent<StateType extends State>(
       }
     }
     const entry = setSegment(pos, numNeighbors);
-    onUpdateSegment(pos, oldSegmentId, entry);
+    if (
+      entry.id !== oldSegmentId ||
+      entry.inSegmentNeighbors !== oldNumNeighbors
+    ) {
+      onUpdateSegment(pos, oldSegmentId, entry);
+    }
   }
 
   const rectangleBoundary = new Set<string>();
@@ -271,7 +277,7 @@ export function smoothDraw<StateType extends State>(
   ) => void,
   state: StateType,
   event: DrawEvent
-): { effectedSegment: number; points: Set<string> }[] {
+): { segment: number; points: Set<string> }[] {
   const segmentEntry = getSegmentEntry(state, event.from);
   const segment = segmentEntry ? segmentEntry.id : state.nextSegmentIndex++;
 
@@ -282,7 +288,7 @@ export function smoothDraw<StateType extends State>(
 
   applyDrawEvent(
     (pos, oldSegment, newEntry) => {
-      if (oldSegment !== -1) {
+      if (oldSegment !== -1 && oldSegment !== segment) {
         let oldSegmentEntry = effectedSegments.get(oldSegment);
         if (oldSegmentEntry) {
           oldSegmentEntry.newBoundaryPoints.delete(`${pos[0]},${pos[1]}`);
@@ -290,10 +296,8 @@ export function smoothDraw<StateType extends State>(
           oldSegmentEntry = { newBoundaryPoints: new Set() };
           effectedSegments.set(oldSegment, oldSegmentEntry);
         }
-        if (oldSegment === newEntry.id) {
-          if (newEntry.inSegmentNeighbors === 4) {
-            oldSegmentEntry.newBoundaryPoints.add(`${pos[0]},${pos[1]}`);
-          }
+        if (oldSegment === newEntry.id && newEntry.inSegmentNeighbors < 4) {
+          oldSegmentEntry.newBoundaryPoints.add(`${pos[0]},${pos[1]}`);
         }
       }
       onUpdateSegment(pos, oldSegment, newEntry);
@@ -303,7 +307,7 @@ export function smoothDraw<StateType extends State>(
     event
   );
 
-  const cuts: { effectedSegment: number; points: Set<string> }[] = [];
+  const cuts: { segment: number; points: Set<string> }[] = [];
   for (const [effectedSegment, { newBoundaryPoints }] of effectedSegments) {
     while (newBoundaryPoints.size > 0) {
       const bfsStart = Object.freeze(
@@ -351,13 +355,53 @@ export function smoothDraw<StateType extends State>(
           },
           true
         );
-        cuts.push({
-          effectedSegment,
-          points: visited,
-        });
+        if (newBoundaryPoints.size > 0) {
+          cuts.push({
+            segment: state.nextSegmentIndex++,
+            points: visited,
+          });
+          continue;
+        }
       }
+      cuts.push({
+        segment: effectedSegment,
+        points: visited,
+      });
     }
   }
 
   return cuts;
+}
+
+export function fillCuts<StateType extends State>(
+  onUpdateSegment: (
+    pos: readonly [number, number],
+    entry: StateType["segmentBuffer"][number],
+    cut: { segment: number; points: Set<string> }
+  ) => void,
+  state: State,
+  cuts: { segment: number; points: Set<string> }[]
+): void {
+  for (const cut of cuts) {
+    const bfsStart = (cut.points.values().next().value as string)
+      .split(",")
+      .map((value) => parseInt(value)) as [number, number];
+    const segmentEntry = getSegmentEntry(state, bfsStart);
+    const segmentId = segmentEntry ? segmentEntry.id : -1;
+    if (segmentId !== cut.segment) {
+      breadthFirstTraversal(
+        bfsStart,
+        (pos) => {
+          const entry = getSegmentEntry(state, pos);
+          if (entry && entry.id === segmentId) {
+            entry.id = cut.segment;
+            onUpdateSegment(pos, entry, cut);
+            return true;
+          }
+          return false;
+        },
+        true
+      );
+    }
+  }
 }
