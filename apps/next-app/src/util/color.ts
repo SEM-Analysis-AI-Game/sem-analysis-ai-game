@@ -1,19 +1,19 @@
-import * as THREE from 'three';
+import * as THREE from "three";
 
 export const getRandomColor = () => {
-    const minimumRange = 0.6;
+  const minimumRange = 0.6;
 
-    // Repeatedly attempt to generate a color that satisfies the above condition
+  // Repeatedly attempt to generate a color that satisfies the above condition
 
-    while (true) {
-        const candidate = [ Math.random(), Math.random(), Math.random()];
-        
-        const range = Math.max(...candidate) - Math.min(...candidate);
+  while (true) {
+    const candidate = [Math.random(), Math.random(), Math.random()];
 
-        if (range < minimumRange) {
-            continue;
-        }
+    const range = Math.max(...candidate) - Math.min(...candidate);
 
-        return new THREE.Color(...candidate);
+    if (range < minimumRange) {
+      continue;
     }
-}
+
+    return new THREE.Color(...candidate);
+  }
+};

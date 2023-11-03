@@ -19,12 +19,30 @@ export function smoothDrawServer(
 
   let drew = false;
 
-  const cuts = smoothDraw(
-    (_, oldSegment, newEntry) => {
-      if (oldSegment !== newEntry.id) {
-        if (node.segment === -1) {
-          node.segment = newEntry.id;
+  function removeCut(
+    pos: readonly [number, number],
+    entry: { cut: CutNode | null }
+  ) {
+    if (entry.cut) {
+      entry.cut.numPixels--;
+      entry.cut.points.delete(`${pos[0]},${pos[1]}`);
+      if (entry.cut.numPixels === 0) {
+        entry.cut.prev.next = entry.cut.next;
+        if (entry.cut.next) {
+          entry.cut.next.prev = entry.cut.prev;
+        } else {
+          state.shortLog.cuts.tail = entry.cut.prev;
         }
+        state.shortLog.cuts.length--;
+      }
+      entry.cut = null;
+    }
+  }
+
+  const { activeSegment, cuts } = smoothDraw(
+    (pos, oldSegment, newEntry) => {
+      removeCut(pos, newEntry);
+      if (oldSegment !== newEntry.id) {
         if (newEntry.node) {
           newEntry.node.numPixels--;
           if (newEntry.node.numPixels === 0) {
@@ -37,27 +55,20 @@ export function smoothDrawServer(
             state.shortLog.draws.length--;
           }
         }
-        if (newEntry.cut) {
-          newEntry.cut.numPixels--;
-          if (newEntry.cut.numPixels === 0) {
-            newEntry.cut.prev.next = newEntry.cut.next;
-            if (newEntry.cut.next) {
-              newEntry.cut.next.prev = newEntry.cut.prev;
-            } else {
-              state.shortLog.cuts.tail = newEntry.cut.prev;
-            }
-            state.shortLog.cuts.length--;
-          }
-          newEntry.cut = null;
-        }
         newEntry.node = node;
         node.numPixels++;
         drew = true;
       }
     },
+    (pos) => {
+      const segmentEntry = getSegmentEntry(state, pos);
+      removeCut(pos, segmentEntry);
+    },
     state,
     event
   );
+
+  node.segment = activeSegment;
 
   if (drew) {
     state.shortLog.draws.length++;
@@ -90,20 +101,7 @@ export function smoothDrawServer(
       (pos, entry, cut) => {
         const posString = pos.join(",");
         if (!cut.points.has(posString)) {
-          if (entry.cut) {
-            entry.cut.numPixels--;
-            entry.cut.points.delete(posString);
-            if (entry.cut.numPixels === 0) {
-              entry.cut.prev.next = entry.cut.next;
-              if (entry.cut.next) {
-                entry.cut.next.prev = entry.cut.prev;
-              } else {
-                state.shortLog.cuts.tail = entry.cut.prev;
-              }
-              state.shortLog.cuts.length--;
-            }
-            entry.cut = null;
-          }
+          removeCut(pos, entry);
         }
       },
       state,

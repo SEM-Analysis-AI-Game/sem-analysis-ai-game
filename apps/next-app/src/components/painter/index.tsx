@@ -8,8 +8,8 @@ import { Canvas } from "@react-three/fiber";
 import { clamp } from "three/src/math/MathUtils.js";
 import { PainterRenderer } from "./renderer";
 import { PainterController } from "./controller";
-import { kImages } from "@/common";
-import { ClientState, applyDrawEventClient } from "@/client";
+import { DrawEvent, kImages } from "@/common";
+import { ClientState, applyDrawEventClient, fillCutsClient } from "@/client";
 
 /**
  * The max zoom multiplier
@@ -28,7 +28,10 @@ function scale(image: StaticImageData): number {
 
 export function Painter(props: {
   imageIndex: number;
-  initialState: any[];
+  initialState: {
+    draws: { event: DrawEvent; segment: number; historyIndex: number }[];
+    cuts: { segment: number; points: readonly (readonly [number, number])[] }[];
+  };
 }): JSX.Element {
   // the image to draw on
   const image = useMemo(() => kImages[props.imageIndex], [props.imageIndex]);
@@ -58,13 +61,28 @@ export function Painter(props: {
       resolution: [image.width, image.height] as const,
     };
 
-    for (const eventData of props.initialState) {
+    for (const eventData of props.initialState.draws) {
       state.nextSegmentIndex = Math.max(
         state.nextSegmentIndex,
         eventData.segment + 1
       );
       applyDrawEventClient(state, eventData.segment, eventData.event);
     }
+
+    const cuts = props.initialState.cuts.map((cut) => {
+      const set = new Set<string>();
+      state.nextSegmentIndex = Math.max(
+        state.nextSegmentIndex,
+        cut.segment + 1
+      );
+      cut.points.forEach((point) => set.add(`${point[0]},${point[1]}`));
+      return {
+        ...cut,
+        points: set,
+      };
+    });
+
+    fillCutsClient(state, cuts);
 
     return state;
   }, [image, props.initialState, props.imageIndex]);
@@ -219,8 +237,9 @@ export function Painter(props: {
       <Canvas>
         <PainterController
           historyIndex={
-            props.initialState.length > 0
-              ? props.initialState[props.initialState.length - 1].historyIndex
+            props.initialState.draws.length > 0
+              ? props.initialState.draws[props.initialState.draws.length - 1]
+                  .historyIndex
               : -1
           }
           imageIndex={props.imageIndex}

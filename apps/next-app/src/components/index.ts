@@ -1,3 +1,3 @@
-export * from "./new_painter";
+export * from "./painter";
 export * from "./socket-connection";
 export * from "./Gradient";

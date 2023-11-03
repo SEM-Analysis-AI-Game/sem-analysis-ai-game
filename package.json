@@ -4,5 +4,8 @@
   "workspaces": [
     "apps/*",
     "scripts/*"
-  ]
+  ],
+  "dependencies": {
+    "@types/seedrandom": "^3.0.7"
+  }
 }

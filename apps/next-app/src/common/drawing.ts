@@ -275,11 +275,15 @@ export function smoothDraw<StateType extends State>(
     oldSegment: number,
     newEntry: StateType["segmentBuffer"][number]
   ) => void,
+  removeCut: (pos: readonly [number, number]) => void,
   state: StateType,
   event: DrawEvent
-): { segment: number; points: Set<string> }[] {
+): { activeSegment: number; cuts: { segment: number; points: Set<string> }[] } {
   const segmentEntry = getSegmentEntry(state, event.from);
-  const segment = segmentEntry ? segmentEntry.id : state.nextSegmentIndex++;
+  const segment = segmentEntry ? segmentEntry.id : state.nextSegmentIndex;
+  if (!segmentEntry) {
+    state.nextSegmentIndex++;
+  }
 
   const effectedSegments = new Map<
     number,
@@ -347,6 +351,8 @@ export function smoothDraw<StateType extends State>(
                   if (newBoundaryPoints.size === 0) {
                     exitLoop();
                   }
+                } else {
+                  removeCut(pos);
                 }
                 return true;
               }
@@ -357,9 +363,10 @@ export function smoothDraw<StateType extends State>(
         );
         if (newBoundaryPoints.size > 0) {
           cuts.push({
-            segment: state.nextSegmentIndex++,
+            segment: state.nextSegmentIndex,
             points: visited,
           });
+          state.nextSegmentIndex++;
           continue;
         }
       }
@@ -370,7 +377,7 @@ export function smoothDraw<StateType extends State>(
     }
   }
 
-  return cuts;
+  return { activeSegment: segment, cuts };
 }
 
 export function fillCuts<StateType extends State>(
@@ -392,11 +399,18 @@ export function fillCuts<StateType extends State>(
       breadthFirstTraversal(
         bfsStart,
         (pos) => {
-          const entry = getSegmentEntry(state, pos);
-          if (entry && entry.id === segmentId) {
-            entry.id = cut.segment;
-            onUpdateSegment(pos, entry, cut);
-            return true;
+          if (
+            pos[0] >= 0 &&
+            pos[1] >= 0 &&
+            pos[0] < state.resolution[0] &&
+            pos[1] < state.resolution[1]
+          ) {
+            const entry = getSegmentEntry(state, pos);
+            if (entry && (entry.id === cut.segment || entry.id === segmentId)) {
+              entry.id = cut.segment;
+              onUpdateSegment(pos, entry, cut);
+              return true;
+            }
           }
           return false;
         },

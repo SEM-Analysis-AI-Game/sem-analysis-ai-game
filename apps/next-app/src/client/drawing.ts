@@ -3,6 +3,8 @@ import {
   applyDrawEvent,
   fillCuts,
   getColor,
+  getSegmentEntry,
+  kAdjacency,
   smoothDraw,
 } from "@/common";
 import { ClientState } from "./state";
@@ -35,17 +37,14 @@ function fill(
 }
 
 export function smoothDrawClient(state: ClientState, event: DrawEvent): void {
-  const cuts = smoothDraw(
+  const { cuts } = smoothDraw(
     (pos, _, newEntry) =>
       fill(state, pos, newEntry.id, newEntry.inSegmentNeighbors < 4),
+    () => {},
     state,
     event
   );
-  fillCuts(
-    (pos, entry) => fill(state, pos, entry.id, entry.inSegmentNeighbors < 4),
-    state,
-    cuts
-  );
+  fillCutsClient(state, cuts);
 }
 
 export function applyDrawEventClient(
@@ -59,5 +58,48 @@ export function applyDrawEventClient(
     state,
     activeSegment,
     event
+  );
+}
+
+export function fillCutsClient(
+  state: ClientState,
+  cuts: { segment: number; points: Set<string> }[]
+): void {
+  fillCuts(
+    (pos, entry) => {
+      if (entry.inSegmentNeighbors < 4) {
+        let numNeighbors: 0 | 1 | 2 | 3 | 4 = 0;
+        for (const neighbor of kAdjacency) {
+          const neighborPos = [
+            pos[0] + neighbor[0],
+            pos[1] + neighbor[1],
+          ] as const;
+          const neighborEntry = getSegmentEntry(state, neighborPos);
+          const neighborId = neighborEntry ? neighborEntry.id : -1;
+          if (neighborId === entry.id) {
+            switch (numNeighbors) {
+              case 0:
+                numNeighbors = 1;
+                break;
+              case 1:
+                numNeighbors = 2;
+                break;
+              case 2:
+                numNeighbors = 3;
+                break;
+              case 3:
+                numNeighbors = 4;
+                break;
+            }
+          }
+        }
+        entry.inSegmentNeighbors = numNeighbors;
+        fill(state, pos, entry.id, numNeighbors < 4);
+      } else {
+        fill(state, pos, entry.id, false);
+      }
+    },
+    state,
+    cuts
   );
 }
