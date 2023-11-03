@@ -23,10 +23,7 @@ export default async function handler(
   let currentCut = state.shortLog.cuts.head.next;
   while (currentCut !== null) {
     initialState.cuts.push({
-      points: Array.from(currentCut.points).map(
-        (point) =>
-          point.split(",").map((data) => parseInt(data)) as [number, number]
-      ),
+      points: Array.from(currentCut.points),
       segment: currentCut.segment,
     });
     currentCut = currentCut.next;

@@ -6,6 +6,7 @@ export function smoothDrawServer(
   event: DrawEvent
 ): {
   activeSegment: number;
+  cuts: { segment: number; points: Set<string> }[];
 } | null {
   const node: DrawNode = {
     event,
@@ -108,7 +109,7 @@ export function smoothDrawServer(
       cuts
     );
 
-    return { activeSegment: node.segment };
+    return { activeSegment: node.segment, cuts };
   } else {
     return null;
   }

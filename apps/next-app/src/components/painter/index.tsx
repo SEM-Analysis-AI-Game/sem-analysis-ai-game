@@ -30,7 +30,7 @@ export function Painter(props: {
   imageIndex: number;
   initialState: {
     draws: { event: DrawEvent; segment: number; historyIndex: number }[];
-    cuts: { segment: number; points: readonly (readonly [number, number])[] }[];
+    cuts: { segment: number; points: string[] }[];
   };
 }): JSX.Element {
   // the image to draw on
@@ -70,15 +70,13 @@ export function Painter(props: {
     }
 
     const cuts = props.initialState.cuts.map((cut) => {
-      const set = new Set<string>();
       state.nextSegmentIndex = Math.max(
         state.nextSegmentIndex,
         cut.segment + 1
       );
-      cut.points.forEach((point) => set.add(`${point[0]},${point[1]}`));
       return {
         ...cut,
-        points: set,
+        points: new Set(cut.points),
       };
     });
 

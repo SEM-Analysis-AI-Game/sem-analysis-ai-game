@@ -3,7 +3,12 @@ import { useFrame, useThree } from "@react-three/fiber";
 import { clamp } from "three/src/math/MathUtils.js";
 import { useSocket } from "../socket-connection";
 import { DrawEvent } from "@/common";
-import { ClientState, applyDrawEventClient, smoothDrawClient } from "@/client";
+import {
+  ClientState,
+  applyDrawEventClient,
+  fillCutsClient,
+  smoothDrawClient,
+} from "@/client";
 
 /**
  * Processes user input, updates the drawing texture uniforms and emits draw events to
@@ -37,13 +42,28 @@ export function PainterController(props: {
   // listen for draw events from the server
   useEffect((): any => {
     if (socket && socket.connected) {
-      socket.on("draw", (data: { draw: DrawEvent; segment: number }) => {
-        props.state.nextSegmentIndex = Math.max(
-          props.state.nextSegmentIndex,
-          data.segment + 1
-        );
-        applyDrawEventClient(props.state, data.segment, data.draw);
-      });
+      socket.on(
+        "draw",
+        (data: {
+          draw: DrawEvent;
+          segment: number;
+          cuts: {
+            segment: number;
+            points: string[];
+          }[];
+        }) => {
+          props.state.nextSegmentIndex = Math.max(
+            props.state.nextSegmentIndex,
+            data.segment + 1
+          );
+          applyDrawEventClient(props.state, data.segment, data.draw);
+          const cuts = data.cuts.map((cut) => ({
+            segment: cut.segment,
+            points: new Set(cut.points),
+          }));
+          fillCutsClient(props.state, cuts);
+        }
+      );
       socket.emit("join", {
         room: props.imageIndex.toString(),
       });
