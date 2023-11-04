@@ -8,7 +8,7 @@ import { Canvas } from "@react-three/fiber";
 import { clamp } from "three/src/math/MathUtils.js";
 import { PainterRenderer } from "./renderer";
 import { PainterController } from "./controller";
-import { DrawEvent, kImages } from "@/common";
+import { StateResponse, kImages } from "@/common";
 import { ClientState, applyDrawEventClient, fillCutsClient } from "@/client";
 
 /**
@@ -28,10 +28,7 @@ function scale(image: StaticImageData): number {
 
 export function Painter(props: {
   imageIndex: number;
-  initialState: {
-    draws: { event: DrawEvent; segment: number; historyIndex: number }[];
-    cuts: { segment: number; points: string[] }[];
-  };
+  initialState: StateResponse;
 }): JSX.Element {
   // the image to draw on
   const image = useMemo(() => kImages[props.imageIndex], [props.imageIndex]);

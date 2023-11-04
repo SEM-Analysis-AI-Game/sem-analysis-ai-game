@@ -1,4 +1,4 @@
-import { DrawEvent } from "@/common";
+import { StateResponse } from "@/common";
 import { serverState } from "@/server";
 import { NextApiRequest, NextApiResponse } from "next";
 
@@ -7,10 +7,7 @@ export default async function handler(
   response: NextApiResponse
 ) {
   const state = serverState[parseInt(request.query.imageIndex as string)];
-  const initialState: {
-    draws: { event: DrawEvent; segment: number; historyIndex: number }[];
-    cuts: {}[];
-  } = { draws: [], cuts: [] };
+  const initialState: StateResponse = { draws: [], cuts: [] };
   let current = state.shortLog.draws.head.next;
   while (current !== null) {
     initialState.draws.push({
@@ -28,5 +25,5 @@ export default async function handler(
     });
     currentCut = currentCut.next;
   }
-  return response.status(200).json({ initialState });
+  return response.status(200).json(initialState);
 }

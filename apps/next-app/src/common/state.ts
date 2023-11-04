@@ -4,6 +4,11 @@ export type DrawEvent = {
   size: number;
 };
 
+export type StateResponse = {
+  draws: { event: DrawEvent; segment: number; historyIndex: number }[];
+  cuts: { segment: number; points: string[] }[];
+};
+
 export type FillCut = {
   type: "FillCut";
   points: Set<string>;
