@@ -10,6 +10,7 @@ import { PainterRenderer } from "./renderer";
 import { PainterController } from "./controller";
 import { StateResponse, kImages } from "@/common";
 import { ClientState, applyDrawEventClient, fillCutsClient } from "@/client";
+import { Downloader } from "./downloader";
 
 /**
  * The max zoom multiplier
@@ -51,6 +52,7 @@ export function Painter(props: {
     texture.premultiplyAlpha = true;
 
     const state = {
+      background: image,
       drawing: texture,
       segmentBuffer: new Array(image.width * image.height),
       nextSegmentIndex: 0,
@@ -216,6 +218,14 @@ export function Painter(props: {
   const downloadFullImage = useRef<HTMLAnchorElement>(null);
   const downloadAnimation = useRef<HTMLAnchorElement>(null);
 
+  const [clickDownloadOverlay, setClickDownloadOverlay] = useState(
+    () => () => {}
+  );
+
+  const [clickDownloadFullImage, setClickDownloadFullImage] = useState(
+    () => () => {}
+  );
+
   return (
     <div className="flex h-screen justify-center items-center">
       <div
@@ -251,16 +261,31 @@ export function Painter(props: {
           canvasSize={[image.width * zoom, image.height * zoom]}
           drawing={state.drawing}
           pan={pan}
+        />
+        <Downloader
+          state={state}
+          currentPan={pan}
           downloadOverlayRef={downloadOverlay}
+          downloadFullImageRef={downloadFullImage}
+          setClickDownloadFullImage={setClickDownloadFullImage}
+          setClickDownloadOverlay={setClickDownloadOverlay}
         />
       </Canvas>
       <div className="flex flex-col absolute right-5 top-5 gap-y-8">
-        <button>
+        <button
+          onClick={() => {
+            clickDownloadOverlay();
+          }}
+        >
           <a ref={downloadOverlay} download={"overlay.png"}>
             Download Overlay
           </a>
         </button>
-        <button>
+        <button
+          onClick={() => {
+            clickDownloadFullImage();
+          }}
+        >
           <a ref={downloadFullImage} download={"full-image.png"}>
             Download Full Image
           </a>

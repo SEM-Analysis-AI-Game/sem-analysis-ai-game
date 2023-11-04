@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { RefObject, useMemo } from "react";
+import { useMemo } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { EffectComposer, TexturePass } from "three-stdlib";
 
@@ -10,7 +10,6 @@ export function PainterRenderer(props: {
   drawing: THREE.DataTexture;
   canvasSize: readonly [number, number];
   pan: readonly [number, number];
-  downloadOverlayRef: RefObject<HTMLAnchorElement>;
 }): null {
   const { gl } = useThree();
 
@@ -32,9 +31,5 @@ export function PainterRenderer(props: {
       props.canvasSize[1]
     );
     composer.render();
-
-    if (props.downloadOverlayRef.current) {
-      props.downloadOverlayRef.current.href = gl.domElement.toDataURL();
-    }
   });
 }
