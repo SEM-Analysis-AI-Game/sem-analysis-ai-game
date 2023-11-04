@@ -1,7 +1,7 @@
 "use client";
 
 import * as THREE from "three";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Image, { StaticImageData } from "next/image";
 import { useDrag, usePinch } from "@use-gesture/react";
 import { Canvas } from "@react-three/fiber";
@@ -212,6 +212,10 @@ export function Painter(props: {
       : undefined
   );
 
+  const downloadOverlay = useRef<HTMLAnchorElement>(null);
+  const downloadFullImage = useRef<HTMLAnchorElement>(null);
+  const downloadAnimation = useRef<HTMLAnchorElement>(null);
+
   return (
     <div className="flex h-screen justify-center items-center">
       <div
@@ -247,8 +251,24 @@ export function Painter(props: {
           canvasSize={[image.width * zoom, image.height * zoom]}
           drawing={state.drawing}
           pan={pan}
+          downloadOverlayRef={downloadOverlay}
         />
       </Canvas>
+      <div className="flex flex-col absolute right-5 top-5 gap-y-8">
+        <button>
+          <a ref={downloadOverlay} download={"overlay.png"}>
+            Download Overlay
+          </a>
+        </button>
+        <button>
+          <a ref={downloadFullImage} download={"full-image.png"}>
+            Download Full Image
+          </a>
+        </button>
+        <button>
+          <a ref={downloadAnimation}>Download Animation</a>
+        </button>
+      </div>
     </div>
   );
 }
