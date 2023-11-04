@@ -23,10 +23,14 @@ function fill(
   state: ClientState,
   pos: readonly [number, number],
   segment: number,
-  boundary: boolean
+  boundary: boolean,
+  flipY: boolean
 ): void {
   const color = getColor(segment);
-  const pixelIndex = (pos[1] * state.resolution[0] + pos[0]) * 4;
+  const pixelIndex =
+    ((flipY ? state.resolution[1] - pos[1] : pos[1]) * state.resolution[0] +
+      pos[0]) *
+    4;
   const data = state.drawing.image.data;
   data[pixelIndex] = color.r * 255;
   data[pixelIndex + 1] = color.g * 255;
@@ -36,15 +40,19 @@ function fill(
   state.drawing.needsUpdate = true;
 }
 
-export function smoothDrawClient(state: ClientState, event: DrawEvent): void {
+export function smoothDrawClient(
+  state: ClientState,
+  event: DrawEvent,
+  flipY: boolean
+): void {
   const { cuts } = smoothDraw(
     (pos, _, newEntry) =>
-      fill(state, pos, newEntry.id, newEntry.inSegmentNeighbors < 4),
+      fill(state, pos, newEntry.id, newEntry.inSegmentNeighbors < 4, flipY),
     () => {},
     state,
     event
   );
-  fillCutsClient(state, cuts);
+  fillCutsClient(state, cuts, flipY);
 }
 
 export function applyDrawEventClient(
@@ -54,7 +62,7 @@ export function applyDrawEventClient(
 ): void {
   applyDrawEvent(
     (pos, _, newEntry) =>
-      fill(state, pos, newEntry.id, newEntry.inSegmentNeighbors < 4),
+      fill(state, pos, newEntry.id, newEntry.inSegmentNeighbors < 4, false),
     state,
     activeSegment,
     event
@@ -63,7 +71,8 @@ export function applyDrawEventClient(
 
 export function fillCutsClient(
   state: ClientState,
-  cuts: { segment: number; points: Set<string> }[]
+  cuts: { segment: number; points: Set<string> }[],
+  flipY: boolean
 ): void {
   fillCuts(
     (pos, entry) => {
@@ -94,9 +103,9 @@ export function fillCutsClient(
           }
         }
         entry.inSegmentNeighbors = numNeighbors;
-        fill(state, pos, entry.id, numNeighbors < 4);
+        fill(state, pos, entry.id, numNeighbors < 4, flipY);
       } else {
-        fill(state, pos, entry.id, false);
+        fill(state, pos, entry.id, false, flipY);
       }
     },
     state,

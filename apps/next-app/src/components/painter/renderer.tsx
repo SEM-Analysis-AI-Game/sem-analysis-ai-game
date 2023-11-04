@@ -15,6 +15,7 @@ export function PainterRenderer(props: {
 
   const composer = useMemo(() => {
     gl.autoClear = false;
+    gl.setClearColor(0x000000, 0);
     const drawingComposer = new EffectComposer(gl);
     drawingComposer.addPass(new TexturePass(props.drawing));
     return drawingComposer;

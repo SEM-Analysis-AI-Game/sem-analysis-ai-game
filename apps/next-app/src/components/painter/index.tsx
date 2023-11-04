@@ -8,7 +8,7 @@ import { Canvas } from "@react-three/fiber";
 import { clamp } from "three/src/math/MathUtils.js";
 import { PainterRenderer } from "./renderer";
 import { PainterController } from "./controller";
-import { StateResponse, kImages } from "@/common";
+import { DrawEvent, StateResponse, kImages } from "@/common";
 import { ClientState, applyDrawEventClient, fillCutsClient } from "@/client";
 import { Downloader } from "./downloader";
 
@@ -79,7 +79,7 @@ export function Painter(props: {
       };
     });
 
-    fillCutsClient(state, cuts);
+    fillCutsClient(state, cuts, false);
 
     return state;
   }, [image, props.initialState, props.imageIndex]);
@@ -214,9 +214,8 @@ export function Painter(props: {
       : undefined
   );
 
-  const downloadOverlay = useRef<HTMLAnchorElement>(null);
-  const downloadFullImage = useRef<HTMLAnchorElement>(null);
-  const downloadAnimation = useRef<HTMLAnchorElement>(null);
+  const downloadOverlayRef = useRef<HTMLAnchorElement>(null);
+  const downloadFullImageRef = useRef<HTMLAnchorElement>(null);
 
   const [clickDownloadOverlay, setClickDownloadOverlay] = useState(
     () => () => {}
@@ -224,6 +223,10 @@ export function Painter(props: {
 
   const [clickDownloadFullImage, setClickDownloadFullImage] = useState(
     () => () => {}
+  );
+
+  const [downloadAnimation, setDownloadAnimation] = useState(
+    () => (log: { initialState: DrawEvent[] }) => {}
   );
 
   return (
@@ -243,7 +246,7 @@ export function Painter(props: {
           fill
         />
       </div>
-      <Canvas>
+      <Canvas gl={{ preserveDrawingBuffer: true }}>
         <PainterController
           historyIndex={
             props.initialState.draws.length > 0
@@ -265,10 +268,11 @@ export function Painter(props: {
         <Downloader
           state={state}
           currentPan={pan}
-          downloadOverlayRef={downloadOverlay}
-          downloadFullImageRef={downloadFullImage}
+          downloadOverlayRef={downloadOverlayRef}
+          downloadFullImageRef={downloadFullImageRef}
           setClickDownloadFullImage={setClickDownloadFullImage}
           setClickDownloadOverlay={setClickDownloadOverlay}
+          setDownloadAnimation={setDownloadAnimation}
         />
       </Canvas>
       <div className="flex flex-col absolute right-5 top-5 gap-y-8">
@@ -277,7 +281,7 @@ export function Painter(props: {
             clickDownloadOverlay();
           }}
         >
-          <a ref={downloadOverlay} download={"overlay.png"}>
+          <a ref={downloadOverlayRef} download={"overlay.png"}>
             Download Overlay
           </a>
         </button>
@@ -286,12 +290,22 @@ export function Painter(props: {
             clickDownloadFullImage();
           }}
         >
-          <a ref={downloadFullImage} download={"full-image.png"}>
+          <a ref={downloadFullImageRef} download={"full-image.png"}>
             Download Full Image
           </a>
         </button>
-        <button>
-          <a ref={downloadAnimation}>Download Animation</a>
+        <button
+          onClick={async () => {
+            const log = await fetch(
+              `/api/log?imageIndex=${props.imageIndex}&historyIndex=-1`,
+              {
+                cache: "no-cache",
+              }
+            ).then((res) => res.json());
+            downloadAnimation(log);
+          }}
+        >
+          Download Animation
         </button>
       </div>
     </div>

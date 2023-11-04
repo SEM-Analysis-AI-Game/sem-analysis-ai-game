@@ -4,9 +4,5 @@
   "workspaces": [
     "apps/*",
     "scripts/*"
-  ],
-  "dependencies": {
-    "@react-three/drei": "^9.88.11",
-    "@types/seedrandom": "^3.0.7"
-  }
+  ]
 }

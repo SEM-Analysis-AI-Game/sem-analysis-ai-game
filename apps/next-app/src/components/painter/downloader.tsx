@@ -1,9 +1,12 @@
-import { ClientState } from "@/client";
+import { ClientState, smoothDrawClient } from "@/client";
+import { DrawEvent } from "@/common";
 import { useTexture } from "@react-three/drei";
 import { useThree } from "@react-three/fiber";
 import { Dispatch, RefObject, useEffect } from "react";
-import { Vector2 } from "three";
+import { DataTexture, Vector2 } from "three";
 import { EffectComposer, ShaderPass, TexturePass } from "three-stdlib";
+// @ts-ignore
+import GIFEncoder from "gif-encoder-2";
 
 export const vertexShader = `
 varying vec3 vUv;
@@ -33,6 +36,7 @@ export function Downloader(props: {
   downloadFullImageRef: RefObject<HTMLAnchorElement>;
   setClickDownloadOverlay: Dispatch<() => void>;
   setClickDownloadFullImage: Dispatch<() => void>;
+  setDownloadAnimation: Dispatch<(log: { initialState: DrawEvent[] }) => void>;
 }): null {
   const { gl } = useThree();
 
@@ -74,6 +78,46 @@ export function Downloader(props: {
           })
         );
         updateAnchorHrefs(props.downloadFullImageRef.current, composer);
+      }
+    });
+
+    props.setDownloadAnimation(() => (log: { initialState: DrawEvent[] }) => {
+      if (backgroundTexture) {
+        const animationState: ClientState = {
+          nextSegmentIndex: 0,
+          segmentBuffer: new Array(props.state.segmentBuffer.length),
+          resolution: props.state.resolution,
+          drawing: new DataTexture(
+            new Uint8Array(props.state.drawing.image.data.length),
+            props.state.drawing.image.width,
+            props.state.drawing.image.height
+          ),
+          background: props.state.background,
+          imageIndex: props.state.imageIndex,
+        };
+        const encoder = new GIFEncoder(
+          props.state.resolution[0],
+          props.state.resolution[1]
+        );
+        encoder.setRepeat(1);
+        encoder.setFrameRate(30);
+        encoder.start();
+        for (const event of log.initialState) {
+          smoothDrawClient(animationState, event, true);
+          encoder.addFrame(animationState.drawing.image.data);
+        }
+        encoder.finish();
+        const anchor = document.createElement("a");
+        const blobUrl = URL.createObjectURL(
+          new Blob([new Uint8Array(encoder.out.getData())], {
+            type: "image/gif",
+          })
+        );
+        anchor.href = blobUrl;
+        anchor.download = "animation.gif";
+        anchor.click();
+        anchor.remove();
+        URL.revokeObjectURL(blobUrl);
       }
     });
   }, [props, gl, backgroundTexture]);
