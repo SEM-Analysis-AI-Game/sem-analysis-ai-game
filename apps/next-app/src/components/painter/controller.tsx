@@ -57,10 +57,16 @@ export function PainterController(props: {
             data.segment + 1
           );
           applyDrawEventClient(props.state, data.segment, data.draw);
-          const cuts = data.cuts.map((cut) => ({
-            segment: cut.segment,
-            points: new Set(cut.points),
-          }));
+          const cuts = data.cuts.map((cut) => {
+            props.state.nextSegmentIndex = Math.max(
+              props.state.nextSegmentIndex,
+              cut.segment + 1
+            );
+            return {
+              segment: cut.segment,
+              points: new Set(cut.points),
+            };
+          });
           fillCutsClient(props.state, cuts);
         }
       );
