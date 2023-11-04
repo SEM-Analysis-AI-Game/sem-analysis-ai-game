@@ -39,17 +39,24 @@ export function Downloader(props: {
   const backgroundTexture = useTexture(props.state.background.src);
 
   useEffect(() => {
+    function updateAnchorHrefs(
+      anchor: HTMLAnchorElement,
+      composer: EffectComposer
+    ) {
+      gl.clear();
+      const oldSize = new Vector2();
+      gl.getSize(oldSize);
+      gl.setSize(props.state.resolution[0], props.state.resolution[1]);
+      composer.render();
+      anchor.href = gl.domElement.toDataURL();
+      gl.setSize(oldSize.x, oldSize.y);
+    }
+
     props.setClickDownloadOverlay(() => () => {
       if (props.downloadOverlayRef.current) {
         const composer = new EffectComposer(gl);
         composer.addPass(new TexturePass(props.state.drawing));
-        gl.clear();
-        const oldSize = new Vector2();
-        gl.getSize(oldSize);
-        gl.setSize(props.state.resolution[0], props.state.resolution[1]);
-        composer.render();
-        props.downloadOverlayRef.current.href = gl.domElement.toDataURL();
-        gl.setSize(oldSize.x, oldSize.y);
+        updateAnchorHrefs(props.downloadOverlayRef.current, composer);
       }
     });
 
@@ -66,13 +73,7 @@ export function Downloader(props: {
             },
           })
         );
-        gl.clear();
-        const oldSize = new Vector2();
-        gl.getSize(oldSize);
-        gl.setSize(props.state.resolution[0], props.state.resolution[1]);
-        composer.render();
-        props.downloadFullImageRef.current.href = gl.domElement.toDataURL();
-        gl.setSize(oldSize.x, oldSize.y);
+        updateAnchorHrefs(props.downloadFullImageRef.current, composer);
       }
     });
   }, [props, gl, backgroundTexture]);
