@@ -79,7 +79,7 @@ export function Painter(props: {
       };
     });
 
-    fillCutsClient(state, cuts, false);
+    fillCutsClient(state, cuts, false, null);
 
     return state;
   }, [image, props.initialState, props.imageIndex]);

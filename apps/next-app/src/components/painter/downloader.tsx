@@ -2,7 +2,7 @@ import { ClientState, smoothDrawClient } from "@/client";
 import { DrawEvent } from "@/common";
 import { useTexture } from "@react-three/drei";
 import { useThree } from "@react-three/fiber";
-import { Dispatch, RefObject, useEffect } from "react";
+import { Dispatch, RefObject, useEffect, useState } from "react";
 import { DataTexture, Vector2 } from "three";
 import { EffectComposer, ShaderPass, TexturePass } from "three-stdlib";
 // @ts-ignore
@@ -41,6 +41,20 @@ export function Downloader(props: {
   const { gl } = useThree();
 
   const backgroundTexture = useTexture(props.state.background.src);
+
+  const [backgroundImage, setBackgroundImage] =
+    useState<HTMLImageElement | null>(null);
+
+  useEffect(() => {
+    const image = new Image(
+      props.state.resolution[0],
+      props.state.resolution[1]
+    );
+    image.src = backgroundTexture.image.src;
+    image.onload = () => {
+      setBackgroundImage(image);
+    };
+  }, [backgroundTexture, props.state.resolution]);
 
   useEffect(() => {
     function updateAnchorHrefs(
@@ -82,13 +96,25 @@ export function Downloader(props: {
     });
 
     props.setDownloadAnimation(() => (log: { initialState: DrawEvent[] }) => {
-      if (backgroundTexture) {
+      if (backgroundImage) {
+        const canvas = document.createElement("canvas");
+        canvas.width = props.state.resolution[0];
+        canvas.height = props.state.resolution[1];
+        const context = canvas.getContext("2d")!;
+        context.drawImage(backgroundImage, 0, 0);
+        const backgroundData = context.getImageData(
+          0,
+          0,
+          props.state.resolution[0],
+          props.state.resolution[1]
+        ).data;
+        canvas.remove();
         const animationState: ClientState = {
           nextSegmentIndex: 0,
           segmentBuffer: new Array(props.state.segmentBuffer.length),
           resolution: props.state.resolution,
           drawing: new DataTexture(
-            new Uint8Array(props.state.drawing.image.data.length),
+            new Uint8Array(backgroundData),
             props.state.drawing.image.width,
             props.state.drawing.image.height
           ),
@@ -97,13 +123,14 @@ export function Downloader(props: {
         };
         const encoder = new GIFEncoder(
           props.state.resolution[0],
-          props.state.resolution[1]
+          props.state.resolution[1],
+          "octree"
         );
         encoder.setRepeat(1);
-        encoder.setFrameRate(30);
+        encoder.setFrameRate(20);
         encoder.start();
         for (const event of log.initialState) {
-          smoothDrawClient(animationState, event, true);
+          smoothDrawClient(animationState, event, true, backgroundData);
           encoder.addFrame(animationState.drawing.image.data);
         }
         encoder.finish();
@@ -120,7 +147,7 @@ export function Downloader(props: {
         URL.revokeObjectURL(blobUrl);
       }
     });
-  }, [props, gl, backgroundTexture]);
+  }, [props, gl, backgroundTexture, backgroundImage]);
 
   return null;
 }

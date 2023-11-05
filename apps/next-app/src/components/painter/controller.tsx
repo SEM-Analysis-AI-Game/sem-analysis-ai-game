@@ -67,7 +67,7 @@ export function PainterController(props: {
               points: new Set(cut.points),
             };
           });
-          fillCutsClient(props.state, cuts, false);
+          fillCutsClient(props.state, cuts, false, null);
         }
       );
       socket.emit("join", {
@@ -87,7 +87,7 @@ export function PainterController(props: {
         .then((res) => res.json())
         .then((res) => {
           for (const eventData of res.initialState) {
-            smoothDrawClient(props.state, eventData, false);
+            smoothDrawClient(props.state, eventData, false, null);
           }
           setReconciled(true);
           setReconciling(false);
@@ -168,7 +168,7 @@ export function PainterController(props: {
           size: 10,
         };
 
-        smoothDrawClient(props.state, drawEvent, false);
+        smoothDrawClient(props.state, drawEvent, false, null);
 
         // emit the draw event to the server
         socket.emit("draw", drawEvent);

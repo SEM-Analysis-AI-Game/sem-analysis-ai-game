@@ -24,35 +24,69 @@ function fill(
   pos: readonly [number, number],
   segment: number,
   boundary: boolean,
-  flipY: boolean
+  flipY: boolean,
+  premultiplyBackgroundAlpha: Uint8ClampedArray | null
 ): void {
   const color = getColor(segment);
   const pixelIndex =
     ((flipY ? state.resolution[1] - pos[1] : pos[1]) * state.resolution[0] +
       pos[0]) *
     4;
+  const overlayAlpha = boundary ? kDrawAlpha + kBorderAlphaBoost : kDrawAlpha;
   const data = state.drawing.image.data;
-  data[pixelIndex] = color.r * 255;
-  data[pixelIndex + 1] = color.g * 255;
-  data[pixelIndex + 2] = color.b * 255;
-  data[pixelIndex + 3] =
-    (boundary ? kDrawAlpha + kBorderAlphaBoost : kDrawAlpha) * 255;
+  const overlayRed = color.r * 255;
+  const overlayGreen = color.g * 255;
+  const overlayBlue = color.b * 255;
+  if (premultiplyBackgroundAlpha) {
+    const backgroundRed = premultiplyBackgroundAlpha[pixelIndex];
+    const backgroundGreen = premultiplyBackgroundAlpha[pixelIndex + 1];
+    const backgroundBlue = premultiplyBackgroundAlpha[pixelIndex + 2];
+    const premultipliedRed = Math.min(
+      overlayRed * overlayAlpha + backgroundRed * (1 - overlayAlpha),
+      255
+    );
+    const premultipliedGreen = Math.min(
+      overlayGreen * overlayAlpha + backgroundGreen * (1 - overlayAlpha),
+      255
+    );
+    const premultipliedBlue = Math.min(
+      overlayBlue * overlayAlpha + backgroundBlue * (1 - overlayAlpha),
+      255
+    );
+    data[pixelIndex] = premultipliedRed;
+    data[pixelIndex + 1] = premultipliedGreen;
+    data[pixelIndex + 2] = premultipliedBlue;
+    data[pixelIndex + 3] = 255;
+  } else {
+    data[pixelIndex] = overlayRed;
+    data[pixelIndex + 1] = overlayGreen;
+    data[pixelIndex + 2] = overlayBlue;
+    data[pixelIndex + 3] = overlayAlpha * 255;
+  }
   state.drawing.needsUpdate = true;
 }
 
 export function smoothDrawClient(
   state: ClientState,
   event: DrawEvent,
-  flipY: boolean
+  flipY: boolean,
+  premultiplyBackgroundAlpha: Uint8ClampedArray | null
 ): void {
   const { cuts } = smoothDraw(
     (pos, _, newEntry) =>
-      fill(state, pos, newEntry.id, newEntry.inSegmentNeighbors < 4, flipY),
+      fill(
+        state,
+        pos,
+        newEntry.id,
+        newEntry.inSegmentNeighbors < 4,
+        flipY,
+        premultiplyBackgroundAlpha
+      ),
     () => {},
     state,
     event
   );
-  fillCutsClient(state, cuts, flipY);
+  fillCutsClient(state, cuts, flipY, premultiplyBackgroundAlpha);
 }
 
 export function applyDrawEventClient(
@@ -62,7 +96,14 @@ export function applyDrawEventClient(
 ): void {
   applyDrawEvent(
     (pos, _, newEntry) =>
-      fill(state, pos, newEntry.id, newEntry.inSegmentNeighbors < 4, false),
+      fill(
+        state,
+        pos,
+        newEntry.id,
+        newEntry.inSegmentNeighbors < 4,
+        false,
+        null
+      ),
     state,
     activeSegment,
     event
@@ -72,7 +113,8 @@ export function applyDrawEventClient(
 export function fillCutsClient(
   state: ClientState,
   cuts: { segment: number; points: Set<string> }[],
-  flipY: boolean
+  flipY: boolean,
+  premultiplyBackgroundAlpha: Uint8ClampedArray | null
 ): void {
   fillCuts(
     (pos, entry) => {
@@ -103,9 +145,16 @@ export function fillCutsClient(
           }
         }
         entry.inSegmentNeighbors = numNeighbors;
-        fill(state, pos, entry.id, numNeighbors < 4, flipY);
+        fill(
+          state,
+          pos,
+          entry.id,
+          numNeighbors < 4,
+          flipY,
+          premultiplyBackgroundAlpha
+        );
       } else {
-        fill(state, pos, entry.id, false, flipY);
+        fill(state, pos, entry.id, false, flipY, premultiplyBackgroundAlpha);
       }
     },
     state,
