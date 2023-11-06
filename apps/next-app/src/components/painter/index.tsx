@@ -11,6 +11,7 @@ import { PainterController } from "./controller";
 import { DrawEvent, StateResponse, kImages } from "@/common";
 import { ClientState, applyDrawEventClient, floodFillClient } from "@/client";
 import { Downloader } from "./downloader";
+import { Toolbar } from "./toolbar";
 
 /**
  * The max zoom multiplier
@@ -271,12 +272,9 @@ export function Painter(props: {
           setDownloadAnimation={setDownloadAnimation}
         />
       </Canvas>
-      <div className="flex flex-col absolute left-0 top-0 gap-y-2 bg-neutral-700 rounded-br p-4">
-        <p className="font-bold text-gray-50">
-          Export:
-        </p>
-        <button 
-          className="toolbar-button"
+      <div className="flex flex-col absolute right-5 top-5 gap-y-8">
+        <Toolbar>
+        <button
           onClick={() => {
             clickDownloadOverlay();
           }}
@@ -312,6 +310,7 @@ export function Painter(props: {
             Animation
           </p>
         </button>
+        </Toolbar>
       </div>
     </div>
   );
