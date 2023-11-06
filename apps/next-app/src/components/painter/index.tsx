@@ -230,7 +230,7 @@ export function Painter(props: {
   );
 
   return (
-    <div className="flex h-screen justify-center items-center">
+    <div className="flex h-screen justify-center items-center bg-neutral-800">
       <div
         className="absolute"
         style={{
@@ -275,26 +275,32 @@ export function Painter(props: {
           setDownloadAnimation={setDownloadAnimation}
         />
       </Canvas>
-      <div className="flex flex-col absolute right-5 top-5 gap-y-8">
-        <button
+      <div className="flex flex-col absolute left-0 top-0 gap-y-2 bg-neutral-700 rounded-br p-4">
+        <p className="font-bold text-gray-50">
+          Export:
+        </p>
+        <button 
+          className="toolbar-button"
           onClick={() => {
             clickDownloadOverlay();
           }}
         >
+          <Image src="/download.png" alt="" width={30} height={30} />
           <a ref={downloadOverlayRef} download={"overlay.png"}>
-            Download Overlay
+            Overlay
           </a>
         </button>
-        <button
+        <button className="toolbar-button"
           onClick={() => {
             clickDownloadFullImage();
           }}
         >
+          <Image src="/download.png" alt="" width={30} height={30} />
           <a ref={downloadFullImageRef} download={"full-image.png"}>
-            Download Full Image
+            Full Image
           </a>
         </button>
-        <button
+        <button className="toolbar-button"
           onClick={async () => {
             const log = await fetch(
               `/api/log?imageIndex=${props.imageIndex}&historyIndex=-1`,
@@ -305,7 +311,10 @@ export function Painter(props: {
             downloadAnimation(log);
           }}
         >
-          Download Animation
+          <Image src="/download.png" alt="" width={30} height={30} />
+          <p>
+            Animation
+          </p>
         </button>
       </div>
     </div>

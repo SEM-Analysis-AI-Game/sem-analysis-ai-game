@@ -19,3 +19,7 @@ Canvas {
   --gradient-color-3: #E74C3C;  
   --gradient-color-4: #F1C40F;
 }  
+
+.toolbar-button {
+  @apply rounded bg-gray-300 flex items-center px-2 hover:bg-gray-100 transition;
+}
