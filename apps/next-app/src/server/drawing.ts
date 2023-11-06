@@ -1,48 +1,51 @@
-import { DrawEvent, fillCuts, getSegmentEntry, smoothDraw } from "@/common";
-import { CutNode, DrawNode, RoomState } from "./state";
+import {
+  DrawEvent,
+  FloodFillEvent,
+  floodFill,
+  getSegmentEntry,
+  smoothDraw,
+} from "@/common";
+import { DrawNode, FloodFillNode, RoomState } from "./state";
 
 export function smoothDrawServer(
   state: RoomState,
   event: DrawEvent
 ): {
   activeSegment: number;
-  cuts: { segment: number; points: Set<string> }[];
+  fills: FloodFillEvent[];
 } | null {
   const node: DrawNode = {
-    event,
-    segment: -1,
-    type: "Draw",
+    event: { ...event, segment: -1, historyIndex: state.rawLog.length },
     prev: state.shortLog.draws.tail,
     next: null,
-    historyIndex: state.rawLog.length,
     numPixels: 0,
   };
 
   let drew = false;
 
-  function removeCut(
+  function removeFill(
     pos: readonly [number, number],
-    entry: { cut: CutNode | null }
+    entry: { fill: FloodFillNode | null }
   ) {
-    if (entry.cut) {
-      entry.cut.numPixels--;
-      entry.cut.points.delete(`${pos[0]},${pos[1]}`);
-      if (entry.cut.numPixels === 0) {
-        entry.cut.prev.next = entry.cut.next;
-        if (entry.cut.next) {
-          entry.cut.next.prev = entry.cut.prev;
+    if (entry.fill) {
+      entry.fill.numPixels--;
+      entry.fill.event.points.delete(`${pos[0]},${pos[1]}`);
+      if (entry.fill.numPixels === 0) {
+        entry.fill.prev.next = entry.fill.next;
+        if (entry.fill.next) {
+          entry.fill.next.prev = entry.fill.prev;
         } else {
-          state.shortLog.cuts.tail = entry.cut.prev;
+          state.shortLog.fills.tail = entry.fill.prev;
         }
-        state.shortLog.cuts.length--;
+        state.shortLog.fills.length--;
       }
-      entry.cut = null;
+      entry.fill = null;
     }
   }
 
-  const { activeSegment, cuts } = smoothDraw(
+  const { activeSegment, fills } = smoothDraw(
     (pos, oldSegment, newEntry) => {
-      removeCut(pos, newEntry);
+      removeFill(pos, newEntry);
       if (oldSegment !== newEntry.id) {
         if (newEntry.node) {
           newEntry.node.numPixels--;
@@ -63,53 +66,59 @@ export function smoothDrawServer(
     },
     (pos) => {
       const segmentEntry = getSegmentEntry(state, pos);
-      removeCut(pos, segmentEntry);
+      removeFill(pos, segmentEntry);
     },
     state,
     event
   );
 
-  node.segment = activeSegment;
+  node.event.segment = activeSegment;
 
   if (drew) {
     state.shortLog.draws.length++;
     state.shortLog.draws.tail.next = node;
     state.shortLog.draws.tail = node;
 
-    for (const cut of cuts) {
-      const cutNode: CutNode = {
-        type: "Cut",
-        points: cut.points,
-        numPixels: cut.points.size,
-        segment: cut.segment,
-        prev: state.shortLog.cuts.tail,
+    for (const fill of fills) {
+      const fillNode: FloodFillNode = {
+        event: {
+          points: fill.points,
+          segment: fill.segment,
+        },
+        numPixels: fill.points.size,
+        prev: state.shortLog.fills.tail,
         next: null,
       };
-      for (const point of cut.points) {
+      for (const point of fill.points) {
         getSegmentEntry(
           state,
           point.split(",").map((data) => parseInt(data)) as [number, number]
-        ).cut = cutNode;
+        ).fill = fillNode;
       }
-      state.shortLog.cuts.length++;
-      state.shortLog.cuts.tail.next = cutNode;
-      state.shortLog.cuts.tail = cutNode;
+      state.shortLog.fills.length++;
+      state.shortLog.fills.tail.next = fillNode;
+      state.shortLog.fills.tail = fillNode;
     }
 
     state.rawLog.push(event);
 
-    fillCuts<RoomState>(
-      (pos, entry, cut) => {
+    floodFill<RoomState, FloodFillEvent>(
+      (pos, entry, fill) => {
         const posString = pos.join(",");
-        if (!cut.points.has(posString)) {
-          removeCut(pos, entry);
+        if (!fill.points.has(posString)) {
+          removeFill(pos, entry);
         }
       },
       state,
-      cuts
+      fills.map((fill) => ({
+        fill: fill,
+        bfsStart: (fill.points.values().next().value as string)
+          .split(",")
+          .map((data) => parseInt(data)) as [number, number],
+      }))
     );
 
-    return { activeSegment: node.segment, cuts };
+    return { activeSegment: node.event.segment, fills };
   } else {
     return null;
   }

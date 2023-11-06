@@ -7,23 +7,21 @@ export default async function handler(
   response: NextApiResponse
 ) {
   const state = serverState[parseInt(request.query.imageIndex as string)];
-  const initialState: StateResponse = { draws: [], cuts: [] };
+  const initialState: StateResponse = { draws: [], fills: [] };
   let current = state.shortLog.draws.head.next;
   while (current !== null) {
-    initialState.draws.push({
-      event: current.event,
-      segment: current.segment,
-      historyIndex: current.historyIndex,
-    });
+    initialState.draws.push(current.event);
     current = current.next;
   }
-  let currentCut = state.shortLog.cuts.head.next;
-  while (currentCut !== null) {
-    initialState.cuts.push({
-      points: Array.from(currentCut.points),
-      segment: currentCut.segment,
+  let currentFill = state.shortLog.fills.head.next;
+  while (currentFill !== null) {
+    initialState.fills.push({
+      startingPoint: (currentFill.event.points.values().next().value as string)
+        .split(",")
+        .map((x) => parseInt(x)) as [number, number],
+      segment: currentFill.event.segment,
     });
-    currentCut = currentCut.next;
+    currentFill = currentFill.next;
   }
   return response.status(200).json(initialState);
 }

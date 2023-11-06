@@ -9,7 +9,7 @@ import { clamp } from "three/src/math/MathUtils.js";
 import { PainterRenderer } from "./renderer";
 import { PainterController } from "./controller";
 import { DrawEvent, StateResponse, kImages } from "@/common";
-import { ClientState, applyDrawEventClient, fillCutsClient } from "@/client";
+import { ClientState, applyDrawEventClient, floodFillClient } from "@/client";
 import { Downloader } from "./downloader";
 import { Toolbar } from "./toolbar";
 
@@ -66,21 +66,17 @@ export function Painter(props: {
         state.nextSegmentIndex,
         eventData.segment + 1
       );
-      applyDrawEventClient(state, eventData.segment, eventData.event);
+      applyDrawEventClient(state, eventData.segment, eventData);
     }
 
-    const cuts = props.initialState.cuts.map((cut) => {
+    for (const fill of props.initialState.fills) {
       state.nextSegmentIndex = Math.max(
         state.nextSegmentIndex,
-        cut.segment + 1
+        fill.segment + 1
       );
-      return {
-        ...cut,
-        points: new Set(cut.points),
-      };
-    });
+    }
 
-    fillCutsClient(state, cuts, false, null);
+    floodFillClient(state, props.initialState.fills, false, null);
 
     return state;
   }, [image, props.initialState, props.imageIndex]);
@@ -231,7 +227,7 @@ export function Painter(props: {
   );
 
   return (
-    <div className="flex h-screen justify-center items-center">
+    <div className="flex h-screen justify-center items-center bg-neutral-800">
       <div
         className="absolute"
         style={{
@@ -283,20 +279,22 @@ export function Painter(props: {
             clickDownloadOverlay();
           }}
         >
+          <Image src="/download.png" alt="" width={30} height={30} />
           <a ref={downloadOverlayRef} download={"overlay.png"}>
-            Download Overlay
+            Overlay
           </a>
         </button>
-        <button
+        <button className="toolbar-button"
           onClick={() => {
             clickDownloadFullImage();
           }}
         >
+          <Image src="/download.png" alt="" width={30} height={30} />
           <a ref={downloadFullImageRef} download={"full-image.png"}>
-            Download Full Image
+            Full Image
           </a>
         </button>
-        <button
+        <button className="toolbar-button"
           onClick={async () => {
             const log = await fetch(
               `/api/log?imageIndex=${props.imageIndex}&historyIndex=-1`,
@@ -307,7 +305,10 @@ export function Painter(props: {
             downloadAnimation(log);
           }}
         >
-          Download Animation
+          <Image src="/download.png" alt="" width={30} height={30} />
+          <p>
+            Animation
+          </p>
         </button>
         </Toolbar>
       </div>

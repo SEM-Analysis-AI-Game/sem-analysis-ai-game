@@ -1,6 +1,6 @@
 import { breadthFirstTraversal, kAdjacency } from "./bft";
 import { getBrush } from "./brush";
-import { DrawEvent, State } from "./state";
+import { DrawEvent, FloodFillEvent, FloodFillResponse, State } from "./state";
 
 export function getSegmentEntry<StateType extends State>(
   state: StateType,
@@ -275,10 +275,13 @@ export function smoothDraw<StateType extends State>(
     oldSegment: number,
     newEntry: StateType["segmentBuffer"][number]
   ) => void,
-  removeCut: (pos: readonly [number, number]) => void,
+  removeFill: (pos: readonly [number, number]) => void,
   state: StateType,
   event: DrawEvent
-): { activeSegment: number; cuts: { segment: number; points: Set<string> }[] } {
+): {
+  activeSegment: number;
+  fills: FloodFillEvent[];
+} {
   const segmentEntry = getSegmentEntry(state, event.from);
   const segment = segmentEntry ? segmentEntry.id : state.nextSegmentIndex;
   if (!segmentEntry) {
@@ -311,7 +314,7 @@ export function smoothDraw<StateType extends State>(
     event
   );
 
-  const cuts: { segment: number; points: Set<string> }[] = [];
+  const fills: FloodFillEvent[] = [];
   for (const [effectedSegment, { newBoundaryPoints }] of effectedSegments) {
     while (newBoundaryPoints.size > 0) {
       const bfsStart = Object.freeze(
@@ -352,7 +355,7 @@ export function smoothDraw<StateType extends State>(
                     exitLoop();
                   }
                 } else {
-                  removeCut(pos);
+                  removeFill(pos);
                 }
                 return true;
               }
@@ -362,7 +365,7 @@ export function smoothDraw<StateType extends State>(
           true
         );
         if (newBoundaryPoints.size > 0) {
-          cuts.push({
+          fills.push({
             segment: state.nextSegmentIndex,
             points: visited,
           });
@@ -370,34 +373,34 @@ export function smoothDraw<StateType extends State>(
           continue;
         }
       }
-      cuts.push({
+      fills.push({
         segment: effectedSegment,
         points: visited,
       });
     }
   }
 
-  return { activeSegment: segment, cuts };
+  return { activeSegment: segment, fills };
 }
 
-export function fillCuts<StateType extends State>(
+export function floodFill<
+  StateType extends State,
+  FillType extends FloodFillResponse | FloodFillEvent
+>(
   onUpdateSegment: (
     pos: readonly [number, number],
     entry: StateType["segmentBuffer"][number],
-    cut: { segment: number; points: Set<string> }
+    fill: FillType
   ) => void,
   state: State,
-  cuts: { segment: number; points: Set<string> }[]
+  fills: readonly { fill: FillType; bfsStart: readonly [number, number] }[]
 ): void {
-  for (const cut of cuts) {
-    const bfsStart = (cut.points.values().next().value as string)
-      .split(",")
-      .map((value) => parseInt(value)) as [number, number];
-    const segmentEntry = getSegmentEntry(state, bfsStart);
+  for (const fill of fills) {
+    const segmentEntry = getSegmentEntry(state, fill.bfsStart);
     const segmentId = segmentEntry ? segmentEntry.id : -1;
-    if (segmentId !== cut.segment) {
+    if (segmentId !== fill.fill.segment) {
       breadthFirstTraversal(
-        bfsStart,
+        fill.bfsStart,
         (pos) => {
           if (
             pos[0] >= 0 &&
@@ -406,9 +409,12 @@ export function fillCuts<StateType extends State>(
             pos[1] < state.resolution[1]
           ) {
             const entry = getSegmentEntry(state, pos);
-            if (entry && (entry.id === cut.segment || entry.id === segmentId)) {
-              entry.id = cut.segment;
-              onUpdateSegment(pos, entry, cut);
+            if (
+              entry &&
+              (entry.id === fill.fill.segment || entry.id === segmentId)
+            ) {
+              entry.id = fill.fill.segment;
+              onUpdateSegment(pos, entry, fill.fill);
               return true;
             }
           }

@@ -1,25 +1,25 @@
-import { DrawEvent, State, kImages } from "@/common";
+import {
+  DrawEvent,
+  DrawResponse,
+  FloodFillEvent,
+  State,
+  kImages,
+} from "@/common";
 
-export type HeadNode<NodeType> = {
-  type: "HeadNode";
+type HeadNode<NodeType> = {
   next: NodeType | null;
 };
 
-export type CutNode = {
-  type: "Cut";
-  points: Set<string>;
+export type FloodFillNode = {
+  event: FloodFillEvent;
   numPixels: number;
-  segment: number;
-  prev: HeadNode<CutNode> | CutNode;
-  next: CutNode | null;
+  prev: HeadNode<FloodFillNode> | FloodFillNode;
+  next: FloodFillNode | null;
 };
 
 export type DrawNode = {
-  type: "Draw";
-  event: DrawEvent;
+  event: DrawResponse;
   numPixels: number;
-  segment: number;
-  historyIndex: number;
   prev: HeadNode<DrawNode> | DrawNode;
   next: DrawNode | null;
 };
@@ -32,30 +32,28 @@ export type RoomState = State & {
       head: HeadNode<DrawNode>;
       tail: HeadNode<DrawNode> | DrawNode;
     };
-    cuts: {
+    fills: {
       length: number;
-      head: HeadNode<CutNode>;
-      tail: HeadNode<CutNode> | CutNode;
+      head: HeadNode<FloodFillNode>;
+      tail: HeadNode<FloodFillNode> | FloodFillNode;
     };
   };
   segmentBuffer: State["segmentBuffer"] &
-    { node: DrawNode; cut: CutNode | null }[];
+    { node: DrawNode; fill: FloodFillNode | null }[];
 };
 
 export const serverState: RoomState[] = kImages.map((image, imageIndex) => {
   const drawHead: HeadNode<DrawNode> = {
-    type: "HeadNode",
     next: null,
   };
-  const cutHead: HeadNode<CutNode> = {
-    type: "HeadNode",
+  const fillHead: HeadNode<FloodFillNode> = {
     next: null,
   };
   return {
     rawLog: [],
     shortLog: {
       draws: { head: drawHead, tail: drawHead, length: 0 },
-      cuts: { head: cutHead, tail: cutHead, length: 0 },
+      fills: { head: fillHead, tail: fillHead, length: 0 },
     },
     imageIndex: imageIndex,
     segmentBuffer: new Array(image.width * image.height),

@@ -66,9 +66,11 @@ export default async function socket(
             if (result) {
               connection.broadcast.to(room).emit("draw", {
                 draw: data,
-                cuts: result.cuts.map((cut) => ({
-                  segment: cut.segment,
-                  points: Array.from(cut.points),
+                fills: result.fills.map((fill) => ({
+                  segment: fill.segment,
+                  startingPoint: (fill.points.values().next().value as string)
+                    .split(",")
+                    .map((value) => parseInt(value)) as [number, number],
                 })),
                 segment: result.activeSegment,
               });

@@ -1,7 +1,9 @@
 import {
   DrawEvent,
+  FloodFillEvent,
+  FloodFillResponse,
   applyDrawEvent,
-  fillCuts,
+  floodFill,
   getColor,
   getSegmentEntry,
   kAdjacency,
@@ -72,7 +74,7 @@ export function smoothDrawClient(
   flipY: boolean,
   premultiplyBackgroundAlpha: Uint8ClampedArray | null
 ): void {
-  const { cuts } = smoothDraw(
+  const { fills } = smoothDraw(
     (pos, _, newEntry) =>
       fill(
         state,
@@ -86,7 +88,17 @@ export function smoothDrawClient(
     state,
     event
   );
-  fillCutsClient(state, cuts, flipY, premultiplyBackgroundAlpha);
+  floodFillClient(
+    state,
+    fills.map((fill) => ({
+      segment: fill.segment,
+      startingPoint: (fill.points.values().next().value as string)
+        .split(",")
+        .map((value) => parseInt(value)) as [number, number],
+    })),
+    flipY,
+    premultiplyBackgroundAlpha
+  );
 }
 
 export function applyDrawEventClient(
@@ -110,13 +122,13 @@ export function applyDrawEventClient(
   );
 }
 
-export function fillCutsClient(
+export function floodFillClient(
   state: ClientState,
-  cuts: { segment: number; points: Set<string> }[],
+  fills: FloodFillResponse[],
   flipY: boolean,
   premultiplyBackgroundAlpha: Uint8ClampedArray | null
 ): void {
-  fillCuts(
+  floodFill(
     (pos, entry) => {
       if (entry.inSegmentNeighbors < 4) {
         let numNeighbors: 0 | 1 | 2 | 3 | 4 = 0;
@@ -158,6 +170,9 @@ export function fillCutsClient(
       }
     },
     state,
-    cuts
+    fills.map((fill) => ({
+      fill: fill,
+      bfsStart: fill.startingPoint,
+    }))
   );
 }
