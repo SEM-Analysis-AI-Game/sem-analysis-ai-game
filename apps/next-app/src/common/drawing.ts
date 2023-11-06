@@ -5,15 +5,15 @@ import { DrawEvent, FloodFillEvent, FloodFillResponse, State } from "./state";
 export function getSegmentEntry<StateType extends State>(
   state: StateType,
   pos: readonly [number, number]
-): StateType["segmentBuffer"][number] {
-  return state.segmentBuffer[pos[1] * state.resolution[0] + pos[0]];
+): StateType["canvas"][number] {
+  return state.canvas[pos[1] * state.resolution[0] + pos[0]];
 }
 
 export function applyDrawEvent<StateType extends State>(
   onUpdateSegment: (
     pos: readonly [number, number],
     oldSegment: number,
-    newEntry: StateType["segmentBuffer"][number]
+    newEntry: StateType["canvas"][number]
   ) => void,
   state: StateType,
   activeSegment: number,
@@ -23,10 +23,10 @@ export function applyDrawEvent<StateType extends State>(
     pos: readonly [number, number],
     numNeighbors: 0 | 1 | 2 | 3 | 4
   ) {
-    let entry = state.segmentBuffer[pos[1] * state.resolution[0] + pos[0]];
+    let entry = state.canvas[pos[1] * state.resolution[0] + pos[0]];
     if (!entry) {
       entry = { id: activeSegment, inSegmentNeighbors: numNeighbors };
-      state.segmentBuffer[pos[1] * state.resolution[0] + pos[0]] = entry;
+      state.canvas[pos[1] * state.resolution[0] + pos[0]] = entry;
     }
     entry.id = activeSegment;
     entry.inSegmentNeighbors = numNeighbors;
@@ -273,7 +273,7 @@ export function smoothDraw<StateType extends State>(
   onUpdateSegment: (
     pos: readonly [number, number],
     oldSegment: number,
-    newEntry: StateType["segmentBuffer"][number]
+    newEntry: StateType["canvas"][number]
   ) => void,
   removeFill: (pos: readonly [number, number]) => void,
   state: StateType,
@@ -389,7 +389,7 @@ export function floodFill<
 >(
   onUpdateSegment: (
     pos: readonly [number, number],
-    entry: StateType["segmentBuffer"][number],
+    entry: StateType["canvas"][number],
     fill: FillType
   ) => void,
   state: State,

@@ -55,7 +55,7 @@ export function Painter(props: {
     const state = {
       background: image,
       drawing: texture,
-      segmentBuffer: new Array(image.width * image.height),
+      canvas: new Array(image.width * image.height),
       nextSegmentIndex: 0,
       imageIndex: props.imageIndex,
       resolution: [image.width, image.height] as const,

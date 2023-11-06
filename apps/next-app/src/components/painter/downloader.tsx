@@ -108,7 +108,7 @@ export function Downloader(props: {
         canvas.remove();
         const animationState: ClientState = {
           nextSegmentIndex: 0,
-          segmentBuffer: new Array(props.state.segmentBuffer.length),
+          canvas: new Array(props.state.canvas.length),
           resolution: props.state.resolution,
           drawing: new DataTexture(
             new Uint8Array(backgroundData),
