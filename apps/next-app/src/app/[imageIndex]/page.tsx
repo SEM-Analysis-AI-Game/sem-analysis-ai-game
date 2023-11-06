@@ -19,7 +19,7 @@ export default async function Paint(props: {
     .then((res) => res.json())
     .catch(() => ({
       draws: [],
-      cuts: [],
+      fills: [],
     }));
 
   const index = parseInt(props.params.imageIndex);

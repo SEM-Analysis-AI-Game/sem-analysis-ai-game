@@ -2,11 +2,11 @@ import { useEffect, useState } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { clamp } from "three/src/math/MathUtils.js";
 import { useSocket } from "../socket-connection";
-import { DrawEvent } from "@/common";
+import { DrawEvent, FloodFillResponse } from "@/common";
 import {
   ClientState,
   applyDrawEventClient,
-  fillCutsClient,
+  floodFillClient,
   smoothDrawClient,
 } from "@/client";
 
@@ -47,27 +47,24 @@ export function PainterController(props: {
         (data: {
           draw: DrawEvent;
           segment: number;
-          cuts: {
-            segment: number;
-            points: string[];
-          }[];
+          fills: FloodFillResponse[];
         }) => {
           props.state.nextSegmentIndex = Math.max(
             props.state.nextSegmentIndex,
             data.segment + 1
           );
           applyDrawEventClient(props.state, data.segment, data.draw);
-          const cuts = data.cuts.map((cut) => {
+          const fills = data.fills.map((fill) => {
             props.state.nextSegmentIndex = Math.max(
               props.state.nextSegmentIndex,
-              cut.segment + 1
+              fill.segment + 1
             );
             return {
-              segment: cut.segment,
-              points: new Set(cut.points),
+              segment: fill.segment,
+              points: new Set(fill.points),
             };
           });
-          fillCutsClient(props.state, cuts, false, null);
+          floodFillClient(props.state, fills, false, null);
         }
       );
       socket.emit("join", {

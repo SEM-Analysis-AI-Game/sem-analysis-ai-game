@@ -9,7 +9,7 @@ import { clamp } from "three/src/math/MathUtils.js";
 import { PainterRenderer } from "./renderer";
 import { PainterController } from "./controller";
 import { DrawEvent, StateResponse, kImages } from "@/common";
-import { ClientState, applyDrawEventClient, fillCutsClient } from "@/client";
+import { ClientState, applyDrawEventClient, floodFillClient } from "@/client";
 import { Downloader } from "./downloader";
 
 /**
@@ -68,18 +68,18 @@ export function Painter(props: {
       applyDrawEventClient(state, eventData.segment, eventData);
     }
 
-    const cuts = props.initialState.cuts.map((cut) => {
+    const fills = props.initialState.fills.map((fill) => {
       state.nextSegmentIndex = Math.max(
         state.nextSegmentIndex,
-        cut.segment + 1
+        fill.segment + 1
       );
       return {
-        ...cut,
-        points: new Set(cut.points),
+        ...fill,
+        points: new Set(fill.points),
       };
     });
 
-    fillCutsClient(state, cuts, false, null);
+    floodFillClient(state, fills, false, null);
 
     return state;
   }, [image, props.initialState, props.imageIndex]);
