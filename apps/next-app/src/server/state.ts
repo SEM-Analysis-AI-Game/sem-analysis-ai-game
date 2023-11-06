@@ -1,12 +1,10 @@
 import { DrawEvent, State, kImages } from "@/common";
 
-export type HeadNode<NodeType> = {
-  type: "HeadNode";
+type HeadNode<NodeType> = {
   next: NodeType | null;
 };
 
 export type CutNode = {
-  type: "Cut";
   points: Set<string>;
   numPixels: number;
   segment: number;
@@ -15,7 +13,6 @@ export type CutNode = {
 };
 
 export type DrawNode = {
-  type: "Draw";
   event: DrawEvent;
   numPixels: number;
   segment: number;
@@ -44,11 +41,9 @@ export type RoomState = State & {
 
 export const serverState: RoomState[] = kImages.map((image, imageIndex) => {
   const drawHead: HeadNode<DrawNode> = {
-    type: "HeadNode",
     next: null,
   };
   const cutHead: HeadNode<CutNode> = {
-    type: "HeadNode",
     next: null,
   };
   return {

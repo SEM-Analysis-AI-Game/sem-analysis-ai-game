@@ -11,7 +11,6 @@ export function smoothDrawServer(
   const node: DrawNode = {
     event,
     segment: -1,
-    type: "Draw",
     prev: state.shortLog.draws.tail,
     next: null,
     historyIndex: state.rawLog.length,
@@ -78,7 +77,6 @@ export function smoothDrawServer(
 
     for (const cut of cuts) {
       const cutNode: CutNode = {
-        type: "Cut",
         points: cut.points,
         numPixels: cut.points.size,
         segment: cut.segment,
