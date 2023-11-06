@@ -274,42 +274,42 @@ export function Painter(props: {
       </Canvas>
       <div className="flex flex-col absolute right-5 top-5 gap-y-8">
         <Toolbar>
-        <button
-          onClick={() => {
-            clickDownloadOverlay();
-          }}
-        >
-          <Image src="/download.png" alt="" width={30} height={30} />
-          <a ref={downloadOverlayRef} download={"overlay.png"}>
-            Overlay
-          </a>
-        </button>
-        <button className="toolbar-button"
-          onClick={() => {
-            clickDownloadFullImage();
-          }}
-        >
-          <Image src="/download.png" alt="" width={30} height={30} />
-          <a ref={downloadFullImageRef} download={"full-image.png"}>
-            Full Image
-          </a>
-        </button>
-        <button className="toolbar-button"
-          onClick={async () => {
-            const log = await fetch(
-              `/api/log?imageIndex=${props.imageIndex}&historyIndex=-1`,
-              {
-                cache: "no-cache",
-              }
-            ).then((res) => res.json());
-            downloadAnimation(log);
-          }}
-        >
-          <Image src="/download.png" alt="" width={30} height={30} />
-          <p>
-            Animation
-          </p>
-        </button>
+          <button
+            onClick={() => {
+              clickDownloadOverlay();
+            }}
+          >
+            <Image src="/download.png" alt="" width={30} height={30} />
+            <a ref={downloadOverlayRef} download={"overlay.png"}>
+              Overlay
+            </a>
+          </button>
+          <button
+            className="toolbar-button"
+            onClick={() => {
+              clickDownloadFullImage();
+            }}
+          >
+            <Image src="/download.png" alt="" width={30} height={30} />
+            <a ref={downloadFullImageRef} download={"full-image.png"}>
+              Full Image
+            </a>
+          </button>
+          <button
+            className="toolbar-button"
+            onClick={async () => {
+              const log = await fetch(
+                `/api/log?imageIndex=${props.imageIndex}&historyIndex=-1`,
+                {
+                  cache: "no-cache",
+                }
+              ).then((res) => res.json());
+              downloadAnimation(log);
+            }}
+          >
+            <Image src="/download.png" alt="" width={30} height={30} />
+            <p>Animation</p>
+          </button>
         </Toolbar>
       </div>
     </div>

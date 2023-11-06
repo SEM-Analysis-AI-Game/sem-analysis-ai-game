@@ -12,7 +12,6 @@ type HeadNode<NodeType> = {
 
 export type FloodFillNode = {
   event: FloodFillEvent;
-  numPixels: number;
   prev: HeadNode<FloodFillNode> | FloodFillNode;
   next: FloodFillNode | null;
 };

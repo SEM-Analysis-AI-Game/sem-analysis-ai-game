@@ -28,9 +28,8 @@ export function smoothDrawServer(
     entry: { fill: FloodFillNode | null }
   ) {
     if (entry.fill) {
-      entry.fill.numPixels--;
       entry.fill.event.points.delete(`${pos[0]},${pos[1]}`);
-      if (entry.fill.numPixels === 0) {
+      if (entry.fill.event.points.size === 0) {
         entry.fill.prev.next = entry.fill.next;
         if (entry.fill.next) {
           entry.fill.next.prev = entry.fill.prev;
@@ -85,7 +84,6 @@ export function smoothDrawServer(
           points: fill.points,
           segment: fill.segment,
         },
-        numPixels: fill.points.size,
         prev: state.shortLog.fills.tail,
         next: null,
       };

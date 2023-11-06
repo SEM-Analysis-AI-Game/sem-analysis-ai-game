@@ -1,9 +1,8 @@
 import { ClientState, smoothDrawClient } from "@/client";
 import { DrawEvent } from "@/common";
-import { useTexture } from "@react-three/drei";
 import { useThree } from "@react-three/fiber";
 import { Dispatch, RefObject, useEffect, useState } from "react";
-import { DataTexture, Vector2 } from "three";
+import { DataTexture, Vector2, Texture } from "three";
 import { EffectComposer, ShaderPass, TexturePass } from "three-stdlib";
 // @ts-ignore
 import GIFEncoder from "gif-encoder-2";
@@ -40,8 +39,6 @@ export function Downloader(props: {
 }): null {
   const { gl } = useThree();
 
-  const backgroundTexture = useTexture(props.state.background.src);
-
   const [backgroundImage, setBackgroundImage] =
     useState<HTMLImageElement | null>(null);
 
@@ -50,11 +47,11 @@ export function Downloader(props: {
       props.state.resolution[0],
       props.state.resolution[1]
     );
-    image.src = backgroundTexture.image.src;
+    image.src = props.state.background.src;
     image.onload = () => {
       setBackgroundImage(image);
     };
-  }, [backgroundTexture, props.state.resolution]);
+  }, [props.state.background, props.state.resolution]);
 
   useEffect(() => {
     function updateAnchorHrefs(
@@ -79,14 +76,14 @@ export function Downloader(props: {
     });
 
     props.setClickDownloadFullImage(() => () => {
-      if (props.downloadFullImageRef.current && backgroundTexture) {
+      if (props.downloadFullImageRef.current && backgroundImage) {
         const composer = new EffectComposer(gl);
         composer.addPass(
           new ShaderPass({
             vertexShader,
             fragmentShader: premultiplyAlphaShader,
             uniforms: {
-              background: { value: backgroundTexture },
+              background: { value: new Texture(backgroundImage) },
               overlay: { value: props.state.drawing },
             },
           })
@@ -147,7 +144,7 @@ export function Downloader(props: {
         URL.revokeObjectURL(blobUrl);
       }
     });
-  }, [props, gl, backgroundTexture, backgroundImage]);
+  }, [props, gl, backgroundImage]);
 
   return null;
 }
