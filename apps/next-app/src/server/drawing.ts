@@ -102,7 +102,7 @@ export function smoothDrawServer(
 
     state.rawLog.push(event);
 
-    floodFill<RoomState>(
+    floodFill<RoomState, FloodFillEvent>(
       (pos, entry, fill) => {
         const posString = pos.join(",");
         if (!fill.points.has(posString)) {
@@ -110,7 +110,12 @@ export function smoothDrawServer(
         }
       },
       state,
-      fills
+      fills.map((fill) => ({
+        fill: fill,
+        bfsStart: (fill.points.values().next().value as string)
+          .split(",")
+          .map((data) => parseInt(data)) as [number, number],
+      }))
     );
 
     return { activeSegment: node.event.segment, fills };

@@ -1,6 +1,6 @@
 import { breadthFirstTraversal, kAdjacency } from "./bft";
 import { getBrush } from "./brush";
-import { DrawEvent, FloodFillEvent, State } from "./state";
+import { DrawEvent, FloodFillEvent, FloodFillResponse, State } from "./state";
 
 export function getSegmentEntry<StateType extends State>(
   state: StateType,
@@ -383,24 +383,24 @@ export function smoothDraw<StateType extends State>(
   return { activeSegment: segment, fills };
 }
 
-export function floodFill<StateType extends State>(
+export function floodFill<
+  StateType extends State,
+  FillType extends FloodFillResponse | FloodFillEvent
+>(
   onUpdateSegment: (
     pos: readonly [number, number],
     entry: StateType["segmentBuffer"][number],
-    fill: { segment: number; points: Set<string> }
+    fill: FillType
   ) => void,
   state: State,
-  fills: { segment: number; points: Set<string> }[]
+  fills: readonly { fill: FillType; bfsStart: readonly [number, number] }[]
 ): void {
   for (const fill of fills) {
-    const bfsStart = (fill.points.values().next().value as string)
-      .split(",")
-      .map((value) => parseInt(value)) as [number, number];
-    const segmentEntry = getSegmentEntry(state, bfsStart);
+    const segmentEntry = getSegmentEntry(state, fill.bfsStart);
     const segmentId = segmentEntry ? segmentEntry.id : -1;
-    if (segmentId !== fill.segment) {
+    if (segmentId !== fill.fill.segment) {
       breadthFirstTraversal(
-        bfsStart,
+        fill.bfsStart,
         (pos) => {
           if (
             pos[0] >= 0 &&
@@ -411,10 +411,10 @@ export function floodFill<StateType extends State>(
             const entry = getSegmentEntry(state, pos);
             if (
               entry &&
-              (entry.id === fill.segment || entry.id === segmentId)
+              (entry.id === fill.fill.segment || entry.id === segmentId)
             ) {
-              entry.id = fill.segment;
-              onUpdateSegment(pos, entry, fill);
+              entry.id = fill.fill.segment;
+              onUpdateSegment(pos, entry, fill.fill);
               return true;
             }
           }

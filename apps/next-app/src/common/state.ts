@@ -9,7 +9,7 @@ export type DrawResponse = DrawEvent & {
   historyIndex: number;
 };
 
-export type FloodFill = {
+export type FloodFillResponse = {
   segment: number;
   startingPoint: readonly [number, number];
 };
@@ -17,11 +17,6 @@ export type FloodFill = {
 export type FloodFillEvent = {
   segment: number;
   points: Set<string>;
-};
-
-export type FloodFillResponse = {
-  segment: number;
-  points: string[];
 };
 
 export type StateResponse = {

@@ -68,18 +68,14 @@ export function Painter(props: {
       applyDrawEventClient(state, eventData.segment, eventData);
     }
 
-    const fills = props.initialState.fills.map((fill) => {
+    for (const fill of props.initialState.fills) {
       state.nextSegmentIndex = Math.max(
         state.nextSegmentIndex,
         fill.segment + 1
       );
-      return {
-        ...fill,
-        points: new Set(fill.points),
-      };
-    });
+    }
 
-    floodFillClient(state, fills, false, null);
+    floodFillClient(state, props.initialState.fills, false, null);
 
     return state;
   }, [image, props.initialState, props.imageIndex]);

@@ -54,17 +54,13 @@ export function PainterController(props: {
             data.segment + 1
           );
           applyDrawEventClient(props.state, data.segment, data.draw);
-          const fills = data.fills.map((fill) => {
+          for (const fill of data.fills) {
             props.state.nextSegmentIndex = Math.max(
               props.state.nextSegmentIndex,
               fill.segment + 1
             );
-            return {
-              segment: fill.segment,
-              points: new Set(fill.points),
-            };
-          });
-          floodFillClient(props.state, fills, false, null);
+          }
+          floodFillClient(props.state, data.fills, false, null);
         }
       );
       socket.emit("join", {

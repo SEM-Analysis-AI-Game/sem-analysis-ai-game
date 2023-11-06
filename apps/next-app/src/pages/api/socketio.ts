@@ -68,7 +68,9 @@ export default async function socket(
                 draw: data,
                 fills: result.fills.map((fill) => ({
                   segment: fill.segment,
-                  points: Array.from(fill.points),
+                  startingPoint: (fill.points.values().next().value as string)
+                    .split(",")
+                    .map((value) => parseInt(value)) as [number, number],
                 })),
                 segment: result.activeSegment,
               });

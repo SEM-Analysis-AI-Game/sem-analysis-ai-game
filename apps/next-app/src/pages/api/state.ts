@@ -16,7 +16,9 @@ export default async function handler(
   let currentFill = state.shortLog.fills.head.next;
   while (currentFill !== null) {
     initialState.fills.push({
-      points: Array.from(currentFill.event.points),
+      startingPoint: (currentFill.event.points.values().next().value as string)
+        .split(",")
+        .map((x) => parseInt(x)) as [number, number],
       segment: currentFill.event.segment,
     });
     currentFill = currentFill.next;

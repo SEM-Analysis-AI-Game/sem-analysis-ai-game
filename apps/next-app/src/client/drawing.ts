@@ -1,6 +1,7 @@
 import {
   DrawEvent,
   FloodFillEvent,
+  FloodFillResponse,
   applyDrawEvent,
   floodFill,
   getColor,
@@ -87,7 +88,17 @@ export function smoothDrawClient(
     state,
     event
   );
-  floodFillClient(state, fills, flipY, premultiplyBackgroundAlpha);
+  floodFillClient(
+    state,
+    fills.map((fill) => ({
+      segment: fill.segment,
+      startingPoint: (fill.points.values().next().value as string)
+        .split(",")
+        .map((value) => parseInt(value)) as [number, number],
+    })),
+    flipY,
+    premultiplyBackgroundAlpha
+  );
 }
 
 export function applyDrawEventClient(
@@ -113,7 +124,7 @@ export function applyDrawEventClient(
 
 export function floodFillClient(
   state: ClientState,
-  fills: FloodFillEvent[],
+  fills: FloodFillResponse[],
   flipY: boolean,
   premultiplyBackgroundAlpha: Uint8ClampedArray | null
 ): void {
@@ -159,6 +170,9 @@ export function floodFillClient(
       }
     },
     state,
-    fills
+    fills.map((fill) => ({
+      fill: fill,
+      bfsStart: fill.startingPoint,
+    }))
   );
 }
