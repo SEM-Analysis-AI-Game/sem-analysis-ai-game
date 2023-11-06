@@ -4,8 +4,13 @@ export type DrawEvent = {
   size: number;
 };
 
+export type DrawResponse = DrawEvent & {
+  segment: number;
+  historyIndex: number;
+};
+
 export type StateResponse = {
-  draws: { event: DrawEvent; segment: number; historyIndex: number }[];
+  draws: DrawResponse[];
   cuts: { segment: number; points: string[] }[];
 };
 

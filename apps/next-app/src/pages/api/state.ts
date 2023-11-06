@@ -10,11 +10,7 @@ export default async function handler(
   const initialState: StateResponse = { draws: [], cuts: [] };
   let current = state.shortLog.draws.head.next;
   while (current !== null) {
-    initialState.draws.push({
-      event: current.event,
-      segment: current.segment,
-      historyIndex: current.historyIndex,
-    });
+    initialState.draws.push(current.event);
     current = current.next;
   }
   let currentCut = state.shortLog.cuts.head.next;

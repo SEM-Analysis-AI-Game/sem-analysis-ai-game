@@ -9,11 +9,9 @@ export function smoothDrawServer(
   cuts: { segment: number; points: Set<string> }[];
 } | null {
   const node: DrawNode = {
-    event,
-    segment: -1,
+    event: { ...event, segment: -1, historyIndex: state.rawLog.length },
     prev: state.shortLog.draws.tail,
     next: null,
-    historyIndex: state.rawLog.length,
     numPixels: 0,
   };
 
@@ -68,7 +66,7 @@ export function smoothDrawServer(
     event
   );
 
-  node.segment = activeSegment;
+  node.event.segment = activeSegment;
 
   if (drew) {
     state.shortLog.draws.length++;
@@ -107,7 +105,7 @@ export function smoothDrawServer(
       cuts
     );
 
-    return { activeSegment: node.segment, cuts };
+    return { activeSegment: node.event.segment, cuts };
   } else {
     return null;
   }

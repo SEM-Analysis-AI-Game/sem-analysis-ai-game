@@ -65,7 +65,7 @@ export function Painter(props: {
         state.nextSegmentIndex,
         eventData.segment + 1
       );
-      applyDrawEventClient(state, eventData.segment, eventData.event);
+      applyDrawEventClient(state, eventData.segment, eventData);
     }
 
     const cuts = props.initialState.cuts.map((cut) => {

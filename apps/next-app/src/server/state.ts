@@ -1,4 +1,4 @@
-import { DrawEvent, State, kImages } from "@/common";
+import { DrawEvent, DrawResponse, State, kImages } from "@/common";
 
 type HeadNode<NodeType> = {
   next: NodeType | null;
@@ -13,10 +13,8 @@ export type CutNode = {
 };
 
 export type DrawNode = {
-  event: DrawEvent;
+  event: DrawResponse;
   numPixels: number;
-  segment: number;
-  historyIndex: number;
   prev: HeadNode<DrawNode> | DrawNode;
   next: DrawNode | null;
 };
