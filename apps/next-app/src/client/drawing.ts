@@ -79,7 +79,7 @@ export function smoothDrawClient(
       fill(
         state,
         pos,
-        newEntry.id,
+        newEntry.segment,
         newEntry.inSegmentNeighbors < 4,
         flipY,
         premultiplyBackgroundAlpha
@@ -111,7 +111,7 @@ export function applyDrawEventClient(
       fill(
         state,
         pos,
-        newEntry.id,
+        newEntry.segment,
         newEntry.inSegmentNeighbors < 4,
         false,
         null
@@ -124,7 +124,7 @@ export function applyDrawEventClient(
 
 export function floodFillClient(
   state: ClientState,
-  fills: FloodFillResponse[],
+  fills: readonly FloodFillResponse[],
   flipY: boolean,
   premultiplyBackgroundAlpha: Uint8ClampedArray | null
 ): void {
@@ -138,8 +138,8 @@ export function floodFillClient(
             pos[1] + neighbor[1],
           ] as const;
           const neighborEntry = getSegmentEntry(state, neighborPos);
-          const neighborId = neighborEntry ? neighborEntry.id : -1;
-          if (neighborId === entry.id) {
+          const neighborId = neighborEntry ? neighborEntry.segment : -1;
+          if (neighborId === entry.segment) {
             switch (numNeighbors) {
               case 0:
                 numNeighbors = 1;
@@ -160,13 +160,20 @@ export function floodFillClient(
         fill(
           state,
           pos,
-          entry.id,
+          entry.segment,
           numNeighbors < 4,
           flipY,
           premultiplyBackgroundAlpha
         );
       } else {
-        fill(state, pos, entry.id, false, flipY, premultiplyBackgroundAlpha);
+        fill(
+          state,
+          pos,
+          entry.segment,
+          false,
+          flipY,
+          premultiplyBackgroundAlpha
+        );
       }
     },
     state,

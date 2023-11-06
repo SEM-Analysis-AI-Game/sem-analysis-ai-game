@@ -8,7 +8,7 @@ import muc2 from "../../public/sem-images/muc-2.png";
 import muc3 from "../../public/sem-images/muc-3.png";
 
 /**
- * the images to display in the gallery.
+ * The images that are available to be used as the background.
  */
 export const kImages = [
   {
@@ -44,3 +44,10 @@ export const kImages = [
     description: "The cells of something (i don't know)",
   },
 ];
+
+/**
+ * Gets a background image by index.
+ */
+export function getImage(index: number) {
+  return kImages[index];
+}

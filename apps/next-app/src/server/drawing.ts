@@ -45,7 +45,7 @@ export function smoothDrawServer(
   const { activeSegment, fills } = smoothDraw(
     (pos, oldSegment, newEntry) => {
       removeFill(pos, newEntry);
-      if (oldSegment !== newEntry.id) {
+      if (oldSegment !== newEntry.segment) {
         if (newEntry.node) {
           newEntry.node.numPixels--;
           if (newEntry.node.numPixels === 0) {
@@ -64,7 +64,7 @@ export function smoothDrawServer(
       }
     },
     (pos) => {
-      const segmentEntry = getSegmentEntry(state, pos);
+      const segmentEntry = getSegmentEntry(state, pos)!;
       removeFill(pos, segmentEntry);
     },
     state,
@@ -91,7 +91,7 @@ export function smoothDrawServer(
         getSegmentEntry(
           state,
           point.split(",").map((data) => parseInt(data)) as [number, number]
-        ).fill = fillNode;
+        )!.fill = fillNode;
       }
       state.shortLog.fills.length++;
       state.shortLog.fills.tail.next = fillNode;

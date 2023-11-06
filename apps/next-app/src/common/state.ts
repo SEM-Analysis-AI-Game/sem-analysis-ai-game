@@ -74,20 +74,46 @@ export type StateResponse = {
   /**
    * The draw events are all applied first, without any flood fill events.
    */
-  draws: DrawResponse[];
+  draws: readonly DrawResponse[];
 
   /**
    * After all of the draw events are applied, the flood fill events are applied.
    */
-  fills: FloodFillResponse[];
+  fills: readonly FloodFillResponse[];
 };
 
 /**
  * Common data structure for the state of the server and client.
  */
 export type State = {
-  canvas: { id: number; inSegmentNeighbors: 0 | 1 | 2 | 3 | 4 }[];
+  /**
+   * The canvas is a 2D flattened into a 1D row-major array. Each element holds
+   * data for a single pixel.
+   */
+  canvas: {
+    /**
+     * The segment that is currently painted at this pixel.
+     */
+    segment: number;
+
+    /**
+     * The number of adjacent pixels that belong to the same segment as this pixel.
+     */
+    inSegmentNeighbors: 0 | 1 | 2 | 3 | 4;
+  }[];
+
+  /**
+   * The resolution of the canvas/background image.
+   */
   resolution: readonly [number, number];
+
+  /**
+   * The index of the background image in kImages.
+   */
   imageIndex: number;
+
+  /**
+   * The next segment index to use for drawing or flood filling.
+   */
   nextSegmentIndex: number;
 };

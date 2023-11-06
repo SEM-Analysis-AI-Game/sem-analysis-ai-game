@@ -5,7 +5,7 @@ import { DrawEvent, FloodFillEvent, FloodFillResponse, State } from "./state";
 export function getSegmentEntry<StateType extends State>(
   state: StateType,
   pos: readonly [number, number]
-): StateType["canvas"][number] {
+): StateType["canvas"][number] | undefined {
   return state.canvas[pos[1] * state.resolution[0] + pos[0]];
 }
 
@@ -25,20 +25,20 @@ export function applyDrawEvent<StateType extends State>(
   ) {
     let entry = state.canvas[pos[1] * state.resolution[0] + pos[0]];
     if (!entry) {
-      entry = { id: activeSegment, inSegmentNeighbors: numNeighbors };
+      entry = { segment: activeSegment, inSegmentNeighbors: numNeighbors };
       state.canvas[pos[1] * state.resolution[0] + pos[0]] = entry;
     }
-    entry.id = activeSegment;
+    entry.segment = activeSegment;
     entry.inSegmentNeighbors = numNeighbors;
     return entry;
   }
 
   function setNonBoundarySegment(pos: readonly [number, number]) {
     const oldSegmentEntry = getSegmentEntry(state, pos);
-    const oldSegmentId = oldSegmentEntry ? oldSegmentEntry.id : -1;
+    const oldSegmentId = oldSegmentEntry ? oldSegmentEntry.segment : -1;
     if (
       !oldSegmentEntry ||
-      oldSegmentEntry.id !== activeSegment ||
+      oldSegmentEntry.segment !== activeSegment ||
       oldSegmentEntry.inSegmentNeighbors < 4
     ) {
       const entry = setSegment(pos, 4);
@@ -49,7 +49,7 @@ export function applyDrawEvent<StateType extends State>(
   function setBoundarySegment(pos: readonly [number, number]) {
     let numNeighbors: 0 | 1 | 2 | 3 | 4 = 0;
     const segmentEntry = getSegmentEntry(state, pos);
-    const oldSegmentId = segmentEntry ? segmentEntry.id : -1;
+    const oldSegmentId = segmentEntry ? segmentEntry.segment : -1;
     const oldNumNeighbors = segmentEntry ? segmentEntry.inSegmentNeighbors : -1;
     for (const neighbor of kAdjacency) {
       const neighborPos = [pos[0] + neighbor[0], pos[1] + neighbor[1]] as const;
@@ -60,78 +60,74 @@ export function applyDrawEvent<StateType extends State>(
         neighborPos[1] < state.resolution[1]
       ) {
         const neighborSegmentEntry = getSegmentEntry(state, neighborPos);
-        const neighborSegmentId = neighborSegmentEntry
-          ? neighborSegmentEntry.id
-          : -1;
-        if (neighborSegmentId === activeSegment) {
-          // using switch here instead of increment operator to retain type info
-          switch (numNeighbors) {
-            case 0:
-              numNeighbors = 1;
-              break;
-            case 1:
-              numNeighbors = 2;
-              break;
-            case 2:
-              numNeighbors = 3;
-              break;
-            case 3:
-              numNeighbors = 4;
-              break;
-          }
-          if (
-            oldSegmentId !== activeSegment &&
-            neighborSegmentEntry.inSegmentNeighbors < 4
-          ) {
-            switch (neighborSegmentEntry.inSegmentNeighbors) {
+        if (neighborSegmentEntry) {
+          if (neighborSegmentEntry.segment === activeSegment) {
+            // using switch here instead of increment operator to retain type info
+            switch (numNeighbors) {
               case 0:
-                neighborSegmentEntry.inSegmentNeighbors = 1;
+                numNeighbors = 1;
                 break;
               case 1:
-                neighborSegmentEntry.inSegmentNeighbors = 2;
+                numNeighbors = 2;
                 break;
               case 2:
-                neighborSegmentEntry.inSegmentNeighbors = 3;
+                numNeighbors = 3;
                 break;
               case 3:
-                neighborSegmentEntry.inSegmentNeighbors = 4;
+                numNeighbors = 4;
+                break;
+            }
+            if (
+              oldSegmentId !== activeSegment &&
+              neighborSegmentEntry.inSegmentNeighbors < 4
+            ) {
+              switch (neighborSegmentEntry.inSegmentNeighbors) {
+                case 0:
+                  neighborSegmentEntry.inSegmentNeighbors = 1;
+                  break;
+                case 1:
+                  neighborSegmentEntry.inSegmentNeighbors = 2;
+                  break;
+                case 2:
+                  neighborSegmentEntry.inSegmentNeighbors = 3;
+                  break;
+                case 3:
+                  neighborSegmentEntry.inSegmentNeighbors = 4;
+                  break;
+              }
+              onUpdateSegment(
+                neighborPos,
+                neighborSegmentEntry.segment,
+                neighborSegmentEntry
+              );
+            }
+          } else if (neighborSegmentEntry.segment === oldSegmentId) {
+            switch (neighborSegmentEntry.inSegmentNeighbors) {
+              case 1:
+                neighborSegmentEntry.inSegmentNeighbors = 0;
+                break;
+              case 2:
+                neighborSegmentEntry.inSegmentNeighbors = 1;
+                break;
+              case 3:
+                neighborSegmentEntry.inSegmentNeighbors = 2;
+                break;
+              case 4:
+                neighborSegmentEntry.inSegmentNeighbors = 3;
                 break;
             }
             onUpdateSegment(
               neighborPos,
-              neighborSegmentEntry.id,
+              neighborSegmentEntry.segment,
               neighborSegmentEntry
             );
           }
-        } else if (
-          neighborSegmentId !== -1 &&
-          neighborSegmentId === oldSegmentId
-        ) {
-          switch (neighborSegmentEntry.inSegmentNeighbors) {
-            case 1:
-              neighborSegmentEntry.inSegmentNeighbors = 0;
-              break;
-            case 2:
-              neighborSegmentEntry.inSegmentNeighbors = 1;
-              break;
-            case 3:
-              neighborSegmentEntry.inSegmentNeighbors = 2;
-              break;
-            case 4:
-              neighborSegmentEntry.inSegmentNeighbors = 3;
-              break;
-          }
-          onUpdateSegment(
-            neighborPos,
-            neighborSegmentEntry.id,
-            neighborSegmentEntry
-          );
         }
       }
     }
     const entry = setSegment(pos, numNeighbors);
     if (
-      entry.id !== oldSegmentId ||
+      entry.segment !== oldSegmentId ||
       entry.inSegmentNeighbors !== oldNumNeighbors
     ) {
       onUpdateSegment(pos, oldSegmentId, entry);
@@ -283,7 +279,7 @@ export function smoothDraw<StateType extends State>(
   fills: FloodFillEvent[];
 } {
   const segmentEntry = getSegmentEntry(state, event.from);
-  const segment = segmentEntry ? segmentEntry.id : state.nextSegmentIndex;
+  const segment = segmentEntry ? segmentEntry.segment : state.nextSegmentIndex;
   if (!segmentEntry) {
     state.nextSegmentIndex++;
   }
@@ -303,7 +299,10 @@ export function smoothDraw<StateType extends State>(
           oldSegmentEntry = { newBoundaryPoints: new Set() };
           effectedSegments.set(oldSegment, oldSegmentEntry);
         }
-        if (oldSegment === newEntry.id && newEntry.inSegmentNeighbors < 4) {
+        if (
+          oldSegment === newEntry.segment &&
+          newEntry.inSegmentNeighbors < 4
+        ) {
           oldSegmentEntry.newBoundaryPoints.add(`${pos[0]},${pos[1]}`);
         }
       }
@@ -345,7 +344,7 @@ export function smoothDraw<StateType extends State>(
               const entry = getSegmentEntry(state, pos);
               if (
                 entry &&
-                entry.id === effectedSegment &&
+                entry.segment === effectedSegment &&
                 entry.inSegmentNeighbors < 4
               ) {
                 const stringify = `${pos[0]},${pos[1]}`;
@@ -397,7 +396,7 @@ export function floodFill<
 ): void {
   for (const fill of fills) {
     const segmentEntry = getSegmentEntry(state, fill.bfsStart);
-    const segmentId = segmentEntry ? segmentEntry.id : -1;
+    const segmentId = segmentEntry ? segmentEntry.segment : -1;
     if (segmentId !== fill.fill.segment) {
       breadthFirstTraversal(
         fill.bfsStart,
@@ -411,9 +410,10 @@ export function floodFill<
             const entry = getSegmentEntry(state, pos);
             if (
               entry &&
-              (entry.id === fill.fill.segment || entry.id === segmentId)
+              (entry.segment === fill.fill.segment ||
+                entry.segment === segmentId)
             ) {
-              entry.id = fill.fill.segment;
+              entry.segment = fill.fill.segment;
               onUpdateSegment(pos, entry, fill.fill);
               return true;
             }

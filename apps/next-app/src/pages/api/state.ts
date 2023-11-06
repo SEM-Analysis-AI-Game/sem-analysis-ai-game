@@ -1,4 +1,4 @@
-import { StateResponse } from "@/common";
+import { DrawResponse, FloodFillResponse, StateResponse } from "@/common";
 import { serverState } from "@/server";
 import { NextApiRequest, NextApiResponse } from "next";
 
@@ -7,7 +7,10 @@ export default async function handler(
   response: NextApiResponse
 ) {
   const state = serverState[parseInt(request.query.imageIndex as string)];
-  const initialState: StateResponse = { draws: [], fills: [] };
+  const initialState: { draws: DrawResponse[]; fills: FloodFillResponse[] } = {
+    draws: [],
+    fills: [],
+  };
   let current = state.shortLog.draws.head.next;
   while (current !== null) {
     initialState.draws.push(current.event);
@@ -23,5 +26,6 @@ export default async function handler(
     });
     currentFill = currentFill.next;
   }
-  return response.status(200).json(initialState);
+  const res: StateResponse = initialState;
+  return response.status(200).json(res);
 }
