@@ -5,7 +5,7 @@ import {
   applyDrawEvent,
   floodFill,
   getColor,
-  getSegmentEntry,
+  getPixelData,
   kAdjacency,
   smoothDraw,
 } from "@/common";
@@ -137,7 +137,7 @@ export function floodFillClient(
             pos[0] + neighbor[0],
             pos[1] + neighbor[1],
           ] as const;
-          const neighborEntry = getSegmentEntry(state, neighborPos);
+          const neighborEntry = getPixelData(state, neighborPos);
           const neighborId = neighborEntry ? neighborEntry.segment : -1;
           if (neighborId === entry.segment) {
             switch (numNeighbors) {

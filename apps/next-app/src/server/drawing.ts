@@ -2,7 +2,7 @@ import {
   DrawEvent,
   FloodFillEvent,
   floodFill,
-  getSegmentEntry,
+  getPixelData,
   smoothDraw,
 } from "@/common";
 import { DrawNode, FloodFillNode, RoomState } from "./state";
@@ -64,7 +64,7 @@ export function smoothDrawServer(
       }
     },
     (pos) => {
-      const segmentEntry = getSegmentEntry(state, pos)!;
+      const segmentEntry = getPixelData(state, pos)!;
       removeFill(pos, segmentEntry);
     },
     state,
@@ -88,7 +88,7 @@ export function smoothDrawServer(
         next: null,
       };
       for (const point of fill.points) {
-        getSegmentEntry(
+        getPixelData(
           state,
           point.split(",").map((data) => parseInt(data)) as [number, number]
         )!.fill = fillNode;

@@ -2,7 +2,10 @@ import { breadthFirstTraversal, kAdjacency } from "./bft";
 import { getBrush } from "./brush";
 import { DrawEvent, FloodFillEvent, FloodFillResponse, State } from "./state";
 
-export function getSegmentEntry<StateType extends State>(
+/**
+ * Get the data for a pixel at a given position on the canvas.
+ */
+export function getPixelData<StateType extends State>(
   state: StateType,
   pos: readonly [number, number]
 ): StateType["canvas"][number] | undefined {
@@ -34,7 +37,7 @@ export function applyDrawEvent<StateType extends State>(
   }
 
   function setNonBoundarySegment(pos: readonly [number, number]) {
-    const oldSegmentEntry = getSegmentEntry(state, pos);
+    const oldSegmentEntry = getPixelData(state, pos);
     const oldSegmentId = oldSegmentEntry ? oldSegmentEntry.segment : -1;
     if (
       !oldSegmentEntry ||
@@ -48,7 +51,7 @@ export function applyDrawEvent<StateType extends State>(
 
   function setBoundarySegment(pos: readonly [number, number]) {
     let numNeighbors: 0 | 1 | 2 | 3 | 4 = 0;
-    const segmentEntry = getSegmentEntry(state, pos);
+    const segmentEntry = getPixelData(state, pos);
     const oldSegmentId = segmentEntry ? segmentEntry.segment : -1;
     const oldNumNeighbors = segmentEntry ? segmentEntry.inSegmentNeighbors : -1;
     for (const neighbor of kAdjacency) {
@@ -59,7 +62,7 @@ export function applyDrawEvent<StateType extends State>(
         neighborPos[0] < state.resolution[0] &&
         neighborPos[1] < state.resolution[1]
       ) {
-        const neighborSegmentEntry = getSegmentEntry(state, neighborPos);
+        const neighborSegmentEntry = getPixelData(state, neighborPos);
         if (neighborSegmentEntry) {
           if (neighborSegmentEntry.segment === activeSegment) {
             // using switch here instead of increment operator to retain type info
@@ -278,7 +281,7 @@ export function smoothDraw<StateType extends State>(
   activeSegment: number;
   fills: FloodFillEvent[];
 } {
-  const segmentEntry = getSegmentEntry(state, event.from);
+  const segmentEntry = getPixelData(state, event.from);
   const segment = segmentEntry ? segmentEntry.segment : state.nextSegmentIndex;
   if (!segmentEntry) {
     state.nextSegmentIndex++;
@@ -341,7 +344,7 @@ export function smoothDraw<StateType extends State>(
               pos[0] < state.resolution[0] &&
               pos[1] < state.resolution[1]
             ) {
-              const entry = getSegmentEntry(state, pos);
+              const entry = getPixelData(state, pos);
               if (
                 entry &&
                 entry.segment === effectedSegment &&
@@ -395,7 +398,7 @@ export function floodFill<
   fills: readonly { fill: FillType; bfsStart: readonly [number, number] }[]
 ): void {
   for (const fill of fills) {
-    const segmentEntry = getSegmentEntry(state, fill.bfsStart);
+    const segmentEntry = getPixelData(state, fill.bfsStart);
     const segmentId = segmentEntry ? segmentEntry.segment : -1;
     if (segmentId !== fill.fill.segment) {
       breadthFirstTraversal(
@@ -407,7 +410,7 @@ export function floodFill<
             pos[0] < state.resolution[0] &&
             pos[1] < state.resolution[1]
           ) {
-            const entry = getSegmentEntry(state, pos);
+            const entry = getPixelData(state, pos);
             if (
               entry &&
               (entry.segment === fill.fill.segment ||
