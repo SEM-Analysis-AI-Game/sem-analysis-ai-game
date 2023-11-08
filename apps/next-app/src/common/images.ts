@@ -13,43 +13,42 @@ import muc3 from "../../public/sem-images/muc-3.png";
 export const kImages = [
   {
     ...hela1,
-    description: "Surface of cervical cancer cell that has a high production of a specific protein involved in breast cancer.",
-    url: "/sem-images/hela-1.png",
+    description:
+      "Surface of cervical cancer cell that has a high production of a specific protein involved in breast cancer.",
   },
   {
     ...hela2,
-    description: "Surface of cervical cancer cell that has a high production of a specific protein involved in breast cancer.",
-    url: "/sem-images/hela-2.png",
+    description:
+      "Surface of cervical cancer cell that has a high production of a specific protein involved in breast cancer.",
   },
   {
     ...hela3,
-    description: "Surface of cervical cancer cell that has a high production of a specific protein involved in breast cancer.",
-    url: "/sem-images/hela-3.png",
+    description:
+      "Surface of cervical cancer cell that has a high production of a specific protein involved in breast cancer.",
   },
   {
     ...lotus1,
-    description: "Lotus leaf that has undergone heat treatment which has changed its physical properties.",
-    url: "/sem-images/lotus-leaf-1.png",
+    description:
+      "Lotus leaf that has undergone heat treatment which has changed its physical properties.",
   },
   {
     ...lotus2,
     description: "Surface of a lotus leaf plant",
-    url: "/sem-images/lotus-leaf-2.png",
   },
   {
     ...muc1,
-    description: "Surface of cell from the breast that has a high production of a specific protein involved in breast cancer.",
-    url: "/sem-images/muc-1.png",
+    description:
+      "Surface of cell from the breast that has a high production of a specific protein involved in breast cancer.",
   },
   {
     ...muc2,
-    description: "Surface of cell from the breast that has a high production of a specific protein involved in breast cancer.",
-    url: "/sem-images/muc-2.png",
+    description:
+      "Surface of cell from the breast that has a high production of a specific protein involved in breast cancer.",
   },
   {
     ...muc3,
-    description: "Surface of cell from the breast that has a high production of a specific protein involved in breast cancer.",
-    url: "/sem-images/muc-3.png",
+    description:
+      "Surface of cell from the breast that has a high production of a specific protein involved in breast cancer.",
   },
 ];
 

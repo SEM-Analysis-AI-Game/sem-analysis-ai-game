@@ -1,8 +1,9 @@
-import { State, getImage } from "@/common";
 import { useThree } from "@react-three/fiber";
 import { Dispatch, RefObject, useEffect, useState } from "react";
 import { Vector2, Texture } from "three";
 import { EffectComposer, ShaderPass, TexturePass } from "three-stdlib";
+import { getImage } from "@/common";
+import { ClientState } from "drawing";
 
 export const vertexShader = `
 varying vec3 vUv;
@@ -26,7 +27,7 @@ void main() {
 `;
 
 export function Downloader(props: {
-  state: State;
+  state: ClientState;
   currentPan: readonly [number, number];
   downloadOverlayRef: RefObject<HTMLAnchorElement>;
   downloadFullImageRef: RefObject<HTMLAnchorElement>;
@@ -60,6 +61,7 @@ export function Downloader(props: {
       gl.setSize(props.state.resolution[0], props.state.resolution[1]);
       composer.render();
       anchor.href = gl.domElement.toDataURL();
+      anchor.click();
       gl.setSize(oldSize.x, oldSize.y);
     }
 

@@ -16,7 +16,7 @@ export function useSocket(): Socket | null {
 }
 
 /**
- * provides a socket connection to children
+ * Provides a socket connection to children
  */
 export function SocketConnectionProvider(
   props: PropsWithChildren

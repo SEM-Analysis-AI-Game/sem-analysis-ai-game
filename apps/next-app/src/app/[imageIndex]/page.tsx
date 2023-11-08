@@ -14,7 +14,7 @@ export default async function Paint(props: {
     `http://localhost${
       process.env.PORT ? `:${process.env.PORT}` : ""
     }/api/state?imageIndex=${props.params.imageIndex}`,
-    { next: { revalidate: 20 } }
+    { cache: "no-cache" }
   )
     .then((res) => res.json())
     .catch(() => ({

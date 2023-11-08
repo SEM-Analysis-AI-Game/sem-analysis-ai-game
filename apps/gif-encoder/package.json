@@ -1,0 +1,19 @@
+{
+  "name": "gif-encoder",
+  "version": "1.0.0",
+  "dependencies": {
+    "@types/node": "20.6.2",
+    "eslint": "8.49.0",
+    "eslint-config-next": "latest",
+    "sharp": "^0.32.6",
+    "socket.io-client": "^4.7.2",
+    "typescript": "5.2.2",
+    "gif-encoder-2": "^1.0.5",
+    "drawing": "workspace:packages/drawing"
+  },
+  "private": true,
+  "scripts": {
+    "dev": "bun src/index.ts",
+    "build": "bun build --compile ./src/index.ts --outfile=./dist/app"
+  }
+}

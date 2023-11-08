@@ -1,17 +1,18 @@
 import { useEffect, useState } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { clamp } from "three/src/math/MathUtils.js";
-import { useSocket } from "../socket-connection";
 import {
+  ClientState,
+  applyDrawEventClient,
   DrawEvent,
   DrawResponse,
+  DrawType,
   FloodFillResponse,
-  State,
-  applyDrawEvent,
-  drawAndFindSplits,
+  drawClient,
   drawImage,
-  floodFill,
-} from "@/common";
+  floodFillClient,
+} from "drawing";
+import { useSocket } from "../socket-connection";
 
 /**
  * Processes user input, updates the drawing texture uniforms and emits draw events to
@@ -23,7 +24,7 @@ export function PainterController(props: {
   zoom: number;
   pan: readonly [number, number];
   cursorDown: boolean;
-  state: State;
+  state: ClientState;
 }): null {
   // current pointer position in screen coordinate system ([-1, -1] to [1, 1] with the origin
   // at the center of the screen)
@@ -42,6 +43,8 @@ export function PainterController(props: {
   const [reconciling, setReconciling] = useState(false);
   const [reconciled, setReconciled] = useState(false);
 
+  const [brushType, setBrushType] = useState<DrawType>("brush");
+
   // listen for draw events from the server
   useEffect((): any => {
     if (socket && socket.connected) {
@@ -55,21 +58,15 @@ export function PainterController(props: {
             props.state.nextSegmentIndex,
             data.draw.segment + 1
           );
-          applyDrawEvent(() => {}, props.state, data.draw, true);
+          applyDrawEventClient(props.state, data.draw, true);
+
           for (const fill of data.fills) {
             props.state.nextSegmentIndex = Math.max(
               props.state.nextSegmentIndex,
               fill.segment + 1
             );
           }
-
-          floodFill(
-            () => {},
-            props.state,
-            data.fills,
-            true,
-            "FloodFillResponse"
-          );
+          floodFillClient(props.state, data.fills, true);
         }
       );
       socket.emit("join", {
@@ -89,20 +86,7 @@ export function PainterController(props: {
         .then((res) => res.json())
         .then((res) => {
           for (const eventData of res.initialState) {
-            const fills = drawAndFindSplits(
-              () => {},
-              () => {},
-              props.state,
-              eventData,
-              false
-            );
-            floodFill(
-              () => {},
-              props.state,
-              fills.fills,
-              false,
-              "FloodFillEvent"
-            );
+            drawClient(props.state, eventData, false);
           }
           drawImage(props.state);
 
@@ -182,17 +166,11 @@ export function PainterController(props: {
         const drawEvent: DrawEvent = {
           from: clampPos(lastCursor ?? pixelPos),
           to: clampPos(pixelPos),
+          type: brushType,
           size: 10,
         };
 
-        const fills = drawAndFindSplits(
-          () => {},
-          () => {},
-          props.state,
-          drawEvent,
-          true
-        );
-        floodFill(() => {}, props.state, fills.fills, true, "FloodFillEvent");
+        drawClient(props.state, drawEvent, true);
 
         // emit the draw event to the server
         socket.emit("draw", drawEvent);

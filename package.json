@@ -1,12 +1,8 @@
 {
   "name": "behind-density-lines",
   "private": true,
-  "workspaces": [
-    "apps/*",
-    "scripts/*"
-  ],
-  "dependencies": {
-    "@use-gesture/react": "^10.3.0",
-    "sharp": "^0.32.6"
+  "workspaces": ["apps/*", "packages/*"],
+  "devDependencies": {
+    "bun-types": "^1.0.11"
   }
 }

@@ -4,10 +4,9 @@ import {
   floodFill,
   drawAndFindSplits,
   getPixelData,
-  remove,
-  push,
-} from "@/common";
+} from "drawing";
 import { DrawNode, FloodFillNode, RoomState } from "./state";
+import { push } from "./doubly-linked-list";
 
 export function drawServer(
   state: RoomState,
@@ -15,19 +14,16 @@ export function drawServer(
 ): {
   activeSegment: number;
   fills: FloodFillEvent[];
-} | null {
+} {
   const node: DrawNode = {
     value: {
       ...event,
       segment: -1,
       historyIndex: state.rawLog.length,
-      numPixels: 0,
     },
     prev: state.shortLog.draws.tail,
     next: null,
   };
-
-  let drew = false;
 
   function removeFill(
     pos: readonly [number, number],
@@ -51,67 +47,53 @@ export function drawServer(
   const { activeSegment, fills } = drawAndFindSplits<RoomState>(
     (pos, oldData, newData) => {
       removeFill(pos, newData);
-      if (oldData && oldData.node && oldData.segment !== newData.segment) {
-        oldData.node.value.numPixels--;
-        if (oldData.node.value.numPixels === 0) {
-          remove(state.shortLog.draws, oldData.node);
-        }
+      if (!oldData || oldData.segment !== newData.segment) {
+        newData.node = node;
       }
-      newData.node = node;
-      node.value.numPixels++;
-      drew = true;
     },
     (pos) => {
       const segmentEntry = getPixelData(state, pos)!;
       removeFill(pos, segmentEntry);
     },
     state,
-    event,
-    true
+    event
   );
 
   node.value.segment = activeSegment;
 
-  if (drew) {
-    push(state.shortLog.draws, node);
+  push(state.shortLog.draws, node);
 
-    for (const fill of fills) {
-      const fillNode: FloodFillNode = {
-        value: {
-          points: fill.points,
-          segment: fill.segment,
-        },
-        prev: state.shortLog.fills.tail,
-        next: null,
-      };
-      for (const point of fill.points) {
-        getPixelData(
-          state,
-          point.split(",").map((data) => parseInt(data)) as [number, number]
-        )!.fill = fillNode;
-      }
-      push(state.shortLog.fills, fillNode);
-    }
-
-    state.rawLog.push(event);
-
-    floodFill<RoomState, FloodFillEvent>(
-      (pos, data, fill) => {
-        const posString = pos.join(",");
-        if (!fill.points.has(posString)) {
-          removeFill(pos, data);
-        }
+  for (const fill of fills) {
+    const fillNode: FloodFillNode = {
+      value: {
+        points: fill.points,
+        segment: fill.segment,
       },
-      state,
-      fills,
-      true,
-      "FloodFillEvent"
-    );
-
-    state.gifEncoder.addFrame(state.drawing.image.data);
-
-    return { activeSegment: node.value.segment, fills };
-  } else {
-    return null;
+      prev: state.shortLog.fills.tail,
+      next: null,
+    };
+    for (const point of fill.points) {
+      getPixelData(
+        state,
+        point.split(",").map((data) => parseInt(data)) as [number, number]
+      )!.fill = fillNode;
+    }
+    push(state.shortLog.fills, fillNode);
   }
+
+  state.rawLog.push(event);
+
+  floodFill<RoomState, FloodFillEvent>(
+    (pos, data, fill) => {
+      const posString = pos.join(",");
+      if (!fill.points.has(posString)) {
+        removeFill(pos, data);
+      }
+    },
+    state,
+    fills,
+    "FloodFillEvent"
+  );
+
+  return { activeSegment: node.value.segment, fills };
 }

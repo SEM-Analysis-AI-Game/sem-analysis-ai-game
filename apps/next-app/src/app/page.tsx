@@ -38,8 +38,8 @@ export default function Home(): JSX.Element {
             >
               <div className="w-full relative pt-[100%]">
                 <Image
-                  fill
                   src={data.src}
+                  fill
                   alt=""
                   className="rounded w-full h-full object-cover top-0 left-0"
                 />

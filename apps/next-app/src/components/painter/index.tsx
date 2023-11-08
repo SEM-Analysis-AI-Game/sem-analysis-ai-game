@@ -4,19 +4,18 @@ import * as THREE from "three";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Image, { StaticImageData } from "next/image";
 import { useDrag, usePinch } from "@use-gesture/react";
+import {
+  StateResponse,
+  ClientState,
+  applyDrawEventClient,
+  drawImage,
+  floodFillClient,
+} from "drawing";
 import { Canvas } from "@react-three/fiber";
 import { clamp } from "three/src/math/MathUtils.js";
 import { PainterRenderer } from "./renderer";
 import { PainterController } from "./controller";
-import {
-  DrawEvent,
-  State,
-  StateResponse,
-  applyDrawEvent,
-  drawImage,
-  floodFill,
-  getImage,
-} from "@/common";
+import { getImage } from "@/common";
 import { Downloader } from "./downloader";
 import { Collapsible } from "./collapsible";
 
@@ -47,7 +46,7 @@ export function Painter(props: {
   }, []);
 
   // initialize client-side state
-  const state: State = useMemo(() => {
+  const state: ClientState = useMemo(() => {
     // the texture to use for drawing
     const textureData = new Uint8Array(image.width * image.height * 4);
     const texture = new THREE.DataTexture(
@@ -74,7 +73,7 @@ export function Painter(props: {
         state.nextSegmentIndex,
         eventData.segment + 1
       );
-      applyDrawEvent(() => {}, state, eventData, false);
+      applyDrawEventClient(state, eventData, false);
     }
 
     for (const fill of props.initialState.fills) {
@@ -84,13 +83,7 @@ export function Painter(props: {
       );
     }
 
-    floodFill(
-      () => {},
-      state,
-      props.initialState.fills,
-      false,
-      "FloodFillResponse"
-    );
+    floodFillClient(state, props.initialState.fills, false);
 
     drawImage(state);
 
@@ -286,72 +279,79 @@ export function Painter(props: {
         />
       </Canvas>
       <div className="flex flex-col absolute left-0 top-0 gap-y-2 bg-neutral-700 rounded-br p-4 border-r border-b border-gray-400">
-          <div className="flex justify-center">
-            <button className="bg-gray-200 rounded hover:bg-gray-400 p-1 mx-2 transition">
-              <Image src="/circle_brush.png" alt="" width={25} height={25} />
-            </button>
-            
-            <button className="bg-gray-200 rounded hover:bg-gray-400 p-1 mx-2 transition">
-              <Image src="/circle_eraser.png" alt="" width={25} height={25} />
-            </button>
-          </div>
-
-          <input type="range" min={5} max={100} step={5} className="accent-neutral-200"/>
-
-          <hr />
-          <button className="toolbar-button"
-            onClick={() => {
-              fetch(`/api/score?imageIndex=${props.imageIndex}`)
-              .then((value) => {
-                value.json().then(data => {
-                  console.log(data);
-                  setScore(data.score);
-                })
-              })
-            }}
-          >
-            <Image src="/score.png" alt="" width={30} height={30} />
-            Re-score
+        <div className="flex justify-center">
+          <button className="bg-gray-200 rounded hover:bg-gray-400 p-1 mx-2 transition">
+            <Image src="/circle_brush.png" alt="" width={25} height={25} />
           </button>
 
-          <p className="text-neutral-100">
-            Score: <span className="font-bold">{Math.round(score * 100)}%</span>
-          </p>
+          <button className="bg-gray-200 rounded hover:bg-gray-400 p-1 mx-2 transition">
+            <Image src="/circle_eraser.png" alt="" width={25} height={25} />
+          </button>
+        </div>
 
-          <hr />
-          
-          <Collapsible title="Export">
-            <button className="toolbar-button"
-              onClick={() => {
-                clickDownloadOverlay();
-              }}
+        <input
+          type="range"
+          min={5}
+          max={100}
+          step={5}
+          className="accent-neutral-200"
+        />
+
+        <hr />
+        <button
+          className="toolbar-button"
+          onClick={() => {
+            fetch(`/api/score?imageIndex=${props.imageIndex}`).then((value) => {
+              value.json().then((data) => {
+                console.log(data);
+                setScore(data.score);
+              });
+            });
+          }}
+        >
+          <Image src="/score.png" alt="" width={30} height={30} />
+          Re-score
+        </button>
+
+        <p className="text-neutral-100">
+          Score: <span className="font-bold">{Math.round(score * 100)}%</span>
+        </p>
+
+        <hr />
+
+        <Collapsible title="Export">
+          <button
+            className="toolbar-button"
+            onClick={() => {
+              clickDownloadOverlay();
+            }}
+          >
+            <Image src="/download.png" alt="" width={30} height={30} />
+            <a ref={downloadOverlayRef} download={"overlay.png"}>
+              Overlay
+            </a>
+          </button>
+          <button
+            className="toolbar-button"
+            onClick={() => {
+              clickDownloadFullImage();
+            }}
+          >
+            <Image src="/download.png" alt="" width={30} height={30} />
+            <a ref={downloadFullImageRef} download={"full-image.png"}>
+              Full Image
+            </a>
+          </button>
+          <button className="toolbar-button">
+            <Image src="/download.png" alt="" width={30} height={30} />
+            <a
+              href={`http://localhost:3001/${props.imageIndex}`}
+              download="animation.gif"
             >
-              <Image src="/download.png" alt="" width={30} height={30} />
-              <a ref={downloadOverlayRef} download={"overlay.png"}>
-                Overlay
-              </a>
-            </button>
-            <button
-              className="toolbar-button"
-              onClick={() => {
-                clickDownloadFullImage();
-              }}
-            >
-              <Image src="/download.png" alt="" width={30} height={30} />
-              <a ref={downloadFullImageRef} download={"full-image.png"}>
-                Full Image
-              </a>
-            </button>
-            <button className="toolbar-button">
-              <Image src="/download.png" alt="" width={30} height={30} />
-              <a
-                href={`/api/animation?imageIndex=${props.imageIndex}`}
-                download="animation.gif"
-              >
-                Animation
-              </a>
-            </button>
-          </Collapsible>
+              Animation
+            </a>
+          </button>
+        </Collapsible>
       </div>
     </div>
   );

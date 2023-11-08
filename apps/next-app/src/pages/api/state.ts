@@ -1,10 +1,5 @@
-import {
-  DrawResponse,
-  FloodFillResponse,
-  StateResponse,
-  drawImage,
-} from "@/common";
-import { lazyBackground, serverState } from "@/server";
+import { serverState } from "@/server";
+import { DrawResponse, FloodFillResponse, StateResponse } from "drawing";
 import { NextApiRequest, NextApiResponse } from "next";
 
 export default async function handler(
@@ -13,10 +8,6 @@ export default async function handler(
 ) {
   const imageIndex = parseInt(request.query.imageIndex as string);
   const state = serverState[imageIndex];
-  if (!state.background) {
-    state.background = await lazyBackground[imageIndex];
-    drawImage(state);
-  }
   const initialState: { draws: DrawResponse[]; fills: FloodFillResponse[] } = {
     draws: [],
     fills: [],

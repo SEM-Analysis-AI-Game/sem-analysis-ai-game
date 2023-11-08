@@ -4,8 +4,8 @@ import { Server as HttpServer } from "http";
 import { Server as NetServer, Socket } from "net";
 import { NextApiResponse } from "next";
 import { Server as SocketIOServer } from "socket.io";
-import { serverState, drawServer, lazyBackground } from "@/server";
-import { DrawEvent, drawImage } from "@/common";
+import { serverState, drawServer } from "@/server";
+import { DrawEvent } from "drawing";
 
 export const config = {
   api: {
@@ -62,25 +62,20 @@ export default async function socket(
           if (room) {
             const imageIndex = parseInt(room);
             const state = serverState[imageIndex];
-            if (!state.background) {
-              state.background = await lazyBackground[imageIndex];
-              drawImage(state);
-            }
             const result = drawServer(state, data);
-            if (result) {
-              connection.broadcast.to(room).emit("draw", {
-                draw: {
-                  ...data,
-                  segment: result.activeSegment,
-                },
-                fills: result.fills.map((fill) => ({
-                  segment: fill.segment,
-                  startingPoint: (fill.points.values().next().value as string)
-                    .split(",")
-                    .map((value) => parseInt(value)) as [number, number],
-                })),
-              });
-            }
+            connection.broadcast.to(room).emit("draw", {
+              imageIndex,
+              draw: {
+                ...data,
+                segment: result.activeSegment,
+              },
+              fills: result.fills.map((fill) => ({
+                segment: fill.segment,
+                startingPoint: (fill.points.values().next().value as string)
+                  .split(",")
+                  .map((value) => parseInt(value)) as [number, number],
+              })),
+            });
           } else {
             // throw new Error("Draw event from user not in a room");
           }
