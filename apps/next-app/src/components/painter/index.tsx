@@ -19,6 +19,7 @@ import {
 } from "@/common";
 import { Downloader } from "./downloader";
 import { Toolbar } from "./toolbar";
+import { Collapsible } from "./collapsible";
 
 /**
  * The max zoom multiplier
@@ -283,39 +284,59 @@ export function Painter(props: {
           setClickDownloadOverlay={setClickDownloadOverlay}
         />
       </Canvas>
-      <div className="flex flex-col absolute right-5 top-5 gap-y-8">
-        <Toolbar>
-          <button
-            onClick={() => {
-              clickDownloadOverlay();
-            }}
-          >
-            <Image src="/download.png" alt="" width={30} height={30} />
-            <a ref={downloadOverlayRef} download="overlay.png">
-              Overlay
-            </a>
-          </button>
-          <button
-            className="toolbar-button"
-            onClick={() => {
-              clickDownloadFullImage();
-            }}
-          >
-            <Image src="/download.png" alt="" width={30} height={30} />
-            <a ref={downloadFullImageRef} download="full-image.png">
-              Full Image
-            </a>
-          </button>
-          <button className="toolbar-button">
-            <Image src="/download.png" alt="" width={30} height={30} />
-            <a
-              href={`/api/animation?imageIndex=${props.imageIndex}`}
-              download="animation.gif"
+      <div className="flex flex-col absolute left-0 top-0 gap-y-2 bg-neutral-700 rounded-br p-4 border-r border-b border-gray-400">
+          <div className="flex justify-center">
+            <button className="bg-gray-200 rounded hover:bg-gray-400 p-1 mx-2 transition">
+              <Image src="/circle_brush.png" alt="" width={25} height={25} />
+            </button>
+            
+            <button className="bg-gray-200 rounded hover:bg-gray-400 p-1 mx-2 transition">
+              <Image src="/circle_eraser.png" alt="" width={25} height={25} />
+            </button>
+          </div>
+
+          <input type="range" />
+
+          <hr />
+          
+          <Collapsible title="Export">
+            <button className="toolbar-button"
+              onClick={() => {
+                clickDownloadOverlay();
+              }}
             >
-              Animation
-            </a>
-          </button>
-        </Toolbar>
+              <Image src="/download.png" alt="" width={30} height={30} />
+              <a ref={downloadOverlayRef} download={"overlay.png"}>
+                Overlay
+              </a>
+            </button>
+            <button
+              className="toolbar-button"
+              onClick={() => {
+                clickDownloadFullImage();
+              }}
+            >
+              <Image src="/download.png" alt="" width={30} height={30} />
+              <a ref={downloadFullImageRef} download={"full-image.png"}>
+                Full Image
+              </a>
+            </button>
+            {/* <button
+              className="toolbar-button"
+              onClick={async () => {
+                const log = await fetch(
+                  `/api/log?imageIndex=${props.imageIndex}&historyIndex=-1`,
+                  {
+                    cache: "no-cache",
+                  }
+                ).then((res) => res.json());
+                downloadAnimation(log);
+              }}
+            >
+              <Image src="/download.png" alt="" width={30} height={30} />
+              <p>Animation</p>
+            </button> */}
+          </Collapsible>
       </div>
     </div>
   );
