@@ -2,7 +2,6 @@
   "name": "next-app",
   "version": "1.0.0",
   "dependencies": {
-    "@react-three/drei": "^9.88.11",
     "@react-three/fiber": "^8.14.2",
     "@types/node": "20.6.2",
     "@types/react": "18.2.21",

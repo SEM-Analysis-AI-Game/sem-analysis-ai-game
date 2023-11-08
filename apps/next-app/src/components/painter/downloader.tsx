@@ -1,11 +1,8 @@
-import { ClientState, smoothDrawClient } from "@/client";
-import { DrawEvent } from "@/common";
+import { State, getImage } from "@/common";
 import { useThree } from "@react-three/fiber";
 import { Dispatch, RefObject, useEffect, useState } from "react";
-import { DataTexture, Vector2, Texture } from "three";
+import { Vector2, Texture } from "three";
 import { EffectComposer, ShaderPass, TexturePass } from "three-stdlib";
-// @ts-ignore
-import GIFEncoder from "gif-encoder-2";
 
 export const vertexShader = `
 varying vec3 vUv;
@@ -29,13 +26,12 @@ void main() {
 `;
 
 export function Downloader(props: {
-  state: ClientState;
+  state: State;
   currentPan: readonly [number, number];
   downloadOverlayRef: RefObject<HTMLAnchorElement>;
   downloadFullImageRef: RefObject<HTMLAnchorElement>;
   setClickDownloadOverlay: Dispatch<() => void>;
   setClickDownloadFullImage: Dispatch<() => void>;
-  setDownloadAnimation: Dispatch<(log: { initialState: DrawEvent[] }) => void>;
 }): null {
   const { gl } = useThree();
 
@@ -47,11 +43,11 @@ export function Downloader(props: {
       props.state.resolution[0],
       props.state.resolution[1]
     );
-    image.src = props.state.background.src;
+    image.src = getImage(props.state.imageIndex).src;
     image.onload = () => {
       setBackgroundImage(image);
     };
-  }, [props.state.background, props.state.resolution]);
+  }, [props.state.imageIndex, props.state.resolution]);
 
   useEffect(() => {
     function updateAnchorHrefs(
@@ -89,59 +85,6 @@ export function Downloader(props: {
           })
         );
         updateAnchorHrefs(props.downloadFullImageRef.current, composer);
-      }
-    });
-
-    props.setDownloadAnimation(() => (log: { initialState: DrawEvent[] }) => {
-      if (backgroundImage) {
-        const canvas = document.createElement("canvas");
-        canvas.width = props.state.resolution[0];
-        canvas.height = props.state.resolution[1];
-        const context = canvas.getContext("2d")!;
-        context.drawImage(backgroundImage, 0, 0);
-        const backgroundData = context.getImageData(
-          0,
-          0,
-          props.state.resolution[0],
-          props.state.resolution[1]
-        ).data;
-        canvas.remove();
-        const animationState: ClientState = {
-          nextSegmentIndex: 0,
-          canvas: new Array(props.state.canvas.length),
-          resolution: props.state.resolution,
-          drawing: new DataTexture(
-            new Uint8Array(backgroundData),
-            props.state.drawing.image.width,
-            props.state.drawing.image.height
-          ),
-          background: props.state.background,
-          imageIndex: props.state.imageIndex,
-        };
-        const encoder = new GIFEncoder(
-          props.state.resolution[0],
-          props.state.resolution[1],
-          "octree"
-        );
-        encoder.setRepeat(1);
-        encoder.setFrameRate(20);
-        encoder.start();
-        for (const event of log.initialState) {
-          smoothDrawClient(animationState, event, true, backgroundData);
-          encoder.addFrame(animationState.drawing.image.data);
-        }
-        encoder.finish();
-        const anchor = document.createElement("a");
-        const blobUrl = URL.createObjectURL(
-          new Blob([new Uint8Array(encoder.out.getData())], {
-            type: "image/gif",
-          })
-        );
-        anchor.href = blobUrl;
-        anchor.download = "animation.gif";
-        anchor.click();
-        anchor.remove();
-        URL.revokeObjectURL(blobUrl);
       }
     });
   }, [props, gl, backgroundImage]);

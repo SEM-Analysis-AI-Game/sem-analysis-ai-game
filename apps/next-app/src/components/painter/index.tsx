@@ -8,8 +8,15 @@ import { Canvas } from "@react-three/fiber";
 import { clamp } from "three/src/math/MathUtils.js";
 import { PainterRenderer } from "./renderer";
 import { PainterController } from "./controller";
-import { DrawEvent, StateResponse, kImages } from "@/common";
-import { ClientState, applyDrawEventClient, floodFillClient } from "@/client";
+import {
+  DrawEvent,
+  State,
+  StateResponse,
+  applyDrawEvent,
+  drawImage,
+  floodFill,
+  getImage,
+} from "@/common";
 import { Downloader } from "./downloader";
 import { Toolbar } from "./toolbar";
 
@@ -33,14 +40,14 @@ export function Painter(props: {
   initialState: StateResponse;
 }): JSX.Element {
   // the image to draw on
-  const image = useMemo(() => kImages[props.imageIndex], [props.imageIndex]);
+  const image = useMemo(() => getImage(props.imageIndex), [props.imageIndex]);
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
   }, []);
 
   // initialize client-side state
-  const state: ClientState = useMemo(() => {
+  const state: State = useMemo(() => {
     // the texture to use for drawing
     const textureData = new Uint8Array(image.width * image.height * 4);
     const texture = new THREE.DataTexture(
@@ -53,12 +60,13 @@ export function Painter(props: {
     texture.premultiplyAlpha = true;
 
     const state = {
-      background: image,
       drawing: texture,
       canvas: new Array(image.width * image.height),
       nextSegmentIndex: 0,
       imageIndex: props.imageIndex,
       resolution: [image.width, image.height] as const,
+      flipY: false,
+      background: null,
     };
 
     for (const eventData of props.initialState.draws) {
@@ -66,7 +74,7 @@ export function Painter(props: {
         state.nextSegmentIndex,
         eventData.segment + 1
       );
-      applyDrawEventClient(state, eventData.segment, eventData);
+      applyDrawEvent(() => {}, state, eventData, false);
     }
 
     for (const fill of props.initialState.fills) {
@@ -76,7 +84,15 @@ export function Painter(props: {
       );
     }
 
-    floodFillClient(state, props.initialState.fills, false, null);
+    floodFill(
+      () => {},
+      state,
+      props.initialState.fills,
+      false,
+      "FloodFillResponse"
+    );
+
+    drawImage(state);
 
     return state;
   }, [image, props.initialState, props.imageIndex]);
@@ -222,10 +238,6 @@ export function Painter(props: {
     () => () => {}
   );
 
-  const [downloadAnimation, setDownloadAnimation] = useState(
-    () => (log: { initialState: DrawEvent[] }) => {}
-  );
-
   return (
     <div className="flex h-screen justify-center items-center bg-neutral-800">
       <div
@@ -269,7 +281,6 @@ export function Painter(props: {
           downloadFullImageRef={downloadFullImageRef}
           setClickDownloadFullImage={setClickDownloadFullImage}
           setClickDownloadOverlay={setClickDownloadOverlay}
-          setDownloadAnimation={setDownloadAnimation}
         />
       </Canvas>
       <div className="flex flex-col absolute right-5 top-5 gap-y-8">
@@ -280,7 +291,7 @@ export function Painter(props: {
             }}
           >
             <Image src="/download.png" alt="" width={30} height={30} />
-            <a ref={downloadOverlayRef} download={"overlay.png"}>
+            <a ref={downloadOverlayRef} download="overlay.png">
               Overlay
             </a>
           </button>
@@ -291,24 +302,18 @@ export function Painter(props: {
             }}
           >
             <Image src="/download.png" alt="" width={30} height={30} />
-            <a ref={downloadFullImageRef} download={"full-image.png"}>
+            <a ref={downloadFullImageRef} download="full-image.png">
               Full Image
             </a>
           </button>
-          <button
-            className="toolbar-button"
-            onClick={async () => {
-              const log = await fetch(
-                `/api/log?imageIndex=${props.imageIndex}&historyIndex=-1`,
-                {
-                  cache: "no-cache",
-                }
-              ).then((res) => res.json());
-              downloadAnimation(log);
-            }}
-          >
+          <button className="toolbar-button">
             <Image src="/download.png" alt="" width={30} height={30} />
-            <p>Animation</p>
+            <a
+              href={`/api/animation?imageIndex=${props.imageIndex}`}
+              download="animation.gif"
+            >
+              Animation
+            </a>
           </button>
         </Toolbar>
       </div>

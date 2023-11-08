@@ -2,12 +2,14 @@ import {
   DrawEvent,
   FloodFillEvent,
   floodFill,
+  drawAndFindSplits,
   getPixelData,
-  smoothDraw,
+  remove,
+  push,
 } from "@/common";
 import { DrawNode, FloodFillNode, RoomState } from "./state";
 
-export function smoothDrawServer(
+export function drawServer(
   state: RoomState,
   event: DrawEvent
 ): {
@@ -15,10 +17,14 @@ export function smoothDrawServer(
   fills: FloodFillEvent[];
 } | null {
   const node: DrawNode = {
-    event: { ...event, segment: -1, historyIndex: state.rawLog.length },
+    value: {
+      ...event,
+      segment: -1,
+      historyIndex: state.rawLog.length,
+      numPixels: 0,
+    },
     prev: state.shortLog.draws.tail,
     next: null,
-    numPixels: 0,
   };
 
   let drew = false;
@@ -28,8 +34,8 @@ export function smoothDrawServer(
     entry: { fill: FloodFillNode | null }
   ) {
     if (entry.fill) {
-      entry.fill.event.points.delete(`${pos[0]},${pos[1]}`);
-      if (entry.fill.event.points.size === 0) {
+      entry.fill.value.points.delete(`${pos[0]},${pos[1]}`);
+      if (entry.fill.value.points.size === 0) {
         entry.fill.prev.next = entry.fill.next;
         if (entry.fill.next) {
           entry.fill.next.prev = entry.fill.prev;
@@ -42,45 +48,36 @@ export function smoothDrawServer(
     }
   }
 
-  const { activeSegment, fills } = smoothDraw(
-    (pos, oldSegment, newEntry) => {
-      removeFill(pos, newEntry);
-      if (oldSegment !== newEntry.segment) {
-        if (newEntry.node) {
-          newEntry.node.numPixels--;
-          if (newEntry.node.numPixels === 0) {
-            newEntry.node.prev.next = newEntry.node.next;
-            if (newEntry.node.next) {
-              newEntry.node.next.prev = newEntry.node.prev;
-            } else {
-              state.shortLog.draws.tail = newEntry.node.prev;
-            }
-            state.shortLog.draws.length--;
-          }
+  const { activeSegment, fills } = drawAndFindSplits<RoomState>(
+    (pos, oldData, newData) => {
+      removeFill(pos, newData);
+      if (oldData && oldData.node && oldData.segment !== newData.segment) {
+        oldData.node.value.numPixels--;
+        if (oldData.node.value.numPixels === 0) {
+          remove(state.shortLog.draws, oldData.node);
         }
-        newEntry.node = node;
-        node.numPixels++;
-        drew = true;
       }
+      newData.node = node;
+      node.value.numPixels++;
+      drew = true;
     },
     (pos) => {
       const segmentEntry = getPixelData(state, pos)!;
       removeFill(pos, segmentEntry);
     },
     state,
-    event
+    event,
+    true
   );
 
-  node.event.segment = activeSegment;
+  node.value.segment = activeSegment;
 
   if (drew) {
-    state.shortLog.draws.length++;
-    state.shortLog.draws.tail.next = node;
-    state.shortLog.draws.tail = node;
+    push(state.shortLog.draws, node);
 
     for (const fill of fills) {
       const fillNode: FloodFillNode = {
-        event: {
+        value: {
           points: fill.points,
           segment: fill.segment,
         },
@@ -93,30 +90,27 @@ export function smoothDrawServer(
           point.split(",").map((data) => parseInt(data)) as [number, number]
         )!.fill = fillNode;
       }
-      state.shortLog.fills.length++;
-      state.shortLog.fills.tail.next = fillNode;
-      state.shortLog.fills.tail = fillNode;
+      push(state.shortLog.fills, fillNode);
     }
 
     state.rawLog.push(event);
 
     floodFill<RoomState, FloodFillEvent>(
-      (pos, entry, fill) => {
+      (pos, data, fill) => {
         const posString = pos.join(",");
         if (!fill.points.has(posString)) {
-          removeFill(pos, entry);
+          removeFill(pos, data);
         }
       },
       state,
-      fills.map((fill) => ({
-        fill: fill,
-        bfsStart: (fill.points.values().next().value as string)
-          .split(",")
-          .map((data) => parseInt(data)) as [number, number],
-      }))
+      fills,
+      true,
+      "FloodFillEvent"
     );
 
-    return { activeSegment: node.event.segment, fills };
+    state.gifEncoder.addFrame(state.drawing.image.data);
+
+    return { activeSegment: node.value.segment, fills };
   } else {
     return null;
   }

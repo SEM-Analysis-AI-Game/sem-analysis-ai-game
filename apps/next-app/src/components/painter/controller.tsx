@@ -2,13 +2,16 @@ import { useEffect, useState } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { clamp } from "three/src/math/MathUtils.js";
 import { useSocket } from "../socket-connection";
-import { DrawEvent, FloodFillResponse } from "@/common";
 import {
-  ClientState,
-  applyDrawEventClient,
-  floodFillClient,
-  smoothDrawClient,
-} from "@/client";
+  DrawEvent,
+  DrawResponse,
+  FloodFillResponse,
+  State,
+  applyDrawEvent,
+  drawAndFindSplits,
+  drawImage,
+  floodFill,
+} from "@/common";
 
 /**
  * Processes user input, updates the drawing texture uniforms and emits draw events to
@@ -20,7 +23,7 @@ export function PainterController(props: {
   zoom: number;
   pan: readonly [number, number];
   cursorDown: boolean;
-  state: ClientState;
+  state: State;
 }): null {
   // current pointer position in screen coordinate system ([-1, -1] to [1, 1] with the origin
   // at the center of the screen)
@@ -45,22 +48,28 @@ export function PainterController(props: {
       socket.on(
         "draw",
         (data: {
-          draw: DrawEvent;
-          segment: number;
+          draw: Omit<DrawResponse, "historyIndex">;
           fills: FloodFillResponse[];
         }) => {
           props.state.nextSegmentIndex = Math.max(
             props.state.nextSegmentIndex,
-            data.segment + 1
+            data.draw.segment + 1
           );
-          applyDrawEventClient(props.state, data.segment, data.draw);
+          applyDrawEvent(() => {}, props.state, data.draw, true);
           for (const fill of data.fills) {
             props.state.nextSegmentIndex = Math.max(
               props.state.nextSegmentIndex,
               fill.segment + 1
             );
           }
-          floodFillClient(props.state, data.fills, false, null);
+
+          floodFill(
+            () => {},
+            props.state,
+            data.fills,
+            true,
+            "FloodFillResponse"
+          );
         }
       );
       socket.emit("join", {
@@ -80,8 +89,23 @@ export function PainterController(props: {
         .then((res) => res.json())
         .then((res) => {
           for (const eventData of res.initialState) {
-            smoothDrawClient(props.state, eventData, false, null);
+            const fills = drawAndFindSplits(
+              () => {},
+              () => {},
+              props.state,
+              eventData,
+              false
+            );
+            floodFill(
+              () => {},
+              props.state,
+              fills.fills,
+              false,
+              "FloodFillEvent"
+            );
           }
+          drawImage(props.state);
+
           setReconciled(true);
           setReconciling(false);
         });
@@ -161,7 +185,14 @@ export function PainterController(props: {
           size: 10,
         };
 
-        smoothDrawClient(props.state, drawEvent, false, null);
+        const fills = drawAndFindSplits(
+          () => {},
+          () => {},
+          props.state,
+          drawEvent,
+          true
+        );
+        floodFill(() => {}, props.state, fills.fills, true, "FloodFillEvent");
 
         // emit the draw event to the server
         socket.emit("draw", drawEvent);

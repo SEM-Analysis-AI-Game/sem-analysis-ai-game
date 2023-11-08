@@ -1,28 +1,38 @@
-import { DrawResponse, FloodFillResponse, StateResponse } from "@/common";
-import { serverState } from "@/server";
+import {
+  DrawResponse,
+  FloodFillResponse,
+  StateResponse,
+  drawImage,
+} from "@/common";
+import { lazyBackground, serverState } from "@/server";
 import { NextApiRequest, NextApiResponse } from "next";
 
 export default async function handler(
   request: NextApiRequest,
   response: NextApiResponse
 ) {
-  const state = serverState[parseInt(request.query.imageIndex as string)];
+  const imageIndex = parseInt(request.query.imageIndex as string);
+  const state = serverState[imageIndex];
+  if (!state.background) {
+    state.background = await lazyBackground[imageIndex];
+    drawImage(state);
+  }
   const initialState: { draws: DrawResponse[]; fills: FloodFillResponse[] } = {
     draws: [],
     fills: [],
   };
   let current = state.shortLog.draws.head.next;
   while (current !== null) {
-    initialState.draws.push(current.event);
+    initialState.draws.push(current.value);
     current = current.next;
   }
   let currentFill = state.shortLog.fills.head.next;
   while (currentFill !== null) {
     initialState.fills.push({
-      startingPoint: (currentFill.event.points.values().next().value as string)
+      startingPoint: (currentFill.value.points.values().next().value as string)
         .split(",")
         .map((x) => parseInt(x)) as [number, number],
-      segment: currentFill.event.segment,
+      segment: currentFill.value.segment,
     });
     currentFill = currentFill.next;
   }
