@@ -23,6 +23,6 @@ export default async function Paint(props: {
     }));
 
   const index = parseInt(props.params.imageIndex);
-  return <></>;
-  // return <Painter imageIndex={index} initialState={response} />;
+
+  return <Painter imageIndex={index} initialState={response} />;
 }
