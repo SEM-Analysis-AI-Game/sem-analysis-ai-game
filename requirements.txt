@@ -1,8 +1,0 @@
-git+https://github.com/ChaoningZhang/MobileSAM.git
-python-dotenv
-onnxruntime
-onnx
-pycocotools
-opencv-python
-flask
-ultralytics
