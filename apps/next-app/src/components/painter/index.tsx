@@ -18,7 +18,6 @@ import {
   getImage,
 } from "@/common";
 import { Downloader } from "./downloader";
-import { Toolbar } from "./toolbar";
 import { Collapsible } from "./collapsible";
 
 /**
@@ -321,21 +320,15 @@ export function Painter(props: {
                 Full Image
               </a>
             </button>
-            {/* <button
-              className="toolbar-button"
-              onClick={async () => {
-                const log = await fetch(
-                  `/api/log?imageIndex=${props.imageIndex}&historyIndex=-1`,
-                  {
-                    cache: "no-cache",
-                  }
-                ).then((res) => res.json());
-                downloadAnimation(log);
-              }}
-            >
+            <button className="toolbar-button">
               <Image src="/download.png" alt="" width={30} height={30} />
-              <p>Animation</p>
-            </button> */}
+              <a
+                href={`/api/animation?imageIndex=${props.imageIndex}`}
+                download="animation.gif"
+              >
+                Animation
+              </a>
+            </button>
           </Collapsible>
       </div>
     </div>

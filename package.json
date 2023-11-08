@@ -4,5 +4,9 @@
   "workspaces": [
     "apps/*",
     "scripts/*"
-  ]
+  ],
+  "dependencies": {
+    "@use-gesture/react": "^10.3.0",
+    "sharp": "^0.32.6"
+  }
 }
