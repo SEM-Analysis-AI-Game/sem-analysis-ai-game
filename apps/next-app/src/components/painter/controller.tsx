@@ -25,6 +25,8 @@ export function PainterController(props: {
   pan: readonly [number, number];
   cursorDown: boolean;
   state: ClientState;
+  drawType: DrawType;
+  brushSize: number;
 }): null {
   // current pointer position in screen coordinate system ([-1, -1] to [1, 1] with the origin
   // at the center of the screen)
@@ -42,8 +44,6 @@ export function PainterController(props: {
   // user input should be disabled until this is true.
   const [reconciling, setReconciling] = useState(false);
   const [reconciled, setReconciled] = useState(false);
-
-  const [brushType, setBrushType] = useState<DrawType>("brush");
 
   // listen for draw events from the server
   useEffect((): any => {
@@ -166,8 +166,8 @@ export function PainterController(props: {
         const drawEvent: DrawEvent = {
           from: clampPos(lastCursor ?? pixelPos),
           to: clampPos(pixelPos),
-          type: brushType,
-          size: 10,
+          type: props.drawType,
+          size: props.brushSize,
         };
 
         drawClient(props.state, drawEvent, true);

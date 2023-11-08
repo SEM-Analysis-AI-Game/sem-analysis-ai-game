@@ -27,20 +27,21 @@ function fillImagePixel(
   segment: number,
   boundary: boolean
 ): void {
-  const color = getColor(segment);
+  const color = segment === -1 ? null : getColor(segment);
   const pixelIndex =
     ((state.flipY ? state.resolution[1] - pos[1] : pos[1]) *
       state.resolution[0] +
       pos[0]) *
     4;
 
-  const overlayAlpha = boundary ? kDrawAlpha + kBorderAlphaBoost : kDrawAlpha;
+  const overlayAlpha =
+    segment === -1 ? 0 : boundary ? kDrawAlpha + kBorderAlphaBoost : kDrawAlpha;
 
   const data = state.drawing.image.data;
 
-  const overlayRed = color.r * 255;
-  const overlayGreen = color.g * 255;
-  const overlayBlue = color.b * 255;
+  const overlayRed = color ? color.r * 255 : 0;
+  const overlayGreen = color ? color.g * 255 : 0;
+  const overlayBlue = color ? color.b * 255 : 0;
 
   if (state.background) {
     const backgroundRed = state.background[pixelIndex];

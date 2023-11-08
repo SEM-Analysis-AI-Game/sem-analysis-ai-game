@@ -377,7 +377,9 @@ export function drawAndFindSplits<StateType extends State>(
 } {
   // get the correct segment for the draw event based on where it begins
   const segment =
-    getPixelData(state, event.from)?.segment ?? state.nextSegmentIndex++;
+    event.type === "brush"
+      ? getPixelData(state, event.from)?.segment ?? state.nextSegmentIndex++
+      : -1;
 
   // the keys are segment ids, and the values are newly created boundary points for
   // those segments
@@ -385,7 +387,7 @@ export function drawAndFindSplits<StateType extends State>(
 
   applyDrawEvent(
     (pos, oldData, newData) => {
-      if (oldData && oldData.segment !== segment) {
+      if (oldData && oldData.segment !== segment && oldData.segment !== -1) {
         let oldSegmentNewBoundaryPoints = effectedSegments.get(oldData.segment);
         const stringified = `${pos[0]},${pos[1]}`;
         if (oldSegmentNewBoundaryPoints) {

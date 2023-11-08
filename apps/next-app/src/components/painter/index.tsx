@@ -10,6 +10,7 @@ import {
   applyDrawEventClient,
   drawImage,
   floodFillClient,
+  DrawType,
 } from "drawing";
 import { Canvas } from "@react-three/fiber";
 import { clamp } from "three/src/math/MathUtils.js";
@@ -233,6 +234,10 @@ export function Painter(props: {
 
   const [score, setScore] = useState<number>(0);
 
+  const [brushType, setBrushType] = useState<DrawType>("brush");
+
+  const [brushSize, setBrushSize] = useState(10);
+
   return (
     <div className="flex h-screen justify-center items-center bg-neutral-800">
       <div
@@ -263,6 +268,8 @@ export function Painter(props: {
           pan={pan}
           cursorDown={cursorDown}
           state={state}
+          drawType={brushType}
+          brushSize={brushSize}
         />
         <PainterRenderer
           canvasSize={[image.width * zoom, image.height * zoom]}
@@ -280,11 +287,21 @@ export function Painter(props: {
       </Canvas>
       <div className="flex flex-col absolute left-0 top-0 gap-y-2 bg-neutral-700 rounded-br p-4 border-r border-b border-gray-400">
         <div className="flex justify-center">
-          <button className="bg-gray-200 rounded hover:bg-gray-400 p-1 mx-2 transition">
+          <button
+            className="bg-gray-200 rounded hover:bg-gray-400 p-1 mx-2 transition"
+            onClick={() => {
+              setBrushType("brush");
+            }}
+          >
             <Image src="/circle_brush.png" alt="" width={25} height={25} />
           </button>
 
-          <button className="bg-gray-200 rounded hover:bg-gray-400 p-1 mx-2 transition">
+          <button
+            className="bg-gray-200 rounded hover:bg-gray-400 p-1 mx-2 transition"
+            onClick={() => {
+              setBrushType("eraser");
+            }}
+          >
             <Image src="/circle_eraser.png" alt="" width={25} height={25} />
           </button>
         </div>
@@ -295,6 +312,9 @@ export function Painter(props: {
           max={100}
           step={5}
           className="accent-neutral-200"
+          onChange={(e) => {
+            setBrushSize(parseInt(e.target.value));
+          }}
         />
 
         <hr />
