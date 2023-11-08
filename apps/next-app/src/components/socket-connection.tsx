@@ -12,7 +12,8 @@ import {
 const SocketContext = createContext<Socket | null>(null);
 
 export function useSocket(): Socket | null {
-  return useContext(SocketContext);
+  // return useContext(SocketContext);
+  return null;
 }
 
 /**
