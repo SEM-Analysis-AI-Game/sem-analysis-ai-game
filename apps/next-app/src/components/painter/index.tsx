@@ -238,6 +238,8 @@ export function Painter(props: {
     () => () => {}
   );
 
+  const [score, setScore] = useState<number>(0);
+
   return (
     <div className="flex h-screen justify-center items-center bg-neutral-800">
       <div
@@ -294,7 +296,27 @@ export function Painter(props: {
             </button>
           </div>
 
-          <input type="range" />
+          <input type="range" min={5} max={100} step={5} className="accent-neutral-200"/>
+
+          <hr />
+          <button className="toolbar-button"
+            onClick={() => {
+              fetch(`/api/score?imageIndex=${props.imageIndex}`)
+              .then((value) => {
+                value.json().then(data => {
+                  console.log(data);
+                  setScore(data.score);
+                })
+              })
+            }}
+          >
+            <Image src="/score.png" alt="" width={30} height={30} />
+            Re-score
+          </button>
+
+          <p className="text-neutral-100">
+            Score: <span className="font-bold">{Math.round(score * 100)}%</span>
+          </p>
 
           <hr />
           

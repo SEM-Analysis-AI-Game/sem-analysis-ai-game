@@ -2,7 +2,7 @@ import { PropsWithChildren } from "react";
 import { useState } from "react";
 
 export function Collapsible(props: PropsWithChildren & {title: string} ) {
-    const [collapsed, setCollapsed] = useState<boolean>(false);
+    const [collapsed, setCollapsed] = useState<boolean>(true);
 
     return (
         <>

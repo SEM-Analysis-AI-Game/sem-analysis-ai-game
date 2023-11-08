@@ -82,7 +82,7 @@ export default async function socket(
               });
             }
           } else {
-            throw new Error("Draw event from user not in a room");
+            // throw new Error("Draw event from user not in a room");
           }
         });
     });
