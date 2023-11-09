@@ -356,7 +356,7 @@ export function Painter(props: {
           <button className="toolbar-button">
             <Image src="/download.png" alt="" width={30} height={30} />
             <a
-              href={`http://localhost:3001/${props.imageIndex}`}
+              href={`http://ec2-100-25-138-100.compute-1.amazonaws.com:3001/${props.imageIndex}`}
               download="animation.gif"
             >
               Animation
