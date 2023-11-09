@@ -10,7 +10,10 @@ export default async function handler(
     return response.status(500).json({ error: "historyIndex is required" });
   }
   const historyIndex = parseInt(request.query.historyIndex as string);
-  return response
-    .status(200)
-    .json({ initialState: state.rawLog.slice(historyIndex + 1) });
+  return response.status(200).json({
+    initialState: state.rawLog.slice(historyIndex + 1).map((event, index) => ({
+      ...event,
+      historyIndex: historyIndex + index + 1,
+    })),
+  });
 }

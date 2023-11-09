@@ -93,7 +93,7 @@ export function Painter(props: {
     drawImage(state);
 
     return state;
-  }, [image, props.initialState, props.imageIndex]);
+  }, [image, props]);
 
   // on the server render initialize a zoom of 1, which will render the image
   // at its native resolution

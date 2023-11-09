@@ -33,6 +33,10 @@ export function SocketConnectionProvider(
       setSocket(newSocket);
     });
 
+    newSocket.on("disconnect", () => {
+      setSocket(null);
+    });
+
     return () => {
       setSocket(null);
       newSocket.disconnect();

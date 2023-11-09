@@ -45,6 +45,10 @@ export function PainterController(props: {
   const [reconciling, setReconciling] = useState(false);
   const [reconciled, setReconciled] = useState(false);
 
+  const [latestHistoryIndex, setLatestHistoryIndex] = useState(
+    props.historyIndex
+  );
+
   // listen for draw events from the server
   useEffect((): any => {
     if (socket && socket.connected) {
@@ -67,8 +71,14 @@ export function PainterController(props: {
             );
           }
           floodFillClient(props.state, data.fills, true);
+
+          setLatestHistoryIndex((latestHistoryIndex) => latestHistoryIndex + 1);
         }
       );
+      socket.on("disconnect", () => {
+        setReconciled(false);
+        setReconciling(false);
+      });
       socket.emit("join", {
         room: props.imageIndex.toString(),
       });
@@ -80,13 +90,14 @@ export function PainterController(props: {
   useEffect(() => {
     if (socket && socket.connected && reconciling && !reconciled) {
       fetch(
-        `/api/log?imageIndex=${props.imageIndex}&historyIndex=${props.historyIndex}`,
+        `/api/log?imageIndex=${props.imageIndex}&historyIndex=${latestHistoryIndex}`,
         { cache: "no-cache" }
       )
         .then((res) => res.json())
         .then((res) => {
           for (const eventData of res.initialState) {
             drawClient(props.state, eventData, false);
+            setLatestHistoryIndex(eventData.historyIndex);
           }
           drawImage(props.state);
 
@@ -96,10 +107,11 @@ export function PainterController(props: {
     }
   }, [
     socket,
-    props.historyIndex,
+    latestHistoryIndex,
     props.imageIndex,
     props.state,
     reconciling,
+    setLatestHistoryIndex,
     setReconciling,
     setReconciled,
     reconciled,
