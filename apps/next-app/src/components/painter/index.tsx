@@ -48,6 +48,10 @@ export function Painter(props: {
 
   // initialize client-side state
   const state: ClientState = useMemo(() => {
+    if (!image) {
+      console.log(props);
+    }
+
     // the texture to use for drawing
     const textureData = new Uint8Array(image.width * image.height * 4);
     const texture = new THREE.DataTexture(
