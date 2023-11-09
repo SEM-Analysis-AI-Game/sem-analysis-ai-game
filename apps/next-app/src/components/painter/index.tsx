@@ -221,9 +221,6 @@ export function Painter(props: {
       : undefined
   );
 
-  const downloadOverlayRef = useRef<HTMLAnchorElement>(null);
-  const downloadFullImageRef = useRef<HTMLAnchorElement>(null);
-
   const [clickDownloadOverlay, setClickDownloadOverlay] = useState(
     () => () => {}
   );
@@ -279,8 +276,6 @@ export function Painter(props: {
         <Downloader
           state={state}
           currentPan={pan}
-          downloadOverlayRef={downloadOverlayRef}
-          downloadFullImageRef={downloadFullImageRef}
           setClickDownloadFullImage={setClickDownloadFullImage}
           setClickDownloadOverlay={setClickDownloadOverlay}
         />
@@ -347,9 +342,7 @@ export function Painter(props: {
             }}
           >
             <Image src="/download.png" alt="" width={30} height={30} />
-            <a ref={downloadOverlayRef} download={"overlay.png"}>
-              Overlay
-            </a>
+            <p>Overlay</p>
           </button>
           <button
             className="toolbar-button"
@@ -358,9 +351,7 @@ export function Painter(props: {
             }}
           >
             <Image src="/download.png" alt="" width={30} height={30} />
-            <a ref={downloadFullImageRef} download={"full-image.png"}>
-              Full Image
-            </a>
+            <p>Full Image</p>
           </button>
           <button className="toolbar-button">
             <Image src="/download.png" alt="" width={30} height={30} />

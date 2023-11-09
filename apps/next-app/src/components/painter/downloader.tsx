@@ -1,5 +1,5 @@
 import { useThree } from "@react-three/fiber";
-import { Dispatch, RefObject, useEffect, useState } from "react";
+import { Dispatch, useEffect, useState } from "react";
 import { Vector2, Texture } from "three";
 import { EffectComposer, ShaderPass, TexturePass } from "three-stdlib";
 import { getImage } from "@/common";
@@ -29,8 +29,6 @@ void main() {
 export function Downloader(props: {
   state: ClientState;
   currentPan: readonly [number, number];
-  downloadOverlayRef: RefObject<HTMLAnchorElement>;
-  downloadFullImageRef: RefObject<HTMLAnchorElement>;
   setClickDownloadOverlay: Dispatch<() => void>;
   setClickDownloadFullImage: Dispatch<() => void>;
 }): null {
@@ -51,30 +49,28 @@ export function Downloader(props: {
   }, [props.state.imageIndex, props.state.resolution]);
 
   useEffect(() => {
-    function updateAnchorHrefs(
-      anchor: HTMLAnchorElement,
-      composer: EffectComposer
-    ) {
+    function updateAnchorHrefs(filename: string, composer: EffectComposer) {
       gl.clear();
       const oldSize = new Vector2();
       gl.getSize(oldSize);
       gl.setSize(props.state.resolution[0], props.state.resolution[1]);
       composer.render();
+      const anchor = document.createElement("a");
       anchor.href = gl.domElement.toDataURL();
+      anchor.download = filename;
       anchor.click();
+      anchor.remove();
       gl.setSize(oldSize.x, oldSize.y);
     }
 
     props.setClickDownloadOverlay(() => () => {
-      if (props.downloadOverlayRef.current) {
-        const composer = new EffectComposer(gl);
-        composer.addPass(new TexturePass(props.state.drawing));
-        updateAnchorHrefs(props.downloadOverlayRef.current, composer);
-      }
+      const composer = new EffectComposer(gl);
+      composer.addPass(new TexturePass(props.state.drawing));
+      updateAnchorHrefs("overlay.png", composer);
     });
 
     props.setClickDownloadFullImage(() => () => {
-      if (props.downloadFullImageRef.current && backgroundImage) {
+      if (backgroundImage) {
         const composer = new EffectComposer(gl);
         composer.addPass(
           new ShaderPass({
@@ -86,7 +82,7 @@ export function Downloader(props: {
             },
           })
         );
-        updateAnchorHrefs(props.downloadFullImageRef.current, composer);
+        updateAnchorHrefs("full-image.png", composer);
       }
     });
   }, [props, gl, backgroundImage]);
