@@ -12,6 +12,8 @@ export default function Home(): JSX.Element {
     (
       gradient as unknown as { initGradient: (str: string) => void }
     ).initGradient("#gradient-canvas");
+
+    document.body.style.overflow = "visible";
   }, []);
   return (
     <>
