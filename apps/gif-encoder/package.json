@@ -15,7 +15,6 @@
   "private": true,
   "scripts": {
     "dev": "bun src/index.ts",
-    "build": "bun build ./src/**.ts --outdir=./dist",
-    "start": "bun run ./dist/index.js"
+    "build": "bun build --compile ./src/index.ts --outfile=./dist/app"
   }
 }
