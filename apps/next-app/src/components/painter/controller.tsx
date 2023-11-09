@@ -170,8 +170,6 @@ export function PainterController(props: {
           size: props.brushSize,
         };
 
-        drawClient(props.state, drawEvent, true);
-
         // emit the draw event to the server
         socket.emit("draw", drawEvent);
 

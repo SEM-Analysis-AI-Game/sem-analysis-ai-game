@@ -63,7 +63,7 @@ export default async function socket(
             const imageIndex = parseInt(room);
             const state = serverState[imageIndex];
             const result = drawServer(state, data);
-            connection.broadcast.to(room).emit("draw", {
+            io.to(room).emit("draw", {
               imageIndex,
               draw: {
                 ...data,
