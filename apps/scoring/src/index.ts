@@ -38,7 +38,7 @@ for (let i = 0; i < kImageResolutions.length; i++) {
 }
 
 Bun.serve({
-  port: 3001,
+  port: 3002,
   fetch(request) {
     const imageIndex = parseInt(request.url.split("/").pop()!);
     return new Response(
