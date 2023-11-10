@@ -1,7 +1,7 @@
 "use client";
 
 import * as THREE from "three";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Image, { StaticImageData } from "next/image";
 import { useDrag, usePinch } from "@use-gesture/react";
 import {
@@ -395,6 +395,32 @@ export function Painter(props: {
             >
               Animation
             </a>
+          </button>
+          <button
+            className="toolbar-button"
+            onClick={() => {
+              const anchor = document.createElement("a");
+              const url = URL.createObjectURL(
+                new Blob(
+                  [
+                    JSON.stringify({
+                      segments: state.canvas.map((e) => e?.segment ?? -1),
+                    }),
+                  ],
+                  {
+                    type: "application/json",
+                  }
+                )
+              );
+              anchor.href = url;
+              anchor.download = "segments.json";
+              anchor.click();
+              anchor.remove();
+              URL.revokeObjectURL(url);
+            }}
+          >
+            <Image src="/download.png" alt="" width={30} height={30} />
+            <p>JSON</p>
           </button>
         </Collapsible>
       </div>
