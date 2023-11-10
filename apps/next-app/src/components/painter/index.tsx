@@ -284,7 +284,7 @@ export function Painter(props: {
           setClickDownloadOverlay={setClickDownloadOverlay}
         />
       </Canvas>
-      <div className="flex flex-col absolute left-0 top-0 gap-y-2 bg-neutral-700 rounded-br p-4 border-r border-b border-gray-400">
+      {/* <div className="flex flex-col absolute left-0 top-0 gap-y-2 bg-neutral-700 rounded-br p-4 border-r border-b border-gray-400">
         <div className="flex justify-center">
           <button
             className="bg-gray-200 rounded hover:bg-gray-400 p-1 mx-2 transition"
@@ -367,7 +367,7 @@ export function Painter(props: {
             </a>
           </button>
         </Collapsible>
-      </div>
+      </div> */}
     </div>
   );
 }
