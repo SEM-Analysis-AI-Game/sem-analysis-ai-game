@@ -25,6 +25,12 @@ import { Collapsible } from "./collapsible";
  */
 const kMaxZoom = 5.0;
 
+const kBaseUrl = `http://${process.env.API_HOST ?? "localhost"}`;
+
+const kGifEncoderPort = 3001;
+
+const kScoringPort = 3002;
+
 /**
  * Finds the scale factor to fit the image to the screen.
  */
@@ -384,7 +390,7 @@ export function Painter(props: {
           <button className="toolbar-button">
             <Image src="/download.png" alt="" width={30} height={30} />
             <a
-              href={`http://ec2-100-25-13-154.compute-1.amazonaws.com:3001/${props.imageIndex}`}
+              href={`${kBaseUrl}:${kGifEncoderPort}/${props.imageIndex}`}
               download="animation.gif"
             >
               Animation

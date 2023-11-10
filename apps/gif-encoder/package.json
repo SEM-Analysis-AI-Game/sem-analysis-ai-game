@@ -13,7 +13,6 @@
   },
   "private": true,
   "scripts": {
-    "dev": "bun src/index.ts",
-    "build": "bun build --compile ./src/index.ts --outfile=./dist/app"
+    "dev": "bun src/index.ts"
   }
 }

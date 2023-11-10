@@ -7,9 +7,6 @@ import {
   floodFillClient,
 } from "drawing";
 import SocketIOClient from "socket.io-client";
-import sharp from "sharp";
-// @ts-ignore
-import GIFEncoder from "gif-encoder-2";
 
 const kImageResolutions: readonly (readonly [number, number])[] = [
   [732, 732],
@@ -22,40 +19,17 @@ const kImageResolutions: readonly (readonly [number, number])[] = [
   [1024, 1144],
 ];
 
-const state: (ClientState & {
-  gifEncoder: GIFEncoder;
-})[] = [];
+const state: ClientState[] = [];
 
 for (let i = 0; i < kImageResolutions.length; i++) {
-  const background = new Uint8ClampedArray(
-    await sharp(`./sem-images/${i}.png`)
-      .extract({
-        left: 0,
-        top: 0,
-        width: kImageResolutions[i][0],
-        height: kImageResolutions[i][1],
-      })
-      .ensureAlpha()
-      .raw()
-      .toBuffer()
-  );
-  const gifEncoder = new GIFEncoder(
-    kImageResolutions[i][0],
-    kImageResolutions[i][1],
-    "octree"
-  );
-  gifEncoder.setRepeat(0);
-  gifEncoder.setFrameRate(20);
-  gifEncoder.start();
   state.push({
-    gifEncoder,
-    background,
+    background: null,
     canvas: new Array(kImageResolutions[i][0] * kImageResolutions[i][1]),
     resolution: kImageResolutions[i],
     imageIndex: i,
     nextSegmentIndex: 0,
     drawing: new THREE.DataTexture(
-      new Uint8Array(background),
+      new Uint8Array(kImageResolutions[i][0] * kImageResolutions[i][1] * 4),
       kImageResolutions[i][0],
       kImageResolutions[i][1]
     ),
@@ -67,15 +41,15 @@ Bun.serve({
   port: 3001,
   fetch(request) {
     const imageIndex = parseInt(request.url.split("/").pop()!);
-    const data = new Uint8Array(state[imageIndex].gifEncoder.out.getData());
-    return new Response(data, {
-      status: 200,
-      headers: {
-        "Content-Type": "image/gif",
-        "Content-Disposition": "attachment; filename=animation.gif",
-        "Content-Length": data.length.toString(),
-      },
-    });
+    return new Response(
+      JSON.stringify({
+        test: imageIndex,
+      }),
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
   },
 });
 
@@ -110,7 +84,6 @@ socket.on("connect", () => {
         );
       }
       floodFillClient(imageState, data.fills, true);
-      imageState.gifEncoder.addFrame(imageState.drawing.image.data);
     }
   );
 });
