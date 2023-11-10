@@ -1,7 +1,7 @@
 "use client";
 
 import * as THREE from "three";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Image, { StaticImageData } from "next/image";
 import Link from "next/link";
 import { useDrag, usePinch } from "@use-gesture/react";
@@ -299,9 +299,7 @@ export function Painter(props: {
       <div className="flex flex-col absolute left-0 top-0 gap-y-2 bg-neutral-700 rounded-br p-4 border-r border-b border-gray-400">
         <button className="toolbar-button py-1">
           <Image src="/home.png" alt="" width={25} height={25}></Image>
-          <Link href="/">
-            &nbsp;Home
-          </Link>
+          <Link href="/">&nbsp;Home</Link>
         </button>
 
         <hr />
@@ -334,9 +332,7 @@ export function Painter(props: {
           </button>
         </div>
 
-        <p className="font-bold text-neutral-200">
-          Brush Size:
-        </p>
+        <p className="font-bold text-neutral-200">Brush Size:</p>
 
         <input
           type="range"
@@ -358,14 +354,14 @@ export function Painter(props: {
           }}
           onClick={() => {
             setFetchingScore(true);
-            fetch(`/api/score?imageIndex=${props.imageIndex}`).then((value) => {
-            // fetch(`http://localhost:3002/${props.imageIndex}`).then((value) => {
-              value.json().then((data) => {
-                console.log(data);
-                setScore(data.score);
-                setFetchingScore(false);
-              });
-            });
+            fetch(`${kBaseUrl}:${kScoringPort}/${props.imageIndex}`).then(
+              (value) => {
+                value.json().then((data) => {
+                  setScore(data.score);
+                  setFetchingScore(false);
+                });
+              }
+            );
           }}
         >
           <Image src="/score.png" alt="" width={30} height={30} />
