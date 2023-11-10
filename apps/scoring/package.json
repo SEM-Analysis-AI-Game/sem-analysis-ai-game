@@ -6,7 +6,6 @@
     "drawing": "workspace:packages/drawing",
     "eslint": "8.49.0",
     "eslint-config-next": "latest",
-    "sharp": "^0.32.6",
     "socket.io-client": "^4.7.2",
     "typescript": "5.2.2"
   },
