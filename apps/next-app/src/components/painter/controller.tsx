@@ -183,8 +183,10 @@ export function PainterController(props: {
           size: props.brushSize,
         };
 
-        // emit the draw event to the server
-        socket.emit("draw", drawEvent);
+        if (drawEvent.from !== drawEvent.to) {
+          // emit the draw event to the server
+          socket.emit("draw", drawEvent);
+        }
 
         // update the last cursor position
         return pixelPos;
