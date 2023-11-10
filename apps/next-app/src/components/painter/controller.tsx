@@ -184,7 +184,7 @@ export function PainterController(props: {
         };
 
         if (
-          drawEvent.from[0] !== drawEvent.to[0] &&
+          drawEvent.from[0] !== drawEvent.to[0] ||
           drawEvent.from[1] !== drawEvent.to[1]
         ) {
           // emit the draw event to the server
