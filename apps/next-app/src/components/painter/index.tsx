@@ -186,6 +186,7 @@ export function Painter(props: {
       // if the shift + mouse are down, or if the user is touching with multiple fingers, then the
       // image should pan.
       if ((e.down && e.shiftKey) || e.touches > 1) {
+        setCursorDown(false);
         setPanAnchor((lastCursor) => {
           if (lastCursor) {
             const currentSize = [
@@ -204,7 +205,6 @@ export function Painter(props: {
               return [cursorPos(0), cursorPos(1)];
             });
           }
-          setCursorDown(false);
           return e.xy;
         });
       } else {
@@ -241,152 +241,156 @@ export function Painter(props: {
   const [brushSize, setBrushSize] = useState(10);
 
   return (
-    <div className="flex h-screen justify-center items-center bg-neutral-800">
-      <div
-        className="absolute"
-        style={{
-          width: `${image.width * zoom}px`,
-          height: `${image.height * zoom}px`,
-          // transform: `translate(${pan[0]}px, ${pan[1]}px)`,
-        }}
-      >
-        <Image
-          className="touch-none pointer-events-none"
-          src={image}
-          alt="SEM image"
-          fill
-        />
-      </div>
-      <Canvas gl={{ preserveDrawingBuffer: true }}>
-        <PainterController
-          historyIndex={
-            props.initialState.draws.length > 0
-              ? props.initialState.draws[props.initialState.draws.length - 1]
-                  .historyIndex
-              : -1
-          }
-          imageIndex={props.imageIndex}
-          zoom={zoom}
-          pan={pan}
-          cursorDown={cursorDown}
-          state={state}
-          drawType={brushType}
-          brushSize={brushSize}
-        />
-        <PainterRenderer
-          canvasSize={[image.width * zoom, image.height * zoom]}
-          drawing={state.drawing}
-          pan={pan}
-        />
-        <Downloader
-          state={state}
-          currentPan={pan}
-          setClickDownloadFullImage={setClickDownloadFullImage}
-          setClickDownloadOverlay={setClickDownloadOverlay}
-        />
-      </Canvas>
-      <div className="flex flex-col absolute left-0 top-0 gap-y-2 bg-neutral-700 rounded-br p-4 border-r border-b border-gray-400">
-        <div className="flex justify-center">
-          <button
-            className={`rounded hover:${
-              brushType === "brush" ? "bg-cyan-200" : "bg-gray-400"
-            } p-1 mx-2 transition ${
-              brushType === "brush" ? "bg-cyan-400" : "bg-gray-200"
-            }`}
-            onClick={() => {
-              setBrushType("brush");
-            }}
-          >
-            <Image src="/circle_brush.png" alt="" width={25} height={25} />
-          </button>
-
-          <button
-            className={`rounded hover:${
-              brushType === "eraser" ? "bg-cyan-200" : "bg-gray-400"
-            } p-1 mx-2 transition ${
-              brushType === "eraser" ? "bg-cyan-400" : "bg-gray-200"
-            }`}
-            onClick={() => {
-              setBrushType("eraser");
-            }}
-          >
-            <Image src="/circle_eraser.png" alt="" width={25} height={25} />
-          </button>
-        </div>
-
-        <input
-          type="range"
-          min={5}
-          max={100}
-          step={5}
-          className="accent-neutral-200"
-          onChange={(e) => {
-            setBrushSize(parseInt(e.target.value));
-          }}
-        />
-
-        <hr />
-        <button
-          className="toolbar-button"
-          disabled={fetchingScore}
+    <div className="absolute inset-0">
+      <div className="flex h-screen justify-center items-center bg-neutral-800">
+        <div
+          className="absolute"
           style={{
-            cursor: fetchingScore ? "auto" : "pointer",
-          }}
-          onClick={() => {
-            setFetchingScore(true);
-            fetch(`/api/score?imageIndex=${props.imageIndex}`).then((value) => {
-              value.json().then((data) => {
-                console.log(data);
-                setScore(data.score);
-                setFetchingScore(false);
-              });
-            });
+            width: `${image.width * zoom}px`,
+            height: `${image.height * zoom}px`,
+            // transform: `translate(${pan[0]}px, ${pan[1]}px)`,
           }}
         >
-          <Image src="/score.png" alt="" width={30} height={30} />
-          Re-score
-        </button>
-
-        <p className="text-neutral-100">
-          Score:{" "}
-          {fetchingScore ? (
-            <div className="lds-hourglass"></div>
-          ) : (
-            <span className="font-bold">{Math.round(score * 100)}%</span>
-          )}
-        </p>
-
-        <hr />
-
-        <Collapsible title="Export">
-          <button
-            className="toolbar-button"
-            onClick={() => {
-              clickDownloadOverlay();
-            }}
-          >
-            <Image src="/download.png" alt="" width={30} height={30} />
-            <p>Overlay</p>
-          </button>
-          <button
-            className="toolbar-button"
-            onClick={() => {
-              clickDownloadFullImage();
-            }}
-          >
-            <Image src="/download.png" alt="" width={30} height={30} />
-            <p>Full Image</p>
-          </button>
-          <button className="toolbar-button">
-            <Image src="/download.png" alt="" width={30} height={30} />
-            <a
-              href={`http://ec2-100-25-138-100.compute-1.amazonaws.com:3001/${props.imageIndex}`}
-              download="animation.gif"
+          <Image
+            className="touch-none pointer-events-none"
+            src={image}
+            alt="SEM image"
+            fill
+          />
+        </div>
+        <Canvas gl={{ preserveDrawingBuffer: true }}>
+          <PainterController
+            historyIndex={
+              props.initialState.draws.length > 0
+                ? props.initialState.draws[props.initialState.draws.length - 1]
+                    .historyIndex
+                : -1
+            }
+            imageIndex={props.imageIndex}
+            zoom={zoom}
+            pan={pan}
+            cursorDown={cursorDown}
+            state={state}
+            drawType={brushType}
+            brushSize={brushSize}
+          />
+          <PainterRenderer
+            canvasSize={[image.width * zoom, image.height * zoom]}
+            drawing={state.drawing}
+            pan={pan}
+          />
+          <Downloader
+            state={state}
+            currentPan={pan}
+            setClickDownloadFullImage={setClickDownloadFullImage}
+            setClickDownloadOverlay={setClickDownloadOverlay}
+          />
+        </Canvas>
+        <div className="flex flex-col absolute left-0 top-0 gap-y-2 bg-neutral-700 rounded-br p-4 border-r border-b border-gray-400">
+          <div className="flex justify-center">
+            <button
+              className={`rounded hover:${
+                brushType === "brush" ? "bg-cyan-200" : "bg-gray-400"
+              } p-1 mx-2 transition ${
+                brushType === "brush" ? "bg-cyan-400" : "bg-gray-200"
+              }`}
+              onClick={() => {
+                setBrushType("brush");
+              }}
             >
-              Animation
-            </a>
+              <Image src="/circle_brush.png" alt="" width={25} height={25} />
+            </button>
+
+            <button
+              className={`rounded hover:${
+                brushType === "eraser" ? "bg-cyan-200" : "bg-gray-400"
+              } p-1 mx-2 transition ${
+                brushType === "eraser" ? "bg-cyan-400" : "bg-gray-200"
+              }`}
+              onClick={() => {
+                setBrushType("eraser");
+              }}
+            >
+              <Image src="/circle_eraser.png" alt="" width={25} height={25} />
+            </button>
+          </div>
+
+          <input
+            type="range"
+            min={5}
+            max={100}
+            step={5}
+            className="accent-neutral-200"
+            onChange={(e) => {
+              setBrushSize(parseInt(e.target.value));
+            }}
+          />
+
+          <hr />
+          <button
+            className="toolbar-button"
+            disabled={fetchingScore}
+            style={{
+              cursor: fetchingScore ? "auto" : "pointer",
+            }}
+            onClick={() => {
+              setFetchingScore(true);
+              fetch(`/api/score?imageIndex=${props.imageIndex}`).then(
+                (value) => {
+                  value.json().then((data) => {
+                    console.log(data);
+                    setScore(data.score);
+                    setFetchingScore(false);
+                  });
+                }
+              );
+            }}
+          >
+            <Image src="/score.png" alt="" width={30} height={30} />
+            Re-score
           </button>
-        </Collapsible>
+
+          <p className="text-neutral-100">
+            Score:{" "}
+            {fetchingScore ? (
+              <div className="lds-hourglass"></div>
+            ) : (
+              <span className="font-bold">{Math.round(score * 100)}%</span>
+            )}
+          </p>
+
+          <hr />
+
+          <Collapsible title="Export">
+            <button
+              className="toolbar-button"
+              onClick={() => {
+                clickDownloadOverlay();
+              }}
+            >
+              <Image src="/download.png" alt="" width={30} height={30} />
+              <p>Overlay</p>
+            </button>
+            <button
+              className="toolbar-button"
+              onClick={() => {
+                clickDownloadFullImage();
+              }}
+            >
+              <Image src="/download.png" alt="" width={30} height={30} />
+              <p>Full Image</p>
+            </button>
+            <button className="toolbar-button">
+              <Image src="/download.png" alt="" width={30} height={30} />
+              <a
+                href={`http://ec2-100-25-138-100.compute-1.amazonaws.com:3001/${props.imageIndex}`}
+                download="animation.gif"
+              >
+                Animation
+              </a>
+            </button>
+          </Collapsible>
+        </div>
       </div>
     </div>
   );
