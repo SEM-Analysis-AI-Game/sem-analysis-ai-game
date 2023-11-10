@@ -404,7 +404,9 @@ export function Painter(props: {
                 new Blob(
                   [
                     JSON.stringify({
-                      segments: state.canvas.map((e) => e?.segment ?? -1),
+                      segments: state.canvas.map((e) =>
+                        e !== null && e !== undefined ? e.segment : -1
+                      ),
                     }),
                   ],
                   {
