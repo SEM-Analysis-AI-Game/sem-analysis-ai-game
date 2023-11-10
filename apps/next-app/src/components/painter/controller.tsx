@@ -183,7 +183,10 @@ export function PainterController(props: {
           size: props.brushSize,
         };
 
-        if (drawEvent.from !== drawEvent.to) {
+        if (
+          drawEvent.from[0] !== drawEvent.to[0] &&
+          drawEvent.from[1] !== drawEvent.to[1]
+        ) {
           // emit the draw event to the server
           socket.emit("draw", drawEvent);
         }
