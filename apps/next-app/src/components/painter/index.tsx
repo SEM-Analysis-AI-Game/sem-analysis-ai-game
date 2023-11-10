@@ -246,7 +246,7 @@ export function Painter(props: {
   return (
     <div className="flex h-[calc(100dvh)] justify-center items-center bg-neutral-800">
       <div
-        className="absolute select-none"
+        className="absolute"
         style={{
           width: `${image.width * zoom}px`,
           height: `${image.height * zoom}px`,
