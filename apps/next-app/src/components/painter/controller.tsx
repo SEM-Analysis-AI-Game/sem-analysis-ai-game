@@ -22,6 +22,7 @@ export function PainterController(props: {
   historyIndex: number;
   imageIndex: number;
   zoom: number;
+  numFingers: number;
   pan: readonly [number, number];
   cursorDown: boolean;
   state: ClientState;
@@ -120,7 +121,7 @@ export function PainterController(props: {
   // handle updates on each frame
   return useFrame(() => {
     // if the cursor is down and reconcilliation is done, allow drawing
-    if (props.cursorDown && socket && reconciled) {
+    if (props.numFingers < 2 && props.cursorDown && socket && reconciled) {
       // gets the pixel position of the cursor in texture coordinates ([0, 0] at the bottom left corner and,
       // and [resolution[0], resolution[1]] at the top right corner)
       const getPixelPos = (

@@ -275,6 +275,7 @@ export function Painter(props: {
           state={state}
           drawType={brushType}
           brushSize={brushSize}
+          numFingers={numFingers}
         />
         <PainterRenderer
           canvasSize={[image.width * zoom, image.height * zoom]}
