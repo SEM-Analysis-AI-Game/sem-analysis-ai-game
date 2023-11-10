@@ -306,18 +306,60 @@ export function applyDrawEvent<StateType extends State>(
       ],
       (pos) => {
         if (inBounds(pos, state.resolution)) {
-          if (rectangleBoundary.has(`${pos[0]},${pos[1]}`)) {
-            setBoundarySegment(onUpdateSegment, state, pos, event.segment);
-
-            // the rectangle boundary will stop the traversal
-            return false;
-          } else {
-            if (onCanvasBoundary(pos)) {
+          const maxBounds = [
+            Math.max(
+              rightEdgeStart[0],
+              rightEdgeEnd[0],
+              leftEdgeStart[0],
+              leftEdgeEnd[0]
+            ),
+            Math.max(
+              rightEdgeStart[1],
+              rightEdgeEnd[1],
+              leftEdgeStart[1],
+              leftEdgeEnd[1]
+            ),
+          ];
+          const minBounds = [
+            Math.min(
+              leftEdgeStart[0],
+              leftEdgeEnd[0],
+              rightEdgeStart[0],
+              rightEdgeEnd[0]
+            ),
+            Math.min(
+              leftEdgeStart[1],
+              leftEdgeEnd[1],
+              rightEdgeStart[1],
+              rightEdgeEnd[1]
+            ),
+          ];
+          if (
+            pos[0] >= minBounds[0] &&
+            pos[1] >= minBounds[1] &&
+            pos[0] <= maxBounds[0] &&
+            pos[1] <= maxBounds[1]
+          ) {
+            if (rectangleBoundary.has(`${pos[0]},${pos[1]}`)) {
               setBoundarySegment(onUpdateSegment, state, pos, event.segment);
+
+              // the rectangle boundary will stop the traversal
+              return false;
             } else {
-              setNonBoundarySegment(onUpdateSegment, state, pos, event.segment);
+              if (onCanvasBoundary(pos)) {
+                setBoundarySegment(onUpdateSegment, state, pos, event.segment);
+              } else {
+                setNonBoundarySegment(
+                  onUpdateSegment,
+                  state,
+                  pos,
+                  event.segment
+                );
+              }
+              return true;
             }
-            return true;
+          } else {
+            return false;
           }
         } else {
           return false;
