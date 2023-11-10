@@ -49,13 +49,13 @@ export const scoringFunction = (resolution: readonly [number, number], reference
         let [x, y] = [i % width, Math.floor(i / width)];
         // perform DFS
         const stack: number[] = [i];
-        console.log('starting dfs on', i)
+        //console.log('starting dfs on', i)
         found[i] = true;
         while (stack.length > 0) {
             const n = stack.pop() as number;
             const segmentIndex = input[n];
             const referenceIndex = reference[n];
-            console.log(segmentIndex, referenceIndex);
+            //console.log(segmentIndex, referenceIndex);
             if (referenceIndex !== null) {
                 if (!counts.has(segmentIndex as number)) {
                     counts.set(segmentIndex as number, new Map<number, number>());
@@ -74,10 +74,10 @@ export const scoringFunction = (resolution: readonly [number, number], reference
                 const [nx, ny] = [x + dir[0], y + dir[1]];
                 if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
                     const index = nx + ny * width;
-                    console.log('exploring',index,input[index],found[index],segmentIndex);
+                    //console.log('exploring',index,input[index],found[index],segmentIndex);
                     if (!found[index] && input[index] === segmentIndex) {
                         stack.push(index);
-                        console.log(stack);
+                        //console.log(stack);
                         found[index] = true;
                     }
                 }
@@ -85,13 +85,13 @@ export const scoringFunction = (resolution: readonly [number, number], reference
         }
     }
 
-    console.log('refseg', refseg);
-    console.log('wrongfill', wrongfill);
-    console.log(vals);
+    //console.log('refseg', refseg);
+    //console.log('wrongfill', wrongfill);
+    //console.log(vals);
 
-    console.log("Counts");
+    //console.log("Counts");
     counts.forEach((value => {
-        console.log(Object.fromEntries(value))
+        //console.log(Object.fromEntries(value))
     }))
 
     // FOR OPTIMAL SOLUTION:
@@ -118,8 +118,8 @@ export const scoringFunction = (resolution: readonly [number, number], reference
         }
     });
 
-    console.log("Reference map")
-    console.log(Object.fromEntries(inputToReference));
+    //console.log("Reference map")
+    //console.log(Object.fromEntries(inputToReference));
 
     let correctCount = 0;
 
@@ -132,9 +132,20 @@ export const scoringFunction = (resolution: readonly [number, number], reference
 
     const totalCorrect = correctCount;
 
-    console.log(totalCorrect, '/', numReferencePoints);
+    //console.log(totalCorrect, '/', numReferencePoints);
 
     const score = totalCorrect / numReferencePoints;
 
     return score;
+}
+
+export function percentScoringFunction(input: readonly (number | null)[]) {
+    // count non-null, non-undefined cells
+    let count = 0;
+    for (let i = 0; i < input.length; i++) {
+        if (input[i] !== null && input[i] !== undefined) {
+            count++;
+        }
+    }
+    return count / input.length;
 }

@@ -23,7 +23,7 @@ import { Collapsible } from "./collapsible";
 /**
  * The max zoom multiplier
  */
-const kMaxZoom = 10.0;
+const kMaxZoom = 5.0;
 
 /**
  * Finds the scale factor to fit the image to the screen.
@@ -234,6 +234,7 @@ export function Painter(props: {
   );
 
   const [score, setScore] = useState<number>(0);
+  const [fetchingScore, setFetchingScore] = useState<boolean>(false);
 
   const [brushType, setBrushType] = useState<DrawType>("brush");
 
@@ -287,7 +288,7 @@ export function Painter(props: {
       {/* <div className="flex flex-col absolute left-0 top-0 gap-y-2 bg-neutral-700 rounded-br p-4 border-r border-b border-gray-400">
         <div className="flex justify-center">
           <button
-            className="bg-gray-200 rounded hover:bg-gray-400 p-1 mx-2 transition"
+            className={`rounded hover:${brushType === "brush" ? "bg-cyan-200" : "bg-gray-400"} p-1 mx-2 transition ${brushType === "brush" ? "bg-cyan-400" : "bg-gray-200"}`}
             onClick={() => {
               setBrushType("brush");
             }}
@@ -296,7 +297,7 @@ export function Painter(props: {
           </button>
 
           <button
-            className="bg-gray-200 rounded hover:bg-gray-400 p-1 mx-2 transition"
+            className={`rounded hover:${brushType === "eraser" ? "bg-cyan-200" : "bg-gray-400"} p-1 mx-2 transition ${brushType === "eraser" ? "bg-cyan-400" : "bg-gray-200"}`}
             onClick={() => {
               setBrushType("eraser");
             }}
@@ -319,11 +320,17 @@ export function Painter(props: {
         <hr />
         <button
           className="toolbar-button"
+          disabled={fetchingScore}
+          style={{
+            cursor: fetchingScore ? "auto" : "pointer" 
+          }}
           onClick={() => {
+            setFetchingScore(true);
             fetch(`/api/score?imageIndex=${props.imageIndex}`).then((value) => {
               value.json().then((data) => {
                 console.log(data);
                 setScore(data.score);
+                setFetchingScore(false);
               });
             });
           }}
@@ -333,7 +340,13 @@ export function Painter(props: {
         </button>
 
         <p className="text-neutral-100">
-          Score: <span className="font-bold">{Math.round(score * 100)}%</span>
+          Score:{" "}
+          {
+            fetchingScore ?
+            <div className="lds-hourglass"></div>
+            :
+            <span className="font-bold">{Math.round(score * 100)}%</span>
+          }
         </p>
 
         <hr />
