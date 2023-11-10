@@ -2,18 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer utilities {
-  @responsive {
-    .scrolling-touch {
-      -webkit-overflow-scrolling: touch;
-    }
-
-    .scrolling-auto {
-      -webkit-overflow-scrolling: auto;
-    }
-  }
-}
-
 Canvas {
   background: transparent;
   position: absolute;
