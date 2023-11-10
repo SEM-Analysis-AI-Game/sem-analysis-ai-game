@@ -2,7 +2,7 @@
 const nextConfig = {
     transpilePackages: ["workspace:packages/drawing"],
     env: {
-        API_HOST: "ec2-100-25-13-154.compute-1.amazonaws.com",
+        API_HOST: "34.234.231.148",
     }
 }
 
