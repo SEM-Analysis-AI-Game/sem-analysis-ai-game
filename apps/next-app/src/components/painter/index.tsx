@@ -400,19 +400,19 @@ export function Painter(props: {
             className="toolbar-button"
             onClick={() => {
               const anchor = document.createElement("a");
+              const data = [];
+              for (let i = 0; i < state.canvas.length; i++) {
+                const segment = state.canvas[i];
+                if (segment) {
+                  data.push(segment.segment);
+                } else {
+                  data.push(-1);
+                }
+              }
               const url = URL.createObjectURL(
-                new Blob(
-                  [
-                    JSON.stringify({
-                      segments: state.canvas.map((e) =>
-                        e !== null && e !== undefined ? e.segment : -1
-                      ),
-                    }),
-                  ],
-                  {
-                    type: "application/json",
-                  }
-                )
+                new Blob([JSON.stringify({ segments: data })], {
+                  type: "application/json",
+                })
               );
               anchor.href = url;
               anchor.download = "segments.json";
