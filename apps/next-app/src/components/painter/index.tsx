@@ -247,7 +247,7 @@ export function Painter(props: {
         style={{
           width: `${image.width * zoom}px`,
           height: `${image.height * zoom}px`,
-          transform: `translate(${pan[0]}px, ${pan[1]}px)`,
+          // transform: `translate(${pan[0]}px, ${pan[1]}px)`,
         }}
       >
         <Image
@@ -288,7 +288,11 @@ export function Painter(props: {
       <div className="flex flex-col absolute left-0 top-0 gap-y-2 bg-neutral-700 rounded-br p-4 border-r border-b border-gray-400">
         <div className="flex justify-center">
           <button
-            className={`rounded hover:${brushType === "brush" ? "bg-cyan-200" : "bg-gray-400"} p-1 mx-2 transition ${brushType === "brush" ? "bg-cyan-400" : "bg-gray-200"}`}
+            className={`rounded hover:${
+              brushType === "brush" ? "bg-cyan-200" : "bg-gray-400"
+            } p-1 mx-2 transition ${
+              brushType === "brush" ? "bg-cyan-400" : "bg-gray-200"
+            }`}
             onClick={() => {
               setBrushType("brush");
             }}
@@ -297,7 +301,11 @@ export function Painter(props: {
           </button>
 
           <button
-            className={`rounded hover:${brushType === "eraser" ? "bg-cyan-200" : "bg-gray-400"} p-1 mx-2 transition ${brushType === "eraser" ? "bg-cyan-400" : "bg-gray-200"}`}
+            className={`rounded hover:${
+              brushType === "eraser" ? "bg-cyan-200" : "bg-gray-400"
+            } p-1 mx-2 transition ${
+              brushType === "eraser" ? "bg-cyan-400" : "bg-gray-200"
+            }`}
             onClick={() => {
               setBrushType("eraser");
             }}
@@ -322,7 +330,7 @@ export function Painter(props: {
           className="toolbar-button"
           disabled={fetchingScore}
           style={{
-            cursor: fetchingScore ? "auto" : "pointer" 
+            cursor: fetchingScore ? "auto" : "pointer",
           }}
           onClick={() => {
             setFetchingScore(true);
@@ -341,12 +349,11 @@ export function Painter(props: {
 
         <p className="text-neutral-100">
           Score:{" "}
-          {
-            fetchingScore ?
+          {fetchingScore ? (
             <div className="lds-hourglass"></div>
-            :
+          ) : (
             <span className="font-bold">{Math.round(score * 100)}%</span>
-          }
+          )}
         </p>
 
         <hr />
