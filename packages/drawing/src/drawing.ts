@@ -376,9 +376,12 @@ export function drawAndFindSplits<StateType extends State>(
   fills: FloodFillEvent[];
 } {
   // get the correct segment for the draw event based on where it begins
+  const oldSegment = getPixelData(state, event.from)?.segment ?? -1;
   const segment =
     event.type === "brush"
-      ? getPixelData(state, event.from)?.segment ?? state.nextSegmentIndex++
+      ? oldSegment === -1
+        ? state.nextSegmentIndex++
+        : oldSegment
       : -1;
 
   // the keys are segment ids, and the values are newly created boundary points for
