@@ -1,11 +1,11 @@
 import hela1 from "../../public/sem-images/hela-1.png";
 import hela2 from "../../public/sem-images/hela-2.png";
 import hela3 from "../../public/sem-images/hela-3.png";
-import lotus1 from "../../public/sem-images/lotus-leaf-1.png";
-import lotus2 from "../../public/sem-images/lotus-leaf-2.png";
-import muc1 from "../../public/sem-images/muc-1.png";
-import muc2 from "../../public/sem-images/muc-2.png";
-import muc3 from "../../public/sem-images/muc-3.png";
+import pus1 from "../../public/sem-images/pus-1.png";
+import blood1 from "../../public/sem-images/blood-clot-1.png";
+import strawberry1 from "../../public/sem-images/strawberry-1.png";
+import bac1 from "../../public/sem-images/bacillus-cereus-1.png";
+import fuso1 from "../../public/sem-images/Fusobacterium-pancreatic-cells-1.png";
 
 /**
  * The images that are available to be used as the background.
@@ -27,28 +27,28 @@ export const kImages = [
       "Surface of cervical cancer cell that has a high production of a specific protein involved in breast cancer.",
   },
   {
-    ...lotus1,
+    ...pus1,
     description:
-      "Lotus leaf that has undergone heat treatment which has changed its physical properties.",
+      "Fluid secreted during the response from the immune system to an infection.",
   },
   {
-    ...lotus2,
-    description: "Surface of a lotus leaf plant",
+    ...blood1,
+    description: "Blood cells that have clotted together. Normal when bleeding and dangerous when not.",
   },
   {
-    ...muc1,
+    ...strawberry1,
     description:
-      "Surface of cell from the breast that has a high production of a specific protein involved in breast cancer.",
+      "Surface of a strawberry. The small bumps are the seeds of the strawberry.",
   },
   {
-    ...muc2,
+    ...bac1,
     description:
-      "Surface of cell from the breast that has a high production of a specific protein involved in breast cancer.",
+      "A colony of bacillus cereus, a bacteria found in soil and marine sponges. Can contaminant in foodborne illness.",
   },
   {
-    ...muc3,
+    ...fuso1,
     description:
-      "Surface of cell from the breast that has a high production of a specific protein involved in breast cancer.",
+      "Bacteria found in the mouth and intestines. It is interacting with a pancreatic cancer cell.",
   },
 ];
 
