@@ -113,9 +113,12 @@ export function Painter(props: {
   // within the image.
   const [pan, setPan] = useState<readonly [number, number]>([0, 0]);
 
+  const [numFingers, setNumFingers] = useState(0);
+
   // handle zooming
   usePinch(
     (e) => {
+      setNumFingers(e.touches);
       // the cursor position in screen pixel coordinates, centered so that [0, 0]
       // is the center of the screen and [window.innerWidth / 2, window.innerHeight / 2]
       // is the top right corner. this is going to be used to calculate the new pan offset.
@@ -185,7 +188,7 @@ export function Painter(props: {
     (e) => {
       // if the shift + mouse are down, or if the user is touching with multiple fingers, then the
       // image should pan.
-      if ((e.down && e.shiftKey) || e.touches > 1) {
+      if ((e.down && e.shiftKey) || numFingers > 1) {
         setCursorDown(false);
         setPanAnchor((lastCursor) => {
           if (lastCursor) {
