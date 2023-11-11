@@ -1,11 +1,11 @@
-import hela1 from "../../public/sem-images/hela-1.png";
-import hela2 from "../../public/sem-images/hela-2.png";
-import hela3 from "../../public/sem-images/hela-3.png";
-import pus1 from "../../public/sem-images/pus-1.png";
-import blood1 from "../../public/sem-images/blood-clot-1.png";
-import strawberry1 from "../../public/sem-images/strawberry-1.png";
-import bac1 from "../../public/sem-images/bacillus-cereus-1.png";
-import fuso1 from "../../public/sem-images/Fusobacterium-pancreatic-cells-1.png";
+import hela1 from "../../public/sem-images/0.png";
+import hela2 from "../../public/sem-images/1.png";
+import hela3 from "../../public/sem-images/2.png";
+import pus1 from "../../public/sem-images/3.png";
+import blood1 from "../../public/sem-images/4.png";
+import strawberry1 from "../../public/sem-images/5.png";
+import bac1 from "../../public/sem-images/6.png";
+import fuso1 from "../../public/sem-images/7.png";
 
 /**
  * The images that are available to be used as the background.
@@ -33,7 +33,8 @@ export const kImages = [
   },
   {
     ...blood1,
-    description: "Blood cells that have clotted together. Normal when bleeding and dangerous when not.",
+    description:
+      "Blood cells that have clotted together. Normal when bleeding and dangerous when not.",
   },
   {
     ...strawberry1,

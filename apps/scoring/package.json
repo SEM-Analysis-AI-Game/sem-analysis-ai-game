@@ -4,6 +4,7 @@
   "dependencies": {
     "@types/node": "20.6.2",
     "drawing": "workspace:packages/drawing",
+    "images": "workspace:packages/images",
     "eslint": "8.49.0",
     "eslint-config-next": "latest",
     "socket.io-client": "^4.7.2",

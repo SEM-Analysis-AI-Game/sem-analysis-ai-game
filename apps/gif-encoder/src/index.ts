@@ -8,19 +8,9 @@ import {
 } from "drawing";
 import SocketIOClient from "socket.io-client";
 import sharp from "sharp";
+import { kImageResolutions } from "images";
 // @ts-ignore
 import GIFEncoder from "gif-encoder-2";
-
-const kImageResolutions: readonly (readonly [number, number])[] = [
-  [732, 732],
-  [732, 732],
-  [732, 732],
-  [512, 347],
-  [511, 347],
-  [1510, 896],
-  [1600, 978],
-  [1459, 1044],
-];
 
 const state: (ClientState & {
   gifEncoder: GIFEncoder;
