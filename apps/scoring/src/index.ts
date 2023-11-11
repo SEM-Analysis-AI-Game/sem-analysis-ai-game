@@ -236,7 +236,7 @@ setInterval(() => {
   for (const user of users) {
     user.send(JSON.stringify({ scores: scores.map((s) => s.score) }));
   }
-}, 60000);
+}, 30000);
 
 Bun.serve({
   port: 3002,
