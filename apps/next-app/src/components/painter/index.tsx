@@ -246,8 +246,8 @@ export function Painter(props: {
     filter: () => true,
     retryOnError: true,
     shouldReconnect: () => true,
-    onMessage: (event: MessageEvent<{ scores: number[] }>) => {
-      setScore(event.data.scores[props.imageIndex]);
+    onMessage: (event: MessageEvent<string>) => {
+      setScore(JSON.parse(event.data).scores[props.imageIndex]);
     },
   });
 
