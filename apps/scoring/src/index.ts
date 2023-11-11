@@ -207,7 +207,7 @@ function outputScores() {
     const state = states[i];
     const segments = [];
     for (const seg of state.canvas) {
-      if (seg.segment || seg.segment === 0) {
+      if (seg) {
         segments.push(seg.segment);
       } else {
         segments.push(-1);
@@ -233,8 +233,6 @@ let users: ServerWebSocket<unknown>[] = [];
 
 setInterval(() => {
   const scores = outputScores();
-  console.log(scores);
-  console.log(users);
   for (const user of users) {
     user.send(JSON.stringify({ scores: scores.map((s) => s.score) }));
   }
