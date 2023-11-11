@@ -24,18 +24,23 @@ for (let i = 0; i < kImageResolutions.length; i++) {
   }
 }
 
+/**
+ * @param resolution The width and height of the input image
+ * @param reference Segment index array of correct/reference image
+ * @param input Segement index array of a given image to assign a score to
+ */
 const scoringFunction = (
   resolution: readonly [number, number],
   reference: readonly number[],
   input: readonly number[]
 ) => {
   /*
-  Approach:
-      Perform an optimal mapping of correct segments to given segments. This mapping should be injective
-      but not necessarily surjective. That is, every correct segment should match to at most 1 given segment.
-      With that mapping count the total number of pixels which have been correctly drawn
-      Report the answer as that value divided by the total number of pixels on the image.
-  */
+    Approach:
+        Perform an optimal mapping of correct segments to given segments. This mapping should be injective
+        but not necessarily surjective. That is, every correct segment should match to at most 1 given segment.
+        With that mapping count the total number of pixels which have been correctly drawn
+        Report the answer as that value divided by the total number of pixels on the image.
+    */
 
   const [width, height] = resolution;
   const size = width * height;
