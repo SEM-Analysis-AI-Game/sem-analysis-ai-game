@@ -56,10 +56,6 @@ export function Painter(props: {
 
   // initialize client-side state
   const state: ClientState = useMemo(() => {
-    if (!image) {
-      console.log(props);
-    }
-
     // the texture to use for drawing
     const textureData = new Uint8Array(image.width * image.height * 4);
     const texture = new THREE.DataTexture(
@@ -245,15 +241,12 @@ export function Painter(props: {
   );
 
   useWebSocket(`ws://${process.env.API_HOST ?? "localhost"}:${kScoringPort}/`, {
-    onOpen: () => {
-      console.log("test");
-    },
+    onOpen: () => {},
     share: true,
     filter: () => true,
     retryOnError: true,
     shouldReconnect: () => true,
     onMessage: (event: MessageEvent<{ scores: number[] }>) => {
-      console.log(event.data);
       setScore(event.data.scores[props.imageIndex]);
     },
   });

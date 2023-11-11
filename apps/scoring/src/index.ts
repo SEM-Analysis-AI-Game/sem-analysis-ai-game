@@ -233,6 +233,8 @@ let users: ServerWebSocket<unknown>[] = [];
 
 setInterval(() => {
   const scores = outputScores();
+  console.log(scores);
+  console.log(users);
   for (const user of users) {
     user.send(JSON.stringify({ scores: scores.map((s) => s.score) }));
   }
