@@ -18,7 +18,7 @@ for (let i = 0; i < kImageResolutions.length; i++) {
     fs.readFileSync(`./references/${i}.json`, "utf8")
   )["data"];
   for (const [value, count] of reference) {
-    for (let i = 0; i < count; i++) {
+    for (let k = 0; k < count; k++) {
       references[i].push(value);
     }
   }
