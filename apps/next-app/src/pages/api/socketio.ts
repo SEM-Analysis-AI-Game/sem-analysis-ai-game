@@ -1,5 +1,4 @@
 import { NextApiRequest } from "next";
-import { Server as ServerIO } from "socket.io";
 import { Server as HttpServer } from "http";
 import { Server as NetServer, Socket } from "net";
 import { NextApiResponse } from "next";
@@ -26,7 +25,7 @@ export default async function socket(
 ) {
   if (!res.socket.server.io) {
     const httpServer: HttpServer = res.socket.server as any;
-    const io = new ServerIO(httpServer, {
+    const io = new SocketIOServer(httpServer, {
       path: "/api/socketio",
       addTrailingSlash: false,
     });

@@ -7,11 +7,9 @@ import {
   floodFillClient,
 } from "drawing";
 import { kImageResolutions } from "images";
-import * as fs from "fs";
-
 import SocketIOClient from "socket.io-client";
-
-type EncodingSegment = readonly [number, number];
+import { ServerWebSocket } from "bun";
+import * as fs from "fs";
 
 const references: { [key: number]: number[] } = {};
 for (let i = 0; i < kImageResolutions.length; i++) {
@@ -203,13 +201,10 @@ for (let i = 0; i < kImageResolutions.length; i++) {
   });
 }
 
-Bun.serve({
-  port: 3002,
-  fetch(request) {
-    const imageIndex = parseInt(request.url.split("/").pop()!);
-
-    const state = states[imageIndex];
-
+function outputScores() {
+  const scores = [];
+  for (let i = 0; i < states.length; i++) {
+    const state = states[i];
     const segments = [];
     for (const seg of state.canvas) {
       if (seg.segment || seg.segment === 0) {
@@ -221,23 +216,44 @@ Bun.serve({
     const dimension = state.resolution;
 
     let score;
-    if (!Object.hasOwn(references, imageIndex)) {
+    if (!Object.hasOwn(references, i)) {
       // Use a percent scoring function if there is no reference image.
       score = percentScoringFunction(segments);
     } else {
       // Compare to a reference image if there is one.
-      score = scoringFunction(dimension, references[imageIndex], segments);
+      score = scoringFunction(dimension, references[i], segments);
     }
 
-    return new Response(
-      JSON.stringify({ dim: dimension, segments: segments, score }),
-      {
-        status: 200,
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
-    );
+    scores.push({ dim: dimension, segments: segments, score });
+  }
+  return scores;
+}
+
+let users: ServerWebSocket<unknown>[] = [];
+
+setInterval(() => {
+  const scores = outputScores();
+  for (const user of users) {
+    user.send(JSON.stringify({ scores: scores.map((s) => s.score) }));
+  }
+}, 60000);
+
+Bun.serve({
+  port: 3002,
+  fetch(req, server) {
+    if (server.upgrade(req)) {
+      return;
+    }
+    return new Response("Upgrade failed :(", { status: 500 });
+  },
+  websocket: {
+    message() {},
+    open(ws) {
+      users.push(ws);
+    },
+    close(ws) {
+      users = users.filter((user) => user !== ws);
+    },
   },
 });
 

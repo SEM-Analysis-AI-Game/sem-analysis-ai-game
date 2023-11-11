@@ -6,7 +6,7 @@ import {
   getPixelData,
 } from "drawing";
 import { DrawNode, FloodFillNode, RoomState } from "./state";
-import { push } from "./doubly-linked-list";
+import { push, remove } from "./doubly-linked-list";
 
 export function drawServer(
   state: RoomState,
@@ -19,6 +19,7 @@ export function drawServer(
     value: {
       ...event,
       segment: -1,
+      points: new Set(),
       historyIndex: state.rawLog.length,
     },
     prev: state.shortLog.draws.tail,
@@ -32,13 +33,7 @@ export function drawServer(
     if (entry.fill) {
       entry.fill.value.points.delete(`${pos[0]},${pos[1]}`);
       if (entry.fill.value.points.size === 0) {
-        entry.fill.prev.next = entry.fill.next;
-        if (entry.fill.next) {
-          entry.fill.next.prev = entry.fill.prev;
-        } else {
-          state.shortLog.fills.tail = entry.fill.prev;
-        }
-        state.shortLog.fills.length--;
+        remove(state.shortLog.fills, entry.fill);
       }
       entry.fill = null;
     }
@@ -49,6 +44,12 @@ export function drawServer(
       removeFill(pos, newData);
       if (!oldData || oldData.segment !== newData.segment) {
         newData.node = node;
+        node.value.points.add(`${pos[0]},${pos[1]}`);
+      } else if (oldData && oldData.node) {
+        oldData.node.value.points.delete(`${pos[0]},${pos[1]}`);
+        if (oldData.node.value.points.size === 0) {
+          remove(state.shortLog.draws, oldData.node);
+        }
       }
     },
     (pos) => {

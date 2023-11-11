@@ -12,7 +12,9 @@ export type FloodFillNode = DoublyLinkedListNode<FloodFillEvent>;
  * Holds information about a draw event. These are stored on the server
  * canvas as well as the short log.
  */
-export type DrawNode = DoublyLinkedListNode<DrawResponse>;
+export type DrawNode = DoublyLinkedListNode<
+  DrawResponse & { points: Set<string> }
+>;
 
 export type RoomState = State & {
   rawLog: DrawEvent[];

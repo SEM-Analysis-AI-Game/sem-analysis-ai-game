@@ -2,6 +2,7 @@
 
 import * as THREE from "three";
 import { useEffect, useMemo, useState } from "react";
+import useWebSocket from "react-use-websocket";
 import Image, { StaticImageData } from "next/image";
 import Link from "next/link";
 import { useDrag, usePinch } from "@use-gesture/react";
@@ -243,6 +244,17 @@ export function Painter(props: {
     () => () => {}
   );
 
+  useWebSocket(`ws://${process.env.API_HOST ?? "localhost"}:${kScoringPort}`, {
+    onOpen: () => {},
+    share: true,
+    filter: () => true,
+    retryOnError: true,
+    shouldReconnect: () => true,
+    onMessage: (event: MessageEvent<{ scores: number[] }>) => {
+      setScore(event.data.scores[props.imageIndex]);
+    },
+  });
+
   const [score, setScore] = useState<number>(0);
   const [fetchingScore, setFetchingScore] = useState<boolean>(false);
 
@@ -346,28 +358,7 @@ export function Painter(props: {
         />
 
         <hr />
-        <button
-          className="toolbar-button"
-          disabled={fetchingScore}
-          style={{
-            cursor: fetchingScore ? "auto" : "pointer",
-          }}
-          onClick={() => {
-            setFetchingScore(true);
-            fetch(`${kBaseUrl}:${kScoringPort}/${props.imageIndex}`).then(
-              (value) => {
-                value.json().then((data) => {
-                  setScore(data.score);
-                  setFetchingScore(false);
-                });
-              }
-            );
-          }}
-        >
-          <Image src="/score.png" alt="" width={30} height={30} />
-          Re-score
-        </button>
-
+        <Image src="/score.png" alt="" width={30} height={30} />
         <p className="text-neutral-100">
           Score:{" "}
           {fetchingScore ? (
