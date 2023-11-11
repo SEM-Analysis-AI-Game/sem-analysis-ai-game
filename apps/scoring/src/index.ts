@@ -15,7 +15,7 @@ const references: { [key: number]: number[] } = {};
 for (let i = 0; i < kImageResolutions.length; i++) {
   references[i] = [];
   const reference = JSON.parse(
-    fs.readFileSync(`../references/${i}.json`, "utf8")
+    fs.readFileSync(`./references/${i}.json`, "utf8")
   )["data"];
   for (const [value, count] of reference) {
     for (let i = 0; i < count; i++) {
