@@ -297,7 +297,7 @@ export function Painter(props: {
         />
       </Canvas>
       <div className="flex flex-col absolute left-0 top-0 gap-y-2 bg-neutral-700 rounded-br p-4 border-r border-b border-gray-400">
-        <button className="toolbar-button">
+        <button className="toolbar-button py-1">
           <Image src="/home.png" alt="" width={25} height={25}></Image>
           <Link href="/">
             &nbsp;Home
@@ -359,6 +359,7 @@ export function Painter(props: {
           onClick={() => {
             setFetchingScore(true);
             fetch(`/api/score?imageIndex=${props.imageIndex}`).then((value) => {
+            // fetch(`http://localhost:3002/${props.imageIndex}`).then((value) => {
               value.json().then((data) => {
                 console.log(data);
                 setScore(data.score);

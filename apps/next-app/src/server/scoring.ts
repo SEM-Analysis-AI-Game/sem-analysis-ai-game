@@ -3,7 +3,7 @@
  * @param reference Segment index array of correct/reference image
  * @param input Segement index array of a given image to assign a score to
  */
-export const scoringFunction = (resolution: readonly [number, number], reference: readonly (number | null)[], input: readonly (number | null)[]) => {
+export const scoringFunction = (resolution: readonly [number, number], reference: readonly number[], input: readonly number[]) => {
     /*
     Approach:
         Perform an optimal mapping of correct segments to given segments. This mapping should be injective
@@ -28,17 +28,17 @@ export const scoringFunction = (resolution: readonly [number, number], reference
     let wrongfill = 0;
     let vals = [];
     for (let i = 0; i < size; i++) {
-        if (reference[i] !== null) {
+        if (reference[i] !== -1) {
             numReferencePoints++;
             refseg++;
         }
-        else if (input[i] !== undefined) { // i.e. reference is null and the user segmented something there
+        else if (input[i] !== -1) { // i.e. reference is null and the user segmented something there
             vals.push(input[i])
             numReferencePoints++;
             wrongfill++;
         }
         
-        if (input[i] === undefined) {
+        if (input[i] === -1) {
             continue;
         }
         
@@ -56,7 +56,7 @@ export const scoringFunction = (resolution: readonly [number, number], reference
             const segmentIndex = input[n];
             const referenceIndex = reference[n];
             //console.log(segmentIndex, referenceIndex);
-            if (referenceIndex !== null) {
+            if (referenceIndex !== -1) {
                 if (!counts.has(segmentIndex as number)) {
                     counts.set(segmentIndex as number, new Map<number, number>());
                 }
@@ -125,8 +125,8 @@ export const scoringFunction = (resolution: readonly [number, number], reference
 
     counts.forEach((value: Map<number ,number>, inputIndex: number) => {
         const referenceIndex = inputToReference.get(inputIndex);
-        if (referenceIndex !== null && referenceIndex !== undefined) {
-            correctCount += value.get(referenceIndex) as number;
+        if (referenceIndex !== -1 && referenceIndex !== -1) {
+            correctCount += value.get(referenceIndex as number) as number;
         }
     });
 
