@@ -304,11 +304,14 @@ export function Painter(props: {
         />
       </Canvas>
       <div className="flex flex-col absolute left-0 top-0 gap-y-2 bg-neutral-700 rounded-br p-4 border-r border-b border-gray-400">
-        <button className="toolbar-button py-1">
-          <Image src="/home.png" alt="" width={25} height={25}></Image>
-          <Link href="/">&nbsp;Home</Link>
-        </button>
-
+        <div className="w-full">
+          <Link href="/">
+            <button className="toolbar-button py-1 w-full">
+              <Image src="/home.png" alt="" width={25} height={25} />
+              <p className="w-full text-center">Home</p>
+            </button>
+          </Link>
+        </div>
         <hr />
 
         <div className="flex justify-center">
