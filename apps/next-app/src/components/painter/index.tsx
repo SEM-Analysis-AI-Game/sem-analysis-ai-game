@@ -300,7 +300,7 @@ export function Painter(props: {
           <button
             className={`rounded hover:${
               brushType === "brush" ? "bg-cyan-200" : "bg-gray-400"
-            } p-1 mx-2 transition ${
+            } p-1 mx-2 transition border border-white ${
               brushType === "brush" ? "bg-cyan-400" : "bg-gray-200"
             }`}
             onClick={() => {
@@ -313,7 +313,7 @@ export function Painter(props: {
           <button
             className={`rounded hover:${
               brushType === "eraser" ? "bg-cyan-200" : "bg-gray-400"
-            } p-1 mx-2 transition ${
+            } p-1 mx-2 transition border border-white ${
               brushType === "eraser" ? "bg-cyan-400" : "bg-gray-200"
             }`}
             onClick={() => {
@@ -323,6 +323,10 @@ export function Painter(props: {
             <Image src="/circle_eraser.png" alt="" width={25} height={25} />
           </button>
         </div>
+
+        <p className="font-bold text-neutral-200">
+          Brush Size:
+        </p>
 
         <input
           type="range"
