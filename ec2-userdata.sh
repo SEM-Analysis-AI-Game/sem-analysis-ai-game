@@ -12,7 +12,7 @@ export PATH="$HOME/.bun/bin:$PATH"
 git clone https://github.com/behind-density-lines/behind-density-lines.git
 cd behind-density-lines
 bun install
-sh ./setup.sh
+sh ./copy-sem-images.sh
 cd apps/next-app
 bun run build
 bun run start &
