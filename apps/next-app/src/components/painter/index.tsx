@@ -307,8 +307,14 @@ export function Painter(props: {
         <div className="w-full">
           <Link href="/">
             <button className="toolbar-button py-1 w-full">
-              <Image src="/home.png" alt="" width={25} height={25} />
-              <p className="w-full text-center">Home</p>
+              <Image
+                className="ml-2 mr-1"
+                src="/home.png"
+                alt=""
+                width={25}
+                height={25}
+              />
+              <p>Home</p>
             </button>
           </Link>
         </div>
@@ -380,15 +386,17 @@ export function Painter(props: {
             <Image src="/download.png" alt="" width={30} height={30} />
             <p>Full Image</p>
           </button>
-          <button className="toolbar-button">
-            <Image src="/download.png" alt="" width={30} height={30} />
+          <div className="w-full">
             <a
               href={`${kBaseUrl}:${kGifEncoderPort}/${props.imageIndex}`}
               download="animation.gif"
             >
-              Animation
+              <button className="toolbar-button w-full">
+                <Image src="/download.png" alt="" width={30} height={30} />
+                <p>Animation</p>
+              </button>
             </a>
-          </button>
+          </div>
           <button
             className="toolbar-button"
             onClick={() => {
