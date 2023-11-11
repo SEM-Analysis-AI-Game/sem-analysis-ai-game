@@ -44,11 +44,11 @@ export function drawServer(
       removeFill(pos, newData);
       if (!oldData || oldData.segment !== newData.segment) {
         newData.node = node;
-        node.value.points.add(`${pos[0]},${pos[1]}`);
+        // node.value.points.add(`${pos[0]},${pos[1]}`);
       } else if (oldData && oldData.node) {
-        oldData.node.value.points.delete(`${pos[0]},${pos[1]}`);
+        // oldData.node.value.points.delete(`${pos[0]},${pos[1]}`);
         if (oldData.node.value.points.size === 0) {
-          remove(state.shortLog.draws, oldData.node);
+          // remove(state.shortLog.draws, oldData.node);
         }
       }
     },
