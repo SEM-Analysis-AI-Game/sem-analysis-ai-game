@@ -3,6 +3,7 @@
 import * as THREE from "three";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Image, { StaticImageData } from "next/image";
+import Link from "next/link";
 import { useDrag, usePinch } from "@use-gesture/react";
 import {
   StateResponse,
@@ -296,6 +297,15 @@ export function Painter(props: {
         />
       </Canvas>
       <div className="flex flex-col absolute left-0 top-0 gap-y-2 bg-neutral-700 rounded-br p-4 border-r border-b border-gray-400">
+        <button className="toolbar-button">
+          <Image src="/home.png" alt="" width={25} height={25}></Image>
+          <Link href="/">
+            &nbsp;Home
+          </Link>
+        </button>
+
+        <hr />
+
         <div className="flex justify-center">
           <button
             className={`rounded hover:${
