@@ -244,19 +244,21 @@ export function Painter(props: {
     () => () => {}
   );
 
-  useWebSocket(`ws://${process.env.API_HOST ?? "localhost"}:${kScoringPort}`, {
-    onOpen: () => {},
+  useWebSocket(`ws://${process.env.API_HOST ?? "localhost"}:${kScoringPort}/`, {
+    onOpen: () => {
+      console.log("test");
+    },
     share: true,
     filter: () => true,
     retryOnError: true,
     shouldReconnect: () => true,
     onMessage: (event: MessageEvent<{ scores: number[] }>) => {
+      console.log(event.data);
       setScore(event.data.scores[props.imageIndex]);
     },
   });
 
   const [score, setScore] = useState<number>(0);
-  const [fetchingScore, setFetchingScore] = useState<boolean>(false);
 
   const [brushType, setBrushType] = useState<DrawType>("brush");
 
@@ -358,16 +360,9 @@ export function Painter(props: {
         />
 
         <hr />
-        <Image src="/score.png" alt="" width={30} height={30} />
         <p className="text-neutral-100">
-          Score:{" "}
-          {fetchingScore ? (
-            <div className="lds-hourglass"></div>
-          ) : (
-            <span className="font-bold">{Math.round(score * 100)}%</span>
-          )}
+          Score: <span className="font-bold">{Math.round(score * 100)}%</span>
         </p>
-
         <hr />
 
         <Collapsible title="Export">
