@@ -244,7 +244,7 @@ setInterval(() => {
 }, 30000);
 
 Bun.serve({
-  port: 3002,
+  port: 4002,
   fetch(req, server) {
     if (server.upgrade(req)) {
       return;
