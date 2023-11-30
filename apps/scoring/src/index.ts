@@ -262,7 +262,7 @@ Bun.serve({
   },
 });
 
-const socket = SocketIOClient("http://localhost:3000", {
+const socket = SocketIOClient("http://localhost:4000", {
   path: "/api/socketio",
   addTrailingSlash: false,
 });

@@ -29,9 +29,9 @@ const kMaxZoom = 5.0;
 
 const kBaseUrl = `http://${process.env.API_HOST ?? "localhost"}`;
 
-const kGifEncoderPort = 3001;
+const kGifEncoderPort = 4001;
 
-const kScoringPort = 3002;
+const kScoringPort = 4002;
 
 /**
  * Finds the scale factor to fit the image to the screen.
