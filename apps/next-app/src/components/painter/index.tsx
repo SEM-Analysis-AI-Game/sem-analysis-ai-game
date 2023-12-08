@@ -247,7 +247,6 @@ export function Painter(props: {
     retryOnError: true,
     shouldReconnect: () => true,
     onMessage: (event: MessageEvent<string>) => {
-      console.log(event);
       setScore(JSON.parse(event.data).scores[props.imageIndex]);
     },
   });
