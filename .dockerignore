@@ -1,18 +1,20 @@
 # dependencies
+
 node_modules
 
 # misc
+
 .DS_Store
-*.pem
+\*.pem
 
 # env
+
 env
 models
 datasets
 
 # lock files
+
 package-lock.json
 yarn.lock
 .vercel
-
-!

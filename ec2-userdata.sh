@@ -18,6 +18,6 @@ bun run build
 bun run start &
 npm rebuild sharp
 cd ../gif-encoder
-bun dev &
+bun run start &
 cd ../scoring
-bun dev &
+bun run start &

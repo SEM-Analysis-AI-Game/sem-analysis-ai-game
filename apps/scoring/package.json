@@ -12,6 +12,6 @@
   },
   "private": true,
   "scripts": {
-    "dev": "bun src/index.ts"
+    "start": "~/.bun/bin/bun src/index.ts"
   }
 }
