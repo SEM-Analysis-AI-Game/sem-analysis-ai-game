@@ -240,13 +240,14 @@ export function Painter(props: {
     () => () => {}
   );
 
-  useWebSocket(`ws://${process.env.API_HOST ?? "localhost"}:${kScoringPort}/`, {
+  useWebSocket(`ws://${process.env.API_HOST ?? "localhost"}:${kScoringPort}`, {
     onOpen: () => {},
     share: true,
     filter: () => true,
     retryOnError: true,
     shouldReconnect: () => true,
     onMessage: (event: MessageEvent<string>) => {
+      console.log(event);
       setScore(JSON.parse(event.data).scores[props.imageIndex]);
     },
   });

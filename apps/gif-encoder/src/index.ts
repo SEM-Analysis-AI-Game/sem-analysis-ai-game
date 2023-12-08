@@ -54,7 +54,7 @@ for (let i = 0; i < kImageResolutions.length; i++) {
 }
 
 Bun.serve({
-  port: 4001,
+  port: 3001,
   fetch(request) {
     const imageIndex = parseInt(request.url.split("/").pop()!);
     const data = new Uint8Array(state[imageIndex].gifEncoder.out.getData());
@@ -69,7 +69,7 @@ Bun.serve({
   },
 });
 
-const socket = SocketIOClient("http://localhost:4000", {
+const socket = SocketIOClient("http://localhost:3000", {
   path: "/api/socketio",
   addTrailingSlash: false,
 });

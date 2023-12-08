@@ -31,8 +31,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build -p 4000",
-    "start": "next start -p 4000",
+    "build": "next build",
+    "start": "next start",
     "lint": "next lint"
   }
 }

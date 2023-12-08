@@ -244,7 +244,7 @@ setInterval(() => {
 }, 30000);
 
 Bun.serve({
-  port: 4002,
+  port: 3002,
   fetch(req, server) {
     if (server.upgrade(req)) {
       return;
@@ -262,7 +262,7 @@ Bun.serve({
   },
 });
 
-const socket = SocketIOClient("http://localhost:4000", {
+const socket = SocketIOClient("http://localhost:3000", {
   path: "/api/socketio",
   addTrailingSlash: false,
 });
