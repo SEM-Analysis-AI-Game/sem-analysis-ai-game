@@ -46,6 +46,6 @@ The following command will run the website on port 4000, the gif-encoder on 4001
 
 ```
 
-docker run -p 4000:3000 -p 4001:3001 -p 4002:3002 behind-density-lines
+docker run -d -p 4000:3000 -p 4001:3001 -p 4002:3002 behind-density-lines
 
 ```
